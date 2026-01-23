@@ -1,0 +1,12 @@
+services:
+  front:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules # コンテナ内のnode_modulesをローカルで上書きしない
+    ports:
+      - "3001:5173" # ローカルの3001番でアクセス
+    stdin_open: true
+    tty: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true # ホットリロードを安定させる
