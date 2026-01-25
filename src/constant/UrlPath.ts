@@ -1,0 +1,33 @@
+// ルーティングパスの集中管理用定数
+export const UrlPath = {
+  // lower-case keys (既存 navItems 用)
+  notifications: '/notifications',
+  mypage: '/mypage',
+  jobSearch: '/',
+  center: '/center',
+  logSearch: '/logs',
+  jobCreate: '/jobs/new',
+  tool: '/tools',
+  oa: '/oa',
+  admin: '/admin',
+  help: '/help',
+  // 上位互換: 既存コードで参照されている Pascal ケースのキー
+  MyPage: '/mypage',
+  ShareArea: '/center',
+  LogSearch: '/logs',
+  JobSearch: '/',
+  JobCreate: '/jobs/new',
+  Tool: '/tools',
+  OAUsers: '/oa/users',
+  OAOrders: '/oa/orders',
+  UserManage: '/admin/users',
+  Manage: '/admin',
+  CenterManage: '/admin/centers',
+  ManageRole: '/admin/roles',
+  Information: '/admin/information',
+  System: '/admin/system',
+  UserSetting: '/admin/user-settings',
+  Batch: '/admin/batch',
+  MyPageEdit: '/mypage/edit',
+  UserProfile: '/mypage/profile',
+} as const

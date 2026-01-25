@@ -1,35 +1,28 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Routes, Route } from 'react-router'
+import JobSearch from '@/components/pages/JobSearch'
+import Notifications from '@/components/pages/Notifications'
+import MyPage from '@/components/pages/MyPage'
+import CenterArea from '@/components/pages/CenterArea'
+import LogSearch from '@/components/pages/LogSearch'
+import JobCreate from '@/components/pages/JobCreate'
+import ToolPage from '@/components/pages/ToolPage'
+import OAIntegration from '@/components/pages/OAIntegration'
+import Admin from '@/components/pages/Admin'
+import Help from '@/components/pages/Help'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+const App = () => (
+  <Routes>
+    <Route path="/" element={<JobSearch />} />
+    <Route path="/notifications" element={<Notifications />} />
+    <Route path="/mypage" element={<MyPage />} />
+    <Route path="/center" element={<CenterArea />} />
+    <Route path="/logs" element={<LogSearch />} />
+    <Route path="/jobs/new" element={<JobCreate />} />
+    <Route path="/tools" element={<ToolPage />} />
+    <Route path="/oa" element={<OAIntegration />} />
+    <Route path="/admin" element={<Admin />} />
+    <Route path="/help" element={<Help />} />
+  </Routes>
+)
 
 export default App
