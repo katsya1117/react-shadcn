@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { topbar, topbarInner } from "./TopMenuStyle.css";
 import { useState, useEffect } from "react";
 
 type NavItem = {
@@ -67,8 +66,8 @@ const TopMenu = () => {
 
   return (
     <>
-      <div className={topbar}>
-        <div className={topbarInner}>
+      <div className="sticky top-0 z-40 w-full border-b bg-background">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-3 min-w-0 flex-nowrap">
             <button
               className="flex items-center gap-2 font-semibold text-lg shrink-0"
@@ -82,7 +81,7 @@ const TopMenu = () => {
               </Badge>
             </button>
             <NavigationMenu>
-              <NavigationMenuList className="flex items-center gap-1">
+              <NavigationMenuList className="flex items-center space-x-1 text-sm whitespace-nowrap overflow-x-auto">
                 <NavigationMenuItem>
                   <Information />
                 </NavigationMenuItem>
@@ -104,12 +103,12 @@ const TopMenu = () => {
                 <NavigationMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
-                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                      <span
+                        className="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
                         aria-expanded={anchorOA ? 'true' : 'false'}
                       >
                         OA連携
-                      </button>
+                      </span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="bottom" align="start">
                       <DropdownMenuItem asChild>
@@ -125,12 +124,12 @@ const TopMenu = () => {
                 <NavigationMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
-                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                      <span
+                        className="inline-flex cursor-pointer select-none items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
                         aria-expanded={anchorManage ? 'true' : 'false'}
                       >
                         管理
-                      </button>
+                      </span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56">
                       <DropdownMenuItem asChild>
@@ -164,10 +163,10 @@ const TopMenu = () => {
               </NavigationMenuList>
             </NavigationMenu>
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <button>
+              <DropdownMenuTrigger asChild>
+                <span className="cursor-pointer select-none rounded-md px-3 py-2 text-sm hover:bg-muted">
                   {loginUser.user?.user_cd}({loginUser.user?.disp_name})
-                </button>
+                </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
