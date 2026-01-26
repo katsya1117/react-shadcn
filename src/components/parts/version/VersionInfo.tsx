@@ -1,15 +1,26 @@
-import type { FC } from 'react'
+import { Tag } from "lucide-react";
+
+type Props = {
+  href?: string;
+  version?: string;
+};
 
 /**
- * ビルドやリリース番号を表示するためのスタブ。
- * 実データがあれば props 化して置き換えてください。
+ * ビルドやリリース番号を表示するアイコンリンク。
  */
-export const VersionInfo: FC = () => {
+export const VersionInfo = ({ href = "https://example.com/release-notes", version = "v0.0.0" }: Props) => {
   return (
-    <div className="text-[11px] text-muted-foreground">
-      <span>v0.0.0</span>
-    </div>
-  )
-}
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+      aria-label="Version info"
+      title={`Version: ${version}`}
+    >
+      <Tag size={18} />
+    </a>
+  );
+};
 
-export default VersionInfo
+export default VersionInfo;

@@ -1,11 +1,10 @@
-// アイコンは一旦非表示運用のため import しない
-import { useState, useEffect, forwardRef } from "react";
+import { useState, forwardRef } from "react";
 import type { ComponentPropsWithoutRef, ElementRef } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
+import { Info, Tag } from "lucide-react";
 import { UrlPath } from "../../constant/UrlPath";
-import type { UrlPathKey } from "../../constant/UrlPath";
 import { cn } from "@/lib/utils";
 import { userSelector } from "../../redux/slices/userSlice";
 import { Information } from "../parts/Information/Information";
@@ -16,6 +15,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -29,12 +35,13 @@ import { Badge } from "@/components/ui/badge";
 
 type NavItem = {
   label: string;
-  key: UrlPathKey;
+  key: keyof typeof UrlPath;
   iconOnly?: boolean;
   end?: boolean;
 };
 
 const navItems: NavItem[] = [
+  { label: "INFO", key: "Information", iconOnly: true }, // 左端アイコン
   { label: "MyPage", key: "MyPage" },
   { label: "JOB SEARCH", key: "JobSearch", end: true },
   { label: "センター専用領域", key: "ShareArea" },
@@ -43,7 +50,6 @@ const navItems: NavItem[] = [
   { label: "TOOL", key: "Tool" },
   { label: "OA連携", key: "OAUsers" }, // ドロップダウンの親判定用に先頭リンクを代表に
   { label: "管理", key: "UserManage" },
-  { label: "ヘルプ", key: "Information", iconOnly: true },
 ];
 
 const TopMenu = () => {
@@ -67,6 +73,8 @@ const TopMenu = () => {
   // }, [location]);
 
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [versionOpen, setVersionOpen] = useState(false);
   const isActive = (path: string) => location.pathname === path;
   const isOAActive = location.pathname.includes("/OA/");
   const isManageActive = location.pathname.includes("/manage/");
@@ -90,7 +98,16 @@ const TopMenu = () => {
             <NavigationMenu onMouseLeave={() => setHoveredKey(null)}>
               <NavigationMenuList className="flex items-center space-x-1 text-sm whitespace-nowrap">
                 <NavigationMenuItem>
-                  <Information />
+                  <NavigationMenuLink asChild active={false}>
+                    <button
+                      type="button"
+                      onClick={() => setInfoOpen(true)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                      aria-label="お知らせ"
+                    >
+                      <Info size={18} />
+                    </button>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
                 {navItems
                   .filter(
@@ -212,7 +229,16 @@ const TopMenu = () => {
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
-                  <VersionInfo />
+                  <NavigationMenuLink asChild active={false}>
+                    <button
+                      type="button"
+                      onClick={() => setVersionOpen(true)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                      aria-label="バージョン情報"
+                    >
+                      <Tag size={18} />
+                    </button>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -239,6 +265,24 @@ const TopMenu = () => {
           </div>
         </div>
       </div>
+      <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>お知らせ</DialogTitle>
+            <DialogDescription>最新のお知らせを確認してください。</DialogDescription>
+          </DialogHeader>
+          <Information />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={versionOpen} onOpenChange={setVersionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>バージョン情報</DialogTitle>
+            <DialogDescription>現在のビルド情報を確認できます。</DialogDescription>
+          </DialogHeader>
+          <VersionInfo version="v0.1.0" />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
