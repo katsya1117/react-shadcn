@@ -22,6 +22,26 @@ const App = () => (
     <Route path="/oa" element={<OAIntegration />} />
     <Route path="/admin" element={<Admin />} />
     <Route path="/help" element={<Help />} />
+    {/* 互換パス（旧 UrlPath 定義に対応） */}
+    <Route path="/job/JobSearch" element={<JobSearch />} />
+    <Route path="/job/MyPage" element={<MyPage />} />
+    <Route path="/job/ShareArea" element={<CenterArea />} />
+    <Route path="/job/LogSearch" element={<LogSearch />} />
+    <Route path="/job/JobCreate" element={<JobCreate />} />
+    <Route path="/job/Tool" element={<ToolPage />} />
+    <Route path="/OA/Users" element={<OAIntegration />} />
+    <Route path="/OA/Orders" element={<OAIntegration />} />
+    <Route path="/manage/User" element={<Admin />} />
+    <Route path="/manage/User/new" element={<Admin />} />
+    <Route path="/manage/User/:user_cd" element={<Admin />} />
+    <Route path="/manage/Center" element={<Admin />} />
+    <Route path="/manage/Center/new" element={<Admin />} />
+    <Route path="/manage/Center/:center_cd" element={<Admin />} />
+    <Route path="/manage/Role" element={<Admin />} />
+    <Route path="/manage/Information" element={<Admin />} />
+    <Route path="/manage/System" element={<Admin />} />
+    <Route path="/manage/UserSetting" element={<Admin />} />
+    <Route path="/manage/Batch" element={<Admin />} />
   </Routes>
 )
 

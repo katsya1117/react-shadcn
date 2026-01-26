@@ -35,16 +35,15 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: "お知らせ", key: "notifications", iconOnly: true },
-  { label: "MyPage", key: "mypage" },
-  { label: "JOB SEARCH", key: "jobSearch", end: true },
-  { label: "センター専用領域", key: "center" },
-  { label: "LOG SEARCH", key: "logSearch" },
-  { label: "JOB作成", key: "jobCreate" },
-  { label: "TOOL", key: "tool" },
-  { label: "OA連携", key: "oa" },
-  { label: "管理", key: "manage" },
-  { label: "ヘルプ", key: "help", iconOnly: true },
+  { label: "MyPage", key: "MyPage" },
+  { label: "JOB SEARCH", key: "JobSearch", end: true },
+  { label: "センター専用領域", key: "ShareArea" },
+  { label: "LOG SEARCH", key: "LogSearch" },
+  { label: "JOB作成", key: "JobCreate" },
+  { label: "TOOL", key: "Tool" },
+  { label: "OA連携", key: "OAUsers" }, // ドロップダウンの親判定用に先頭リンクを代表に
+  { label: "管理", key: "UserManage" },
+  { label: "ヘルプ", key: "Information", iconOnly: true },
 ];
 
 const TopMenu = () => {
@@ -97,8 +96,8 @@ const TopMenu = () => {
                   .filter(
                     (item) =>
                       !item.iconOnly &&
-                      item.key !== "oa" &&
-                      item.key !== "manage",
+                      item.key !== "OAUsers" && // ドロップダウン扱い
+                      item.key !== "UserManage",
                   )
                   .map((item) => {
                     const path = UrlPath[item.key];
@@ -145,10 +144,10 @@ const TopMenu = () => {
 
                 <NavigationMenuItem
                   className="relative h-14 flex items-center"
-                  onMouseEnter={() => setHoveredKey("oa")}
+                  onMouseEnter={() => setHoveredKey("OAUsers")}
                 >
                   <AnimatePresence>
-                  {hoveredKey === 'oa' && (
+                  {hoveredKey === 'OAUsers' && (
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
                 </AnimatePresence>
@@ -172,10 +171,10 @@ const TopMenu = () => {
 
                 <NavigationMenuItem 
                   className="relative h-14 flex items-center"
-                  onMouseEnter={() => setHoveredKey('manage')}
+                  onMouseEnter={() => setHoveredKey('UserManage')}
                 >
                   <AnimatePresence>
-                  {hoveredKey === 'manage' && (
+                  {hoveredKey === 'UserManage' && (
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
                 </AnimatePresence>
@@ -220,7 +219,8 @@ const TopMenu = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <span className="cursor-pointer select-none rounded-md px-3 py-2 text-sm hover:bg-muted">
-                  {loginUser.user?.user_cd}({loginUser.user?.disp_name})
+                  {(loginUser?.user?.user_cd ?? "guest")}(
+                  {loginUser?.user?.disp_name ?? loginUser?.user?.user_name ?? "noname"})
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

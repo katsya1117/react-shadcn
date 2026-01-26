@@ -1,9 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
 import jobsReducer from './jobSlice'
+import { userSliceReducer } from '@/redux/slices/userSlice'
+import { autoCompleteReducer } from '@/redux/slices/autoCompleteSlice'
 
 export const store = configureStore({
   reducer: {
     jobs: jobsReducer,
+    user: userSliceReducer,
+    autoComplete: autoCompleteReducer,
   },
 })
 
