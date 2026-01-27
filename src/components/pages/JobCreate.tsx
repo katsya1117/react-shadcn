@@ -20,3 +20,4 @@ const JobCreate = () => (
 )
 
 export default JobCreate
+export { JobCreate }

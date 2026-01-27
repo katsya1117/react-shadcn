@@ -1,48 +1,77 @@
-import { Routes, Route, Navigate } from 'react-router'
-import JobSearch from '@/components/pages/JobSearch'
-import Notifications from '@/components/pages/Notifications'
-import MyPage from '@/components/pages/MyPage'
-import CenterArea from '@/components/pages/CenterArea'
-import LogSearch from '@/components/pages/LogSearch'
-import JobCreate from '@/components/pages/JobCreate'
-import ToolPage from '@/components/pages/ToolPage'
-import OAIntegration from '@/components/pages/OAIntegration'
-import Help from '@/components/pages/Help'
-import { UrlPath } from '@/constant/UrlPath'
+// import "bootstrap/dist/css/bootstrap.min.css";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import "./App.css";
 
-const AdminPlaceholder = () => (
-  <div className="p-4 text-sm text-muted-foreground">管理系ページは未実装です。</div>
-)
+import { Batch } from "./components/pages/Batch";
+import { CenterCreate } from "./components/pages/CenterCreate";
+import { CenterEdit } from "./components/pages/CenterEdit";
+import { CenterManage } from "./components/pages/CenterManage";
+import { Development } from "./components/pages/Development";
+import { Information } from "./components/pages/Information";
+import { JobCreate } from "./components/pages/JobCreate";
+import { JobSearch } from "./components/pages/JobSearch";
+import { LogSearch } from "./components/pages/LogSearch";
+import { MyPage } from "./components/pages/MyPage";
+import { MyPageEdit } from "./components/pages/MyPageEdit";
+import { OAOrders } from "./components/pages/OAOrders";
+import { OAUsers } from "./components/pages/OAUsers";
+import { RoleManage } from "./components/pages/RoleManage";
+import { SS } from "./components/pages/SS";
+import { ShareArea } from "./components/pages/ShareArea";
+import { System } from "./components/pages/System";
+import { Tool } from "./components/pages/Tool";
+import { UserCreate } from "./components/pages/UserCreate";
+import { UserEdit } from "./components/pages/UserEdit";
+import { UserManage } from "./components/pages/UserManage";
+import { UserProfile } from "./components/pages/UserProfile";
+import { UserSetting } from "./components/pages/UserSetting";
 
-const App = () => (
-  <Routes>
-    <Route path={UrlPath.JobSearch} element={<JobSearch />} />
-    <Route path={UrlPath.MyPage} element={<MyPage />} />
-    <Route path={UrlPath.ShareArea} element={<CenterArea />} />
-    <Route path={UrlPath.LogSearch} element={<LogSearch />} />
-    <Route path={UrlPath.JobCreate} element={<JobCreate />} />
-    <Route path={UrlPath.Tool} element={<ToolPage />} />
-    <Route path={UrlPath.OAUsers} element={<OAIntegration />} />
-    <Route path={UrlPath.OAOrders} element={<OAIntegration />} />
-    <Route path={UrlPath.UserManage} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.UserCreate} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.UserEdit} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.CenterManage} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.CenterCreate} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.CenterEdit} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.ManageRole} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.Information} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.System} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.UserSetting} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.Batch} element={<AdminPlaceholder />} />
-    <Route path={UrlPath.MyPageEdit} element={<MyPage />} />
-    <Route path={UrlPath.UserProfile} element={<MyPage />} />
-    {/* 旧 root から JobSearch へリダイレクト */}
-    <Route path={UrlPath.Root} element={<MyPage />} />
-    <Route path="/notifications" element={<Notifications />} />
-    {/* <Route path="/admin" element={<Admin />} /> */}
-    <Route path="/help" element={<Help />} />
-  </Routes>
-)
+import { SimpleSingleSignOn } from "./components/parts/SimpleSingleSignOn/SimpleSingleSignOn";
+import { UrlPath } from "./constant/UrlPath";
 
-export default App
+/**
+ * APPコンポーネント
+ * UrlPathに応じたページにルーティングする
+ * @returns
+ */
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path={UrlPath.Root} element={<SimpleSingleSignOn />} />
+        <Route path={UrlPath.MyPage} element={<MyPage />} />
+        <Route path={UrlPath.JobSearch} element={<JobSearch />} />
+        <Route path={UrlPath.ShareArea} element={<ShareArea />} />
+        <Route path={UrlPath.LogSearch} element={<LogSearch />} />
+        <Route path={UrlPath.JobCreate} element={<JobCreate />} />
+        <Route path={UrlPath.Tool} element={<Tool />} />
+
+        <Route path={UrlPath.OAUsers} element={<OAUsers />} />
+        <Route path={UrlPath.OAOrders} element={<OAOrders />} />
+
+        <Route path={UrlPath.UserManage} element={<UserManage />} />
+        <Route path={UrlPath.UserCreate} element={<UserCreate />} />
+        <Route path={UrlPath.UserEdit} element={<UserEdit />} />
+
+        <Route path={UrlPath.CenterManage} element={<CenterManage />} />
+        <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
+        <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
+
+        <Route path={UrlPath.ManageRole} element={<RoleManage />} />
+        <Route path={UrlPath.Information} element={<Information />} />
+        <Route path={UrlPath.System} element={<System />} />
+        <Route path={UrlPath.UserSetting} element={<UserSetting />} />
+        <Route path={UrlPath.Batch} element={<Batch />} />
+
+        <Route path={UrlPath.MyPageEdit} element={<MyPageEdit />} />
+        <Route path={UrlPath.UserProfile} element={<UserProfile />} />
+        <Route path={UrlPath.SS} element={<SS />} />
+        <Route path={UrlPath.Development} element={<Development />} />
+
+        <Route path="*" element={<Navigate replace to={UrlPath.Root} />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

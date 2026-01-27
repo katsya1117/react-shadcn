@@ -206,3 +206,4 @@ const JobSearch = () => {
 };
 
 export default JobSearch;
+export { JobSearch };

@@ -1,5 +1,4 @@
-import { useState, forwardRef } from "react";
-import type { ComponentPropsWithoutRef, ElementRef } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,72 +29,60 @@ import {
   NavigationMenuTrigger,
   NavigationMenuContent,
 } from "@/components/ui/navigation-menu";
-// import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-type NavItem = {
-  label: string;
-  key: keyof typeof UrlPath;
-  iconOnly?: boolean;
-  end?: boolean;
-};
-
-const navItems: NavItem[] = [
-  { label: "INFO", key: "Information", iconOnly: true }, // 左端アイコン
-  { label: "MyPage", key: "MyPage" },
-  { label: "JOB SEARCH", key: "JobSearch", end: true },
-  { label: "センター専用領域", key: "ShareArea" },
-  { label: "LOG SEARCH", key: "LogSearch" },
-  { label: "JOB作成", key: "JobCreate" },
-  { label: "TOOL", key: "Tool" },
-  { label: "OA連携", key: "OAUsers" }, // ドロップダウンの親判定用に先頭リンクを代表に
-  { label: "管理", key: "UserManage" },
-];
-
-const TopMenu = () => {
+const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
   const loginUser = useSelector(userSelector.loginUserSelector());
-  // const [anchorOA, setAnchorOA] = useState(false);
-  // const [anchorManage, setAnchorManage] = useState(false);
   const location = useLocation();
-
-  // useEffect(() => {
-  //   if (location.pathname.includes("/OA/")) {
-  //     setAnchorOA(true);
-  //   } else {
-  //     setAnchorOA(false);
-  //   }
-  //   if (location.pathname.includes("/manage/")) {
-  //     setAnchorManage(true);
-  //   } else {
-  //     setAnchorManage(false);
-  //   }
-  //   // user領域は今回のナビには未使用のためフラグも未使用
-  // }, [location]);
-
+  
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [menuValue, setMenuValue] = useState<string | undefined>(undefined);
   const [infoOpen, setInfoOpen] = useState(false);
   const [versionOpen, setVersionOpen] = useState(false);
-  const isActive = (path: string) => location.pathname === path;
-  const isOAActive = location.pathname.includes("/OA/");
-  const isManageActive = location.pathname.includes("/manage/");
+
+  const [anchorOA, setAnchorOA] = useState(false);
+  const [anchorManage, setAnchorManage] = useState(false);
+  const [anchorUser, setAnchorUser] = useState(false);
+  
+  useEffect(() => {
+    setAnchorOA(location.pathname.includes("/OA/"));
+    setAnchorManage(location.pathname.includes("/manage/"));
+    setAnchorUser(location.pathname.includes("/user/"));
+  }, [location]);
+  
+  if (hideMenu) return null;
+
+  const navItems = [
+    { label: "MyPage", key: "MyPage", path: UrlPath.MyPage },
+    { label: "JOB SEARCH", key: "JobSearch", path: UrlPath.JobSearch },
+    { label: "センター専用領域", key: "ShareArea", path: UrlPath.ShareArea },
+    { label: "LOG SEARCH", key: "LogSearch", path: UrlPath.LogSearch },
+    { label: "JOB作成", key: "JobCreate", path: UrlPath.JobCreate },
+    { label: "TOOL", key: "Tool", path: UrlPath.Tool },
+  ] as const;
 
   return (
     <>
       <div className="sticky top-0 z-40 w-full border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-3 min-w-0 flex-nowrap">
-            <button
-              className="flex items-center gap-2 font-semibold text-lg shrink-0"
-              // onClick={() => navigate('/')}
-              aria-label="Go to dashboard"
-              type="button"
+            <div
+              className="flex items-center gap-2 font-semibold text-lg shrink-0 mr-2"
             >
               <span>Ops Console</span>
               <Badge variant="outline" className="hidden sm:inline-flex">
                 Mock
               </Badge>
-            </button>
-            <NavigationMenu onMouseLeave={() => setHoveredKey(null)}>
+            </div>
+            <NavigationMenu
+              viewport={false}
+              value={menuValue}
+              onValueChange={setMenuValue}
+              onMouseLeave={() => {
+                setHoveredKey(null);
+                setMenuValue(undefined);
+              }}
+            >
               <NavigationMenuList className="flex items-center space-x-1 text-sm whitespace-nowrap">
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild active={false}>
@@ -110,22 +97,15 @@ const TopMenu = () => {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 {navItems
-                  .filter(
-                    (item) =>
-                      !item.iconOnly &&
-                      item.key !== "OAUsers" && // ドロップダウン扱い
-                      item.key !== "UserManage",
-                  )
-                  .map((item) => {
-                    const path = UrlPath[item.key];
-                    const active = isActive(path);
-                    return (
+                  .map((item) => (
                       <NavigationMenuItem
                         key={item.key}
                         className="relative h-14 flex items-center"
                         onMouseEnter={() => setHoveredKey(item.key)}
+                        onMouseLeave={() => setHoveredKey(null)}
                       >
-                        <AnimatePresence>
+                        <HoverBackground isVisible={hoveredKey === item.key} />
+                        {/* <AnimatePresence>
                           {hoveredKey === item.key && (
                             <motion.div
                               layoutId="hoverBg"
@@ -135,18 +115,19 @@ const TopMenu = () => {
                               exit={{ opacity: 0 }}
                             />
                           )}
-                        </AnimatePresence>
-                        <NavigationMenuLink asChild active={active}>
+                        </AnimatePresence> */}
+                        <NavigationMenuLink asChild active={location.pathname === item.path}>
                           <RouterNavLink
+                            to={item.path}
                             className="relative z-10 inline-flex items-center px-3 py-2 font-medium transition-colors hover:text-foreground text-muted-foreground data-[active]:text-foreground"
-                            to={path}
                           >
-                            <span>{item.label}</span>
+                            {item.label}
                           </RouterNavLink>
                         </NavigationMenuLink>
-                        {active && (
+                        {location.pathname === item.path && <ActiveLine />}
+                        {/* {active && (
                           <motion.div
-                            layoutId="activeLIne"
+                            layoutId="activeLine"
                             className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground z-20"
                             transition={{
                               type: "spring",
@@ -154,78 +135,90 @@ const TopMenu = () => {
                               damping: 30,
                             }}
                           />
-                        )}
+                        )} */}
                       </NavigationMenuItem>
-                    );
-                  })}
+                    )
+                  )
+                }
 
                 <NavigationMenuItem
+                  value="oa"
                   className="relative h-14 flex items-center"
-                  onMouseEnter={() => setHoveredKey("OAUsers")}
+                  onMouseEnter={() => {
+                    setHoveredKey("OAUsers");
+                    setMenuValue("oa");
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredKey(null);
+                    setMenuValue(undefined);
+                  }}
                 >
-                  <AnimatePresence>
+                  <HoverBackground isVisible={hoveredKey === "OAUsers"} />
+                  {/* <AnimatePresence>
                   {hoveredKey === 'OAUsers' && (
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
-                </AnimatePresence>
-                  <NavigationMenuTrigger className="relative z-10 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
+                </AnimatePresence> */}
+                  <NavigationMenuTrigger className="bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                     OA連携
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid gap-3 p-4 md:w-[320px]">
-                      <ListItem href={UrlPath.OAUsers} title="OAユーザ表示">
-                        OA ユーザー一覧を確認
+                      <ListItem to={UrlPath.OAUsers} title="OAユーザ表示">
                       </ListItem>
-                      <ListItem href={UrlPath.OAOrders} title="OA工番情報">
-                        工番・案件情報を参照
+                      <ListItem to={UrlPath.OAOrders} title="OA工番情報">
                       </ListItem>
                     </ul>
                   </NavigationMenuContent>
-                  {isOAActive && (
+                  {anchorOA && <ActiveLine />}
+                  {/* {isOAActive && (
                   <motion.div layoutId="activeLine" className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground" />
-                )}
+                )} */}
                 </NavigationMenuItem>
 
                 <NavigationMenuItem 
+                  value="manage"
                   className="relative h-14 flex items-center"
-                  onMouseEnter={() => setHoveredKey('UserManage')}
+                  onMouseEnter={() => {
+                    setHoveredKey('UserManage');
+                    setMenuValue("manage");
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredKey(null);
+                    setMenuValue(undefined);
+                  }}
                 >
-                  <AnimatePresence>
+                  <HoverBackground isVisible={hoveredKey === "UserManage"} />
+                  {/* <AnimatePresence>
                   {hoveredKey === 'UserManage' && (
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
-                </AnimatePresence>
-                  <NavigationMenuTrigger className="relative z-10 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
+                </AnimatePresence> */}
+                  <NavigationMenuTrigger className="bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                     管理
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[420px] lg:w-[520px]">
-                      <ListItem href={UrlPath.UserManage} title="ユーザー設定">
-                        ユーザー権限やプロフィールを管理
+                    <ul className="grid gap-3 p-4 md:w-[420px] lg:w-[520px] grid-cols-2">
+                      <ListItem to={UrlPath.UserManage} title="ユーザー設定">
                       </ListItem>
-                      <ListItem href={UrlPath.CenterManage} title="センター設定">
-                        センター情報と連携先を設定
-                      </ListItem>
-                      <ListItem href={UrlPath.ManageRole} title="アクセスユーザー設定">
-                        ロールとフォルダ権限を編集
-                      </ListItem>
-                      <ListItem href={UrlPath.Information} title="お知らせ設定">
-                        通知・掲示を管理
-                      </ListItem>
-                      <ListItem href={UrlPath.System} title="システム設定">
-                        全体の基本設定
-                      </ListItem>
-                      <ListItem href={UrlPath.UserSetting} title="ユーザー設定状況">
-                        設定ステータスを確認
-                      </ListItem>
-                      <ListItem href={UrlPath.Batch} title="バッチステータス">
-                        バッチ実行状況のモニタリング
-                      </ListItem>
+                      <ListItem to={UrlPath.CenterManage} title="センター設定">
+                        </ListItem>
+                      <ListItem to={UrlPath.ManageRole} title="アクセスユーザー設定">
+                        </ListItem>
+                      <ListItem to={UrlPath.Information} title="お知らせ設定">
+                        </ListItem>
+                      <ListItem to={UrlPath.System} title="システム設定">
+                        </ListItem>
+                      <ListItem to={UrlPath.UserSetting} title="ユーザー設定状況">
+                        </ListItem>
+                      <ListItem to={UrlPath.Batch} title="バッチステータス">
+                        </ListItem>
                     </ul>
                   </NavigationMenuContent>
-                  {isManageActive && (
+                  {anchorManage && <ActiveLine />}
+                  {/* {isManageActive && (
                   <motion.div layoutId="activeLine" className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground" />
-                )}
+                )} */}
                 </NavigationMenuItem>
 
                 <NavigationMenuItem>
@@ -242,23 +235,22 @@ const TopMenu = () => {
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
-            <DropdownMenu>
+            <DropdownMenu open={anchorUser} onOpenChange={setAnchorUser}>
               <DropdownMenuTrigger asChild>
-                <span className="cursor-pointer select-none rounded-md px-3 py-2 text-sm hover:bg-muted">
-                  {(loginUser?.user?.user_cd ?? "guest")}(
-                  {loginUser?.user?.disp_name ?? loginUser?.user?.user_name ?? "noname"})
+                <span
+                  className="cursor-pointer select-none rounded-md px-3 py-2 text-sm hover:bg-muted ml-2"
+                  onMouseEnter={() => setAnchorUser(true)}
+                >
+                  {loginUser?.user?.user_cd ?? "guest"}
+                  ({loginUser?.user?.disp_name ?? loginUser?.user?.user_name ?? "noname"})
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" onMouseLeave={() => setAnchorUser(false)}>
                 <DropdownMenuItem asChild>
-                  <RouterNavLink to={UrlPath.MyPageEdit}>
-                    MyPage設定変更
-                  </RouterNavLink>
+                  <RouterNavLink to={UrlPath.MyPageEdit}>MyPage設定変更</RouterNavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <RouterNavLink to={UrlPath.UserProfile}>
-                    ユーザー情報設定変更
-                  </RouterNavLink>
+                  <RouterNavLink to={UrlPath.UserProfile}>ユーザー情報設定変更</RouterNavLink>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -266,42 +258,63 @@ const TopMenu = () => {
         </div>
       </div>
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>お知らせ</DialogTitle>
-            <DialogDescription>最新のお知らせを確認してください。</DialogDescription>
-          </DialogHeader>
-          <Information />
-        </DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>お知らせ</DialogTitle></DialogHeader><Information /></DialogContent>
       </Dialog>
       <Dialog open={versionOpen} onOpenChange={setVersionOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>バージョン情報</DialogTitle>
-            <DialogDescription>現在のビルド情報を確認できます。</DialogDescription>
-          </DialogHeader>
-          <VersionInfo version="v0.1.0" />
-        </DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>バージョン情報</DialogTitle></DialogHeader><VersionInfo version="v0.1.0" /></DialogContent>
       </Dialog>
     </>
   );
 };
 
-export default TopMenu;
+const HoverBackground = ({ isVisible }: { isVisible: boolean }) => (
+  <AnimatePresence>
+    {isVisible && (
+      <motion.div
+        layoutId="hoverBg"
+        className="absolute inset-x-0 inset-y-2 rounded-md bg-muted z-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      />
+    )}
+  </AnimatePresence>
+);
 
-// shadcn NavigationMenu の ListItem 相当
-const ListItem = forwardRef<
-  ElementRef<"a">,
-  ComponentPropsWithoutRef<"a"> & { title: string }
->(({ className, title, children, ...props }, ref) => {
+const ActiveLine = () => (
+  <motion.div
+    layoutId="activeLine" // タイポ修正: activeLIne -> activeLine
+    className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground z-20"
+    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+  />
+);
+
+const IconButton = ({ onClick, icon }: { onClick: () => void; icon: React.ReactNode }) => (
+  <NavigationMenuLink asChild>
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
+    >
+      {icon}
+    </button>
+  </NavigationMenuLink>
+);
+
+interface ListItemProps extends React.ComponentPropsWithoutRef<typeof RouterNavLink> {
+  title: string;
+  to: string;
+}
+
+const ListItem = ({ className, title, children, to, ...props }: ListItemProps) => {
   return (
     <li>
       <NavigationMenuLink asChild>
         <RouterNavLink
-          ref={ref}
+          to={to}
           className={cn(
             "block space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted focus:bg-muted",
-            className,
+            className
           )}
           {...props}
         >
@@ -311,5 +324,7 @@ const ListItem = forwardRef<
       </NavigationMenuLink>
     </li>
   );
-});
+};
 ListItem.displayName = "ListItem";
+
+export default TopMenu;

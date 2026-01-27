@@ -1,7 +1,5 @@
-import type { AnyAction, Dispatch } from 'redux'
+import type { RootState, AppDispatch } from "@/store"
 
-// 最低限のモック Store 型
-export type AppDispatch = Dispatch<AnyAction>
-
-// 実際の Redux store は未実装なので、ダミー dispatch を提供
-export const mockDispatch: AppDispatch = ((action: AnyAction) => action) as Dispatch<AnyAction>
+// アプリ全体の State 型を redux 配下から参照できるようにするための薄いラッパー
+export type AppRootState = RootState
+export type AppDispatchType = AppDispatch

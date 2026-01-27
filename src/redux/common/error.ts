@@ -1,16 +1,28 @@
-export type SliceError = {
-  message: string
-  detail?: string
+/**
+ * slice の共通エラー定義
+ */
+export interface SliceError {
+  isError: boolean;
+  messages: string;
+  details?: string;
 }
 
 export const initialSliceError: SliceError = {
-  message: '',
-  detail: '',
+  isError: false,
+  messages: "",
+  details: "",
+};
+
+export function setSliceError(
+  message: string,
+  details?: string
+): SliceError {
+  return {
+    isError: true,
+    messages: message,
+    details: details,
+  };
 }
 
-export const rejectedMessage = '処理に失敗しました。時間をおいて再度お試しください。'
-
-export const setSliceError = (message: string, detail?: string): SliceError => ({
-  message,
-  detail,
-})
+export const rejectedMessage =
+  "予期せぬエラーが発生しました。";

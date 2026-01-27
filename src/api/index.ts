@@ -89,6 +89,103 @@ export class UsersApi {
   }
 }
 
+// ---------- Center (mock) ----------
+export type CenterCreationParams = {
+  center_name: string
+  folder_name?: string
+}
+
+export type CenterInfo = {
+  center_cd: string
+  center_name: string
+  folder_name: string
+  guest?: boolean
+}
+
+export type CenterSearchParams = {
+  center_name?: string
+  user_list?: string[]
+  sort?: string
+  order?: "asc" | "desc"
+  page?: number
+  per_page?: number
+}
+
+export type PaginationResultCenterListItem = {
+  data: CenterInfo[]
+  pagination: {
+    total: number
+    page: number
+    per_page: number
+  }
+}
+
+export class CenterApi {
+  constructor(public config?: any) {}
+
+  async getCenterList(
+    center_name?: string,
+    user_list?: string[],
+    sort?: string,
+    order: "asc" | "desc" = "asc",
+    page: number = 1,
+    per_page: number = 10,
+    _opts?: any,
+  ) {
+    const data: PaginationResultCenterListItem = {
+      data: [
+        {
+          center_cd: "c001",
+          center_name: "東京センター",
+          folder_name: "/tokyo",
+          guest: false,
+        },
+        {
+          center_cd: "c002",
+          center_name: "大阪DR",
+          folder_name: "/osaka-dr",
+          guest: true,
+        },
+      ],
+      pagination: { total: 2, page, per_page },
+    }
+    return { data }
+  }
+
+  async getCenter(center_cd: string, _opts?: any) {
+    return {
+      data: {
+        center_cd,
+        center_name: `センター ${center_cd}`,
+        folder_name: `/centers/${center_cd}`,
+        guest: false,
+      } as CenterInfo,
+    }
+  }
+
+  async createCenter(_params: CenterCreationParams, _opts?: any) {
+    return { data: "created" }
+  }
+}
+
+// ---------- AutoComplete (mock) ----------
+export class AutoCompleteApi {
+  constructor(public config?: any) {}
+
+  async getList(_opts?: any) {
+    const users = [
+      { label: "sre-user", value: "sre-user", color: "#2563eb" },
+      { label: "ops-admin", value: "ops-admin", color: "#10b981" },
+      { label: "dev-lead", value: "dev-lead", color: "#f59e0b" },
+    ]
+    const groups = [
+      { label: "東京センター", value: "tokyo", color: "#6366f1" },
+      { label: "大阪DR", value: "osaka-dr", color: "#ef4444" },
+    ]
+    return { data: { users, groups } }
+  }
+}
+
 export class BoxApi {
   constructor(public config?: any) {}
 

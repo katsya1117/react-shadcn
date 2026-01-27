@@ -228,3 +228,4 @@ const LogSearch = () => {
 };
 
 export default LogSearch;
+export { LogSearch };
