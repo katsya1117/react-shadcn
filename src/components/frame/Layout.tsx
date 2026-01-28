@@ -1,12 +1,14 @@
-import type { PropsWithChildren } from 'react'
-import { LayoutStyle } from './LayoutStyle.css'
-import TopMenu from './TopMenu'
+import type { PropsWithChildren } from "react";
+import { LayoutStyle } from "./LayoutStyle.css";
+import SideMenu from "./SideMenu";
 
 const Layout = ({ children }: PropsWithChildren) => (
   <div className={LayoutStyle.container}>
-    <TopMenu />
-    <div className={LayoutStyle.contents}>{children}</div>
+    <div className="flex h-screen">
+      <SideMenu />
+      <div className={LayoutStyle.contents}>{children}</div>
+    </div>
   </div>
-)
+);
 
-export default Layout
+export default Layout;

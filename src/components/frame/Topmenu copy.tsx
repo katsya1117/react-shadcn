@@ -15,7 +15,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { brand, navLinks, quickActions, topbar, topbarInner } from './TopmenuStyle.css'
+// import { brand, navLinks, quickActions, topbar, topbarInner } from './TopmenuStyle.css'
 
 const navItems = [
   { label: 'お知らせ', path: '/notifications', icon: Bell, iconOnly: true },
