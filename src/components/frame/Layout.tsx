@@ -10,3 +10,18 @@ const Layout = ({ children }: PropsWithChildren) => (
 )
 
 export default Layout
+
+// import type { PropsWithChildren } from "react";
+// import { Layout } from "./LayoutStyle.css";
+// import SideMenu from "./SideMenu";
+
+// const Layout = ({ children }: PropsWithChildren) => (
+//   <div className={LayoutStyleForSide.container}>
+//     <div className="flex h-screen">
+//       <SideMenu />
+//       <div className={LayoutStyleForSide.contents}>{children}</div>
+//     </div>
+//   </div>
+// );
+
+// export default Layout;
