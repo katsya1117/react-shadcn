@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/frame/Layout";
 import {
   Card,
@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { CustomPagination } from "@/components/parts/Pagination/Pagination";
+import { usePagination } from "@/utility/usePagination";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getUserList, userSelector } from "@/redux/slices/userSlice";
 
 type ADUser = {
   account: string;
@@ -54,7 +58,7 @@ const jclUsersMock: JclUser[] = [
 const permissionTemplates = ["標準", "閲覧のみ", "管理者", "運用", "監査"];
 
 const UserManage = () => {
-  const [tab, setTab] = useState<"new" | "edit">("new");
+  const [tab, setTab] = useState<"new" | "edit">("edit");
   // 新規登録 検索条件
   const [accountKeyword, setAccountKeyword] = useState("");
   const [emailKeyword, setEmailKeyword] = useState("");
@@ -67,6 +71,23 @@ const UserManage = () => {
   const [selected, setSelected] = useState<JclUser | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState("標準");
   const [langJa, setLangJa] = useState(true);
+  const [newSearched, setNewSearched] = useState(false);
+  const [editSearched, setEditSearched] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const savedCondition = useAppSelector(userSelector.searchConditionSelector());
+  const userList = useAppSelector(userSelector.userListSelector());
+
+  // フォーム初期値を savedCondition で復元
+  useEffect(() => {
+    if (savedCondition) {
+      setDisplayKeyword(savedCondition.user_name ?? "");
+      setUserIdKeyword(savedCondition.user_account ?? "");
+      setUserEmailKeyword(savedCondition.user_email ?? "");
+      setCenterKeyword(savedCondition.center_cd_list?.[0] ?? "");
+      setEditSearched(true);
+    }
+  }, [savedCondition]);
 
   const filteredAd = useMemo(
     () =>
@@ -78,17 +99,24 @@ const UserManage = () => {
     [accountKeyword, emailKeyword],
   );
 
-  const filteredJcl = useMemo(
-    () =>
-      jclUsersMock.filter(
-        (u) =>
-          (displayKeyword ? u.display.includes(displayKeyword) : true) &&
-          (userIdKeyword ? u.id.includes(userIdKeyword) : true) &&
-          (userEmailKeyword ? u.email.includes(userEmailKeyword) : true) &&
-          (centerKeyword ? u.center.includes(centerKeyword) : true),
-      ),
-    [displayKeyword, userIdKeyword, userEmailKeyword, centerKeyword],
-  );
+  const jclRecords = useMemo(() => userList?.data ?? [], [userList]);
+
+  const adPagination = usePagination(filteredAd, 10);
+  const jclPagination = usePagination(jclRecords, userList?.pagination?.per_page ?? 10);
+
+  const handleUserSearch = (page = 1, per = jclPagination.perPage) => {
+    const params = {
+      user_name: displayKeyword || undefined,
+      user_account: userIdKeyword || undefined,
+      user_email: userEmailKeyword || undefined,
+      center_cd_list: centerKeyword ? [centerKeyword] : undefined,
+      page,
+      per_page: per,
+    };
+    dispatch(getUserList(params as any));
+    setEditSearched(true);
+    setSelected(null);
+  };
 
   return (
     <Layout>
@@ -102,8 +130,8 @@ const UserManage = () => {
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <TabsList>
-            <TabsTrigger value="new">新規登録（AD連携）</TabsTrigger>
             <TabsTrigger value="edit">既存ユーザー編集</TabsTrigger>
+            <TabsTrigger value="new">新規登録（AD連携）</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new" className="space-y-4">
@@ -136,42 +164,58 @@ const UserManage = () => {
                     <Button variant="secondary" className="whitespace-nowrap">
                       ADユーザー更新
                     </Button>
-                    <Button className="whitespace-nowrap">検索</Button>
+                    <Button
+                      className="whitespace-nowrap"
+                      onClick={() => setNewSearched(true)}
+                    >
+                      検索
+                    </Button>
                   </div>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>アカウント</TableHead>
-                      <TableHead>氏名</TableHead>
-                      <TableHead>メール</TableHead>
-                      <TableHead>JCL登録状況</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAd.map((u) => (
-                      <TableRow key={u.account}>
-                        <TableCell>{u.account}</TableCell>
-                        <TableCell>{u.name}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell>
-                          {u.registered ? (
-                            <Badge variant="outline">登録済み</Badge>
-                          ) : (
-                            <Badge variant="secondary">未登録</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant={u.registered ? "ghost" : "default"}>
-                            {u.registered ? "登録済" : "登録"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {newSearched && (
+                  <div className="space-y-3">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>アカウント</TableHead>
+                          <TableHead>氏名</TableHead>
+                          <TableHead>メール</TableHead>
+                          <TableHead>JCL登録状況</TableHead>
+                          <TableHead className="text-right">操作</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {adPagination.items.map((u) => (
+                          <TableRow key={u.account}>
+                            <TableCell>{u.account}</TableCell>
+                            <TableCell>{u.name}</TableCell>
+                            <TableCell>{u.email}</TableCell>
+                            <TableCell>
+                              {u.registered ? (
+                                <Badge variant="outline">登録済み</Badge>
+                              ) : (
+                                <Badge variant="secondary">未登録</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant={u.registered ? "ghost" : "default"}>
+                                {u.registered ? "登録済" : "登録"}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <CustomPagination
+                      page={adPagination.page}
+                      perPage={adPagination.perPage}
+                      total={adPagination.total}
+                      onPageChange={adPagination.setPage}
+                      onPerPageChange={adPagination.setPerPage}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -219,36 +263,47 @@ const UserManage = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border bg-card/50 shadow-sm">
+                    <div className="rounded-lg border bg-card/50 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground/80">検索結果 {filteredJcl.length} 件</span>
+                      <span className="font-medium text-foreground/80">
+                        検索結果 {userList?.pagination?.total ?? jclRecords.length} 件
+                      </span>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="ghost">
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setDisplayKeyword("");
+                          setUserIdKeyword("");
+                          setUserEmailKeyword("");
+                          setCenterKeyword("");
+                          setEditSearched(false);
+                          setSelected(null);
+                        }}>
                           クリア
                         </Button>
-                        <Button size="sm">再検索</Button>
+                        <Button size="sm" onClick={() => handleUserSearch(jclPagination.page, jclPagination.perPage)}>再検索</Button>
                       </div>
                     </div>
-                    <div className="max-h-[420px] overflow-auto">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-background">
-                          <TableRow>
-                            <TableHead>ユーザーID</TableHead>
-                            <TableHead>表示名</TableHead>
-                            <TableHead>メール</TableHead>
-                            <TableHead>BOX</TableHead>
-                            <TableHead>センター</TableHead>
-                            <TableHead className="text-right">操作</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredJcl.map((u) => (
-                            <TableRow key={u.id} className="last:border-0">
-                              <TableCell>{u.id}</TableCell>
-                              <TableCell>{u.display}</TableCell>
-                              <TableCell>{u.email}</TableCell>
-                              <TableCell>{u.box}</TableCell>
-                              <TableCell>{u.center}</TableCell>
+                    {editSearched && (
+                      <div className="space-y-3">
+                        <div className="max-h-[420px] overflow-auto">
+                          <Table>
+                            <TableHeader className="sticky top-0 bg-background">
+                              <TableRow>
+                                <TableHead>ユーザーID</TableHead>
+                                <TableHead>表示名</TableHead>
+                                <TableHead>メール</TableHead>
+                                <TableHead>BOX</TableHead>
+                                <TableHead>センター</TableHead>
+                                <TableHead className="text-right">操作</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                        {jclPagination.items.map((u: any) => (
+                            <TableRow key={u.user?.user_cd ?? u.id} className="last:border-0">
+                              <TableCell>{u.user?.user_cd ?? u.id}</TableCell>
+                              <TableCell>{u.user?.user_name ?? u.display}</TableCell>
+                              <TableCell>{u.user?.email ?? u.email}</TableCell>
+                              <TableCell>{u.user?.box_account ?? u.box}</TableCell>
+                              <TableCell>{u.user?.center ?? u.center}</TableCell>
                               <TableCell className="text-right">
                                 <Button size="sm" variant="secondary" onClick={() => setSelected(u)}>
                                   選択
@@ -256,28 +311,51 @@ const UserManage = () => {
                               </TableCell>
                             </TableRow>
                           ))}
-                        </TableBody>
-                      </Table>
-                    </div>
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <CustomPagination
+                          pagination={{
+                            page: userList?.pagination?.page ?? jclPagination.page,
+                            per_page: userList?.pagination?.per_page ?? jclPagination.perPage,
+                            total: userList?.pagination?.total ?? jclPagination.total,
+                          }}
+                          onPageChange={(p) => handleUserSearch(p, userList?.pagination?.per_page ?? jclPagination.perPage)}
+                          onPerPageChange={(per) => handleUserSearch(1, per)}
+                        />
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
+              {selected && (
               <Card className="xl:sticky xl:top-20 h-fit shadow-sm">
-                <CardHeader>
-                  <CardTitle>登録情報</CardTitle>
-                  <CardDescription>選択したユーザーの詳細を編集できます。</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>登録情報</CardTitle>
+                    <CardDescription>選択したユーザーの詳細を編集できます。</CardDescription>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground"
+                    onClick={() => setSelected(null)}
+                    aria-label="閉じる"
+                  >
+                    ×
+                  </Button>
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-1">
                   <div className="space-y-3">
                     <Label>ユーザーID</Label>
-                    <Input value={selected?.id ?? ""} readOnly />
+                    <Input value={selected?.user?.user_cd ?? selected?.id ?? ""} readOnly />
                     <Label>表示名</Label>
-                    <Input value={selected?.display ?? ""} />
+                    <Input value={selected?.user?.user_name ?? selected?.display ?? ""} />
                     <Label>アカウント名（ドメイン）</Label>
-                    <Input value={selected?.email.split("@")[0] ?? ""} />
+                    <Input value={(selected?.user?.email ?? selected?.email ?? "").split("@")[0]} />
                     <Label>メールアドレス</Label>
-                    <Input value={selected?.email ?? ""} />
+                    <Input value={selected?.user?.email ?? selected?.email ?? ""} />
                     <div className="flex items-start justify-between rounded-md border p-3 gap-3">
                       <div className="space-y-1">
                         <Label className="text-sm">言語設定</Label>
@@ -293,7 +371,7 @@ const UserManage = () => {
 
                   <div className="space-y-3">
                     <Label>所属センター</Label>
-                    <Input placeholder="センターを選択" defaultValue={selected?.center ?? ""} />
+                    <Input placeholder="センターを選択" defaultValue={selected?.user?.center ?? selected?.center ?? ""} />
                     <Label>操作権限テンプレート</Label>
                     <Select
                       value={selectedTemplate}
@@ -320,12 +398,12 @@ const UserManage = () => {
                       </div>
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <Button variant="secondary">下書き保存</Button>
                       <Button>保存</Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              )}
             </div>
           </TabsContent>
         </Tabs>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,14 +86,7 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
               <NavigationMenuList className="flex items-center space-x-1 text-sm whitespace-nowrap">
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild active={false}>
-                    <button
-                      type="button"
-                      onClick={() => setInfoOpen(true)}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
-                      aria-label="お知らせ"
-                    >
-                      <Info size={18} />
-                    </button>
+                    <Information/>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 {navItems
@@ -159,11 +152,11 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
                 </AnimatePresence> */}
-                  <NavigationMenuTrigger className="bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
+                  <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                     OA連携
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[320px]">
+                    <ul className="grid gap-2 p-3 md:w-[240px]">
                       <ListItem to={UrlPath.OAUsers} title="OAユーザ表示">
                       </ListItem>
                       <ListItem to={UrlPath.OAOrders} title="OA工番情報">
@@ -194,11 +187,11 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
                     <motion.div layoutId="hoverBg" className="absolute inset-x-0 inset-y-2 rounded-md bg-muted" />
                   )}
                 </AnimatePresence> */}
-                  <NavigationMenuTrigger className="bg-transparent hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
+                  <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                     管理
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <ul className="grid gap-3 p-4 md:w-[420px] lg:w-[520px] grid-cols-2">
+                    <ul className="grid gap-2 p-3 md:w-[320px] lg:w-[380px] grid-cols-2">
                       <ListItem to={UrlPath.UserManage} title="ユーザー設定">
                       </ListItem>
                       <ListItem to={UrlPath.CenterManage} title="センター設定">
@@ -283,7 +276,7 @@ const HoverBackground = ({ isVisible }: { isVisible: boolean }) => (
 
 const ActiveLine = () => (
   <motion.div
-    layoutId="activeLine" // タイポ修正: activeLIne -> activeLine
+    layoutId="activeLine"
     className="absolute bottom-0 left-0 right-0 h-[2px] bg-foreground z-20"
     transition={{ type: "spring", stiffness: 380, damping: 30 }}
   />
@@ -306,25 +299,28 @@ interface ListItemProps extends React.ComponentPropsWithoutRef<typeof RouterNavL
   to: string;
 }
 
-const ListItem = ({ className, title, children, to, ...props }: ListItemProps) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <RouterNavLink
-          to={to}
-          className={cn(
-            "block space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted focus:bg-muted",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm text-muted-foreground">{children}</p>
-        </RouterNavLink>
-      </NavigationMenuLink>
-    </li>
-  );
-};
+const ListItem = forwardRef<HTMLAnchorElement, ListItemProps>(
+  ({ className, title, children, to, ...props }, ref) => {
+    return (
+      <li>
+        <NavigationMenuLink asChild>
+          <RouterNavLink
+            ref={ref}
+            to={to}
+            className={cn(
+              "block space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-muted focus:bg-muted",
+              className
+            )}
+            {...props}
+          >
+            <div className="text-sm font-medium leading-none">{title}</div>
+            <p className="line-clamp-2 text-sm text-muted-foreground"></p>
+          </RouterNavLink>
+        </NavigationMenuLink>
+      </li>
+    );
+  }
+);
 ListItem.displayName = "ListItem";
 
 export default TopMenu;
