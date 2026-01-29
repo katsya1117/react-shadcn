@@ -26,6 +26,8 @@ import { CustomPagination } from "@/components/parts/Pagination/Pagination";
 import { usePagination } from "@/utility/usePagination";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getUserList, userSelector } from "@/redux/slices/userSlice";
+import { UrlPath } from "@/constant/UrlPath";
+import { useNavigate } from "react-router";
 
 type ADUser = {
   account: string;
@@ -59,20 +61,19 @@ const permissionTemplates = ["標準", "閲覧のみ", "管理者", "運用", "�
 
 const UserManage = () => {
   const [tab, setTab] = useState<"new" | "edit">("edit");
-  // 新規登録 検索条件
+  // 登録 検索条件
   const [accountKeyword, setAccountKeyword] = useState("");
   const [emailKeyword, setEmailKeyword] = useState("");
-  // 既存編集 検索条件
+  // 編集 検索条件
   const [displayKeyword, setDisplayKeyword] = useState("");
   const [userIdKeyword, setUserIdKeyword] = useState("");
   const [userEmailKeyword, setUserEmailKeyword] = useState("");
   const [centerKeyword, setCenterKeyword] = useState("");
 
-  const [selected, setSelected] = useState<JclUser | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState("標準");
-  const [langJa, setLangJa] = useState(true);
   const [newSearched, setNewSearched] = useState(false);
   const [editSearched, setEditSearched] = useState(false);
+  const navigate = useNavigate();
+  const [sort, setSort] = useState<{ key: "id" | "display" | "email" | "box" | "center"; order: "asc" | "desc" } | null>(null);
 
   const dispatch = useAppDispatch();
   const savedCondition = useAppSelector(userSelector.searchConditionSelector());
@@ -89,6 +90,7 @@ const UserManage = () => {
     }
   }, [savedCondition]);
 
+  // 条件が変わらない限り検索結果をそのまま使いたいので useMemo
   const filteredAd = useMemo(
     () =>
       adUsersMock.filter(
@@ -101,8 +103,29 @@ const UserManage = () => {
 
   const jclRecords = useMemo(() => userList?.data ?? [], [userList]);
 
+  const sortedRecords = useMemo(() => {
+    if (!sort) return jclRecords;
+    const arr = [...jclRecords];
+    const { key, order } = sort;
+    const dir = order === "asc" ? 1 : -1;
+    arr.sort((a: any, b: any) => {
+      const av = (a.user?.user_cd ?? a.id ?? "") + "";
+      const bv = (b.user?.user_cd ?? b.id ?? "") + "";
+      const map: Record<typeof key, [any, any]> = {
+        id: [av, bv],
+        display: [a.user?.user_name ?? a.display ?? "", b.user?.user_name ?? b.display ?? ""],
+        email: [a.user?.email ?? a.email ?? "", b.user?.email ?? b.email ?? ""],
+        box: [a.user?.box_account ?? a.box ?? "", b.user?.box_account ?? b.box ?? ""],
+        center: [a.user?.center ?? a.center ?? "", b.user?.center ?? b.center ?? ""],
+      };
+      const [va, vb] = map[key];
+      return va.localeCompare(vb, "ja") * dir;
+    });
+    return arr;
+  }, [jclRecords, sort]);
+
   const adPagination = usePagination(filteredAd, 10);
-  const jclPagination = usePagination(jclRecords, userList?.pagination?.per_page ?? 10);
+  const jclPagination = usePagination(sortedRecords, userList?.pagination?.per_page ?? 10);
 
   const handleUserSearch = (page = 1, per = jclPagination.perPage) => {
     const params = {
@@ -115,7 +138,7 @@ const UserManage = () => {
     };
     dispatch(getUserList(params as any));
     setEditSearched(true);
-    setSelected(null);
+    setSort(null);
   };
 
   return (
@@ -123,22 +146,19 @@ const UserManage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold">ユーザー設定</h1>
-          <p className="text-sm text-muted-foreground">
-            ADユーザーの取り込みと、JCLユーザーの検索・編集を1ページで。
-          </p>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <TabsList>
-            <TabsTrigger value="edit">既存ユーザー編集</TabsTrigger>
-            <TabsTrigger value="new">新規登録（AD連携）</TabsTrigger>
+            <TabsTrigger value="edit">編集</TabsTrigger>
+            <TabsTrigger value="new">登録（AD連携）</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>ADユーザー検索</CardTitle>
-                <CardDescription>アカウント名 / メールアドレスで検索し、未登録なら登録できます。</CardDescription>
+                <CardTitle>ADユーザーを検索</CardTitle>
+                <CardDescription></CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-4 items-end">
@@ -221,8 +241,8 @@ const UserManage = () => {
           </TabsContent>
 
           <TabsContent value="edit" className="space-y-5">
-            <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-              <Card className="xl:mb-0 shadow-sm">
+            <div className="space-y-5">
+              <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>ユーザー検索</CardTitle>
                   <CardDescription>表示名 / ユーザーID / メール / センターで絞り込み。</CardDescription>
@@ -286,13 +306,23 @@ const UserManage = () => {
                       <div className="space-y-3">
                         <div className="max-h-[420px] overflow-auto">
                           <Table>
-                            <TableHeader className="sticky top-0 bg-background">
+                        <TableHeader className="sticky top-0 bg-background">
                               <TableRow>
-                                <TableHead>ユーザーID</TableHead>
-                                <TableHead>表示名</TableHead>
-                                <TableHead>メール</TableHead>
-                                <TableHead>BOX</TableHead>
-                                <TableHead>センター</TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "id" && prev.order === "asc" ? { key: "id", order: "desc" } : { key: "id", order: "asc" })}>
+                                  ユーザーID
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "display" && prev.order === "asc" ? { key: "display", order: "desc" } : { key: "display", order: "asc" })}>
+                                  表示名
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "email" && prev.order === "asc" ? { key: "email", order: "desc" } : { key: "email", order: "asc" })}>
+                                  メール
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "box" && prev.order === "asc" ? { key: "box", order: "desc" } : { key: "box", order: "asc" })}>
+                                  BOX
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "center" && prev.order === "asc" ? { key: "center", order: "desc" } : { key: "center", order: "asc" })}>
+                                  センター
+                                </TableHead>
                                 <TableHead className="text-right">操作</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -305,7 +335,16 @@ const UserManage = () => {
                               <TableCell>{u.user?.box_account ?? u.box}</TableCell>
                               <TableCell>{u.user?.center ?? u.center}</TableCell>
                               <TableCell className="text-right">
-                                <Button size="sm" variant="secondary" onClick={() => setSelected(u)}>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    const userId = (u as any).user?.user_cd ?? u.id;
+                                    if (userId) {
+                                      navigate(UrlPath.UserEdit.replace(":user_cd", userId));
+                                    }
+                                  }}
+                                >
                                   選択
                                 </Button>
                               </TableCell>
@@ -329,81 +368,6 @@ const UserManage = () => {
                 </CardContent>
               </Card>
 
-              {selected && (
-              <Card className="xl:sticky xl:top-20 h-fit shadow-sm">
-                <CardHeader className="flex flex-row items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>登録情報</CardTitle>
-                    <CardDescription>選択したユーザーの詳細を編集できます。</CardDescription>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-muted-foreground"
-                    onClick={() => setSelected(null)}
-                    aria-label="閉じる"
-                  >
-                    ×
-                  </Button>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-1">
-                  <div className="space-y-3">
-                    <Label>ユーザーID</Label>
-                    <Input value={selected?.user?.user_cd ?? selected?.id ?? ""} readOnly />
-                    <Label>表示名</Label>
-                    <Input value={selected?.user?.user_name ?? selected?.display ?? ""} />
-                    <Label>アカウント名（ドメイン）</Label>
-                    <Input value={(selected?.user?.email ?? selected?.email ?? "").split("@")[0]} />
-                    <Label>メールアドレス</Label>
-                    <Input value={selected?.user?.email ?? selected?.email ?? ""} />
-                    <div className="flex items-start justify-between rounded-md border p-3 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-sm">言語設定</Label>
-                        <p className="text-xs text-muted-foreground">日本語 / 英語</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">EN</span>
-                        <Switch checked={langJa} onCheckedChange={setLangJa} />
-                        <span className="text-xs font-medium">JA</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>所属センター</Label>
-                    <Input placeholder="センターを選択" defaultValue={selected?.user?.center ?? selected?.center ?? ""} />
-                    <Label>操作権限テンプレート</Label>
-                    <Select
-                      value={selectedTemplate}
-                      onChange={(e) => setSelectedTemplate(e.target.value)}
-                    >
-                      {permissionTemplates.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
-                    </Select>
-                    <div className="rounded-md border p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">権限内容</span>
-                        <Badge variant="outline">{selectedTemplate}</Badge>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        <span>ジョブ作成: 可</span>
-                        <span>ステータス編集: 可</span>
-                        <span>ログ検索: 可</span>
-                        <span>アクセスユーザー設定: 可</span>
-                        <span>管理メニュー: 不可</span>
-                        <span>自動削除フォルダ設定: 不可</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <Button>保存</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              )}
             </div>
           </TabsContent>
         </Tabs>
