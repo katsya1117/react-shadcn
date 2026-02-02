@@ -3,19 +3,19 @@ import { style } from "@vanilla-extract/css";
 export const LayoutStyle = {
   container: style({
     width: "100%",
-    height: "100vh",
+    minHeight: "100vh",
     background: "linear-gradient(to bottom, #f8fafc, #ffffff, #f1f5f9)",
     color: "var(--foreground)",
   }),
   contents: style({
     display: "flex",
-    height: 'calc(100% - 60px)',
+    flex: 1,
     margin: "0 auto",
     width: "100%",
-    maxWidth: "1152px",
+    maxWidth: "1200px",
     flexDirection: "column",
-    gap: "1.5rem",
-    padding: "1.5rem",
+    gap: "1.75rem",
+    padding: "clamp(1rem, 1vw + 0.75rem, 2rem)",
     boxSizing: "border-box",
   }),
   contentsHideMenu: style({

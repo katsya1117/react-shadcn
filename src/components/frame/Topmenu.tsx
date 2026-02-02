@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, forwardRef } from "react";
 import { useSelector } from "react-redux";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,16 +40,10 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
   const [infoOpen, setInfoOpen] = useState(false);
   const [versionOpen, setVersionOpen] = useState(false);
 
-  const [anchorOA, setAnchorOA] = useState(false);
-  const [anchorManage, setAnchorManage] = useState(false);
   const [anchorUser, setAnchorUser] = useState(false);
-  
-  useEffect(() => {
-    setAnchorOA(location.pathname.includes("/OA/"));
-    setAnchorManage(location.pathname.includes("/manage/"));
-    setAnchorUser(location.pathname.includes("/user/"));
-  }, [location]);
-  
+  const anchorOA = location.pathname.includes("/OA/");
+  const anchorManage = location.pathname.includes("/manage/");
+
   if (hideMenu) return null;
 
   const navItems = [
@@ -63,12 +57,10 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
 
   return (
     <>
-      <div className="sticky top-0 z-40 w-full border-b bg-background">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-3 min-w-0 flex-nowrap">
-            <div
-              className="flex items-center gap-2 font-semibold text-lg shrink-0 mr-2"
-            >
+      <div className="sticky top-0 z-40 w-full min-w-max h-16 border-b backdrop-blur bg-[color:var(--header-bg)]">
+        <div className="flex h-16 w-full min-w-max items-center justify-between px-4 sm:px-6 lg:px-8 gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 font-semibold shrink-0 mr-2 text-lg">
               <span>Ops Console</span>
               <Badge variant="outline" className="hidden sm:inline-flex">
                 Mock
@@ -83,7 +75,7 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
                 setMenuValue(undefined);
               }}
             >
-              <NavigationMenuList className="flex items-center space-x-1 text-sm whitespace-nowrap">
+              <NavigationMenuList className="flex items-center space-x-1 text-sm px-1 whitespace-nowrap">
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild active={false}>
                     <Information/>
@@ -238,16 +230,16 @@ const TopMenu = ({ hideMenu }: { hideMenu?: boolean }) => {
                   ({loginUser?.user?.disp_name ?? loginUser?.user?.user_name ?? "noname"})
                 </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onMouseLeave={() => setAnchorUser(false)}>
-                <DropdownMenuItem asChild>
-                  <RouterNavLink to={UrlPath.MyPageEdit}>MyPage設定変更</RouterNavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <RouterNavLink to={UrlPath.UserProfile}>ユーザー情報設定変更</RouterNavLink>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+            <DropdownMenuContent align="end" onMouseLeave={() => setAnchorUser(false)}>
+              <DropdownMenuItem asChild>
+                <RouterNavLink to={UrlPath.MyPageEdit}>MyPage設定変更</RouterNavLink>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <RouterNavLink to={UrlPath.UserProfile}>ユーザー情報設定変更</RouterNavLink>
+              </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        </div>
         </div>
       </div>
       <Dialog open={infoOpen} onOpenChange={setInfoOpen}>

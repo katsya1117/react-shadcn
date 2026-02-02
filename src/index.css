@@ -86,6 +86,8 @@
   /* #679e85 */
   --brand: oklch(0.6535 0.0695 164.17);
   --brand-foreground: oklch(0.984 0.003 247.858);
+  /* Header background (80% alpha) */
+  --header-bg: oklab(1 0 0 / 0.8);
 }
 
 .dark {
@@ -120,6 +122,8 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Dark: slightly transparent background based on current background */
+  --header-bg: color-mix(in oklab, var(--background) 80%, transparent);
 }
 
 @layer base {
@@ -129,6 +133,17 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    background: linear-gradient(
+      to bottom,
+      #f8fafc,
+      #ffffff,
+      #f1f5f9
+    );
   }
 
 }
