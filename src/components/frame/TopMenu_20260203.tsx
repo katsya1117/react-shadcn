@@ -1,6 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect,useState, forwardRef } from "react";
-import type React from "react";
 // react-bootstrap から移行
 // import {
 //   Container,
@@ -26,17 +25,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 
-import {
-  Home,
-  Search,
-  FileSearch,
-  FilePlus2,
-  Wrench,
-  Cloud,
-  Lock,
-  Database,
-  UserRound,
-} from "lucide-react";
+import { Info, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const TopMenu = (props: { hideMenu?: boolean }) => {
@@ -78,17 +67,16 @@ export const TopMenu = (props: { hideMenu?: boolean }) => {
   // }
 
   const singleNavItems = [
-    { label: 'MyPage', key: 'MyPage', path: UrlPath.MyPage, icon: <Home className="h-4 w-4" /> },
-    { label: 'JOB SEARCH', key: 'JobSearch', path: UrlPath.JobSearch, icon: <Search className="h-4 w-4" /> },
+    { label: 'MyPage', key: 'MyPage', path: UrlPath.MyPage },
+    { label: 'JOB SEARCH', key: 'JobSearch', path: UrlPath.JobSearch },
     {
       label: 'センター専用領域',
       key: 'ShareArea',
       path: UrlPath.ShareArea,
-      icon: <Database className="h-4 w-4" />,
     },
-    { label: 'LOG SEARCH', key: 'LogSearch', path: UrlPath.LogSearch, icon: <FileSearch className="h-4 w-4" /> },
-    { label: 'JOB作成', key: 'JobCreate', path: UrlPath.JobCreate, icon: <FilePlus2 className="h-4 w-4" /> },
-    { label: 'TOOL', key: 'Tool', path: UrlPath.Tool, icon: <Wrench className="h-4 w-4" /> },
+    { label: 'LOG SEARCH', key: 'LogSearch', path: UrlPath.LogSearch },
+    { label: 'JOB', key: 'JobCreate', path: UrlPath.JobCreate },
+    { label: 'TOOL', key: 'Tool', path: UrlPath.Tool },
   ];
 
   return (
@@ -117,10 +105,9 @@ export const TopMenu = (props: { hideMenu?: boolean }) => {
                   <NavigationMenuLink asChild active={location.pathname === item.path}>
                     <RouterNavLink
                       to={item.path}
-                      className="relative z-10 flex flex-row items-center gap-2 px-3 py-2 font-medium transition-colors hover:text-foreground text-muted-foreground data-[active]:text-foreground whitespace-nowrap"
+                      className="relative z-10 px-3 py-2 font-medium transition-colors hover:text-foreground text-muted-foreground data-[active]:text-foreground"
                     >
-                      {item.icon}
-                      <span>{item.label}</span>
+                      {item.label}
                     </RouterNavLink>
                   </NavigationMenuLink>
 
@@ -136,8 +123,7 @@ export const TopMenu = (props: { hideMenu?: boolean }) => {
               >
                 <HoverBackground isVisible={hoveredKey === 'oa'} />
 
-                <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent flex flex-row items-center gap-2 whitespace-nowrap">
-                  <Cloud className="h-4 w-4" />
+                <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                   OA連携
                 </NavigationMenuTrigger>
 
@@ -159,8 +145,7 @@ export const TopMenu = (props: { hideMenu?: boolean }) => {
               >
                 <HoverBackground isVisible={hoveredKey === 'manage'} />
 
-                <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent flex flex-row items-center gap-2 whitespace-nowrap">
-                  <Lock className="h-4 w-4" />
+                <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                   管理
                 </NavigationMenuTrigger>
 
@@ -189,8 +174,7 @@ export const TopMenu = (props: { hideMenu?: boolean }) => {
         <NavigationMenu viewport={false}>
           <NavigationMenuList>
             <NavigationMenuItem className="flex text-sm items-center whitespace-nowrap h-14">
-              <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent inline-flex items-center gap-2">
-                <UserRound className="h-4 w-4" />
+              <NavigationMenuTrigger className="relative z-10 bg-transparent text-foreground hover:bg-transparent focus:bg-transparent data-[state=open]:bg-transparent">
                 {/* {loginUser.user?.user_cd} ({loginUser.user?.disp_name}) */}
               takagi.katsuya(高木克也)
               </NavigationMenuTrigger>
@@ -234,11 +218,10 @@ const ActiveLine = () => (
 interface ListItemProps extends React.ComponentPropsWithoutRef<typeof RouterNavLink> {
   title: string;
   to: string;
-  icon?: React.ReactNode;
 }
 
 const ListItem = forwardRef<HTMLAnchorElement, ListItemProps>(
-  ({ className, title, children, to, icon, ...props }, ref) => (
+  ({ className, title, children, to, ...props }, ref) => (
     <li>
       <NavigationMenuLink asChild>
         <RouterNavLink
@@ -250,10 +233,7 @@ const ListItem = forwardRef<HTMLAnchorElement, ListItemProps>(
           )}
           {...props}
         >
-          <div className="text-sm font-medium leading-none flex items-center gap-2">
-            {icon}
-            <span>{title}</span>
-          </div>
+          <div className="text-sm font-medium leading-none">{title}</div>
           {/* 説明文を入れる場合用 */}
           {/* <p className="line-clamp-2 text-sm text-muted-foreground">{children}</p> */}
         </RouterNavLink>

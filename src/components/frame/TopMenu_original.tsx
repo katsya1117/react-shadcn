@@ -6,7 +6,7 @@ import { NavLink as RouterNavLink, useLocation } from "react-router";
 import { UrlPath } from "../../constant/UrlPath";
 import { userSelector } from "../../redux/slices/userSlice";
 import { Information } from "../parts/Information/Information";
-import { VersionInfo } from "../parts/version/VersionInfo";
+import { VersionInfo } from "../parts/Version/VersionInfo";
 import { TopMenuStyle } from "./TopMenuStyle.css";
 
 /**

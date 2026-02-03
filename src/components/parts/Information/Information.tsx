@@ -1,60 +1,56 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-type Props = {
-  hasNew?: boolean;
+type Props = React.ComponentPropsWithoutRef<"button"> & {
+  title?: string;
+  message?: React.ReactNode;
 };
 
-/**
- * お知らせアイコン＋モーダル（shadcn版）
- */
-export const Information = ({ hasNew = false }: Props) => {
-  const [open, setOpen] = useState(false);
+export const Information = forwardRef<HTMLButtonElement, Props>(
+  ({ className, title = "お知らせ", message = "お知らせ一覧", ...props }, ref) => {
+    const [open, setOpen] = useState(false);
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <button
+    return (
+      <>
+        <Button
+          ref={ref}
           type="button"
-          className="relative inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition"
-          aria-label="お知らせを開く"
+          variant="ghost"
+          size="icon"
+          aria-label={title}
+          onClick={() => setOpen(true)}
+          className={cn("h-9 w-9 text-muted-foreground hover:text-foreground", className)}
+          {...props}
         >
-          <Info size={18} />
-          {hasNew && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] leading-none"
-            >
-              New
-            </Badge>
-          )}
-        </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>お知らせ</DialogTitle>
-          <DialogDescription>最新のお知らせを確認してください。</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <p>お知らせ一覧</p>
-          <p className="text-xs">※ 実際のコンテンツをここに差し込んでください。</p>
-        </div>
-        <div className="flex justify-end pt-3">
-          <Button onClick={() => setOpen(false)}>閉じる</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+          <Info className="h-5 w-5" />
+        </Button>
 
-export default Information;
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>最新のお知らせを確認できます。</DialogDescription>
+            </DialogHeader>
+            <div className="text-sm text-foreground">{message}</div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                閉じる
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+);
+Information.displayName = "Information";
