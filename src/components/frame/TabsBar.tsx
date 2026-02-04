@@ -1,6 +1,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
+import { TabsBarStyle } from "./TabsBar.css";
 
 const oaTabs = [
   { value: UrlPath.OAUsers, label: "OAユーザ表示" },
@@ -17,7 +18,7 @@ const manageTabs = [
   { value: UrlPath.Batch, label: "バッチステータス" },
 ];
 
-const SideTabsBarv2 = () => {
+const TabsBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
@@ -31,16 +32,25 @@ const SideTabsBarv2 = () => {
     items.find((t) => currentPath.startsWith(t.value))?.value ?? items[0]?.value ?? "";
 
   return (
-    <Tabs value={active} onValueChange={(v) => navigate(v)} className="w-full" orientation="horizontal">
-      <TabsList variant="line" className="mb-3">
-        {items.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value}>
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <div className={TabsBarStyle.container}>
+      <div className={TabsBarStyle.inner}>
+        <Tabs
+          value={active}
+          onValueChange={(v) => navigate(v)}
+          className="w-auto"
+          orientation="horizontal"
+        >
+          <TabsList variant="line" className="mx-auto">
+            {items.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+    </div>
   );
 };
 
-export default SideTabsBarv2;
+export default TabsBar;

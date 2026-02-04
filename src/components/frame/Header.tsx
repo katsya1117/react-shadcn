@@ -2,25 +2,40 @@ import { Information } from "../parts/Information/Information";
 import { VersionInfo } from "../parts/Version/VersionInfo";
 import { userSelector } from "@/redux/slices/userSlice";
 import { useSelector } from "react-redux";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { UrlPath } from "@/constant/UrlPath";
-import { NavLink as RouterNavLink } from "react-router";
+import { NavLink as RouterNavLink, useLocation } from "react-router";
 
-type Props = {
-  title?: string;
-  subtitle?: string;
-};
-
-const SideHeaderv2 = ({ title = "Ops Console", subtitle = "Side Layout" }: Props) => {
+/**
+ * サイドレイアウト用ヘッダー（タイトルなし、操作系のみ）
+ */
+const Header = () => {
   const loginUser = useSelector(userSelector.loginUserSelector());
+  const location = useLocation();
+
+  const title =
+    [
+      { prefix: "/OA/", title: "OA連携" },
+      { prefix: "/manage/", title: "管理" },
+      { prefix: UrlPath.MyPage, title: "MyPage" },
+      { prefix: UrlPath.JobSearch, title: "JOB SEARCH" },
+      { prefix: UrlPath.LogSearch, title: "LOG SEARCH" },
+      { prefix: UrlPath.JobCreate, title: "JOB作成" },
+      { prefix: UrlPath.Tool, title: "TOOL" },
+      { prefix: UrlPath.ShareArea, title: "センター専用領域" },
+    ].find(({ prefix }) => location.pathname.startsWith(prefix))?.title ?? "Ops Console";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3">
-        <div className="flex items-center gap-2 font-semibold text-lg">
-          <span>{title}</span>
-          {subtitle && <span className="text-sm text-muted-foreground">{subtitle}</span>}
+      <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="text-base font-semibold text-foreground">{title}</span>
         </div>
         <div className="flex items-center gap-2">
           <Information className="h-8 w-8 p-0" />
@@ -49,4 +64,4 @@ const SideHeaderv2 = ({ title = "Ops Console", subtitle = "Side Layout" }: Props
   );
 };
 
-export default SideHeaderv2;
+export default Header;
