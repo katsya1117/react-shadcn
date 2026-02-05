@@ -8,6 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -161,37 +162,44 @@ const UserManage = () => {
                 <CardDescription></CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="space-y-2 min-w-[240px] flex-1">
-                    <Label htmlFor="account">アカウント名</Label>
-                    <Input
-                      id="account"
-                      placeholder="例: suzuki.taro"
-                      value={accountKeyword}
-                      onChange={(e) => setAccountKeyword(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2 min-w-[260px] flex-1">
-                    <Label htmlFor="email">メールアドレス</Label>
-                    <Input
-                      id="email"
-                      placeholder="例: user@example.com"
-                      value={emailKeyword}
-                      onChange={(e) => setEmailKeyword(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-end gap-2 justify-end">
-                    <Button variant="secondary" className="whitespace-nowrap">
-                      ADユーザー更新
-                    </Button>
-                    <Button
-                      className="whitespace-nowrap"
-                      onClick={() => setNewSearched(true)}
-                    >
-                      検索
-                    </Button>
-                  </div>
-                </div>
+                <Accordion type="single" collapsible defaultValue="cond-new">
+                  <AccordionItem value="cond-new">
+                    <AccordionTrigger>検索条件</AccordionTrigger>
+                    <AccordionContent>
+                      <div className="flex flex-wrap gap-4 items-end">
+                        <div className="space-y-2 min-w-[240px] flex-1">
+                          <Label htmlFor="account">アカウント名</Label>
+                          <Input
+                            id="account"
+                            placeholder="例: suzuki.taro"
+                            value={accountKeyword}
+                            onChange={(e) => setAccountKeyword(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2 min-w-[260px] flex-1">
+                          <Label htmlFor="email">メールアドレス</Label>
+                          <Input
+                            id="email"
+                            placeholder="例: user@example.com"
+                            value={emailKeyword}
+                            onChange={(e) => setEmailKeyword(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-end gap-2 justify-end">
+                          <Button variant="secondary" className="whitespace-nowrap">
+                            ADユーザー更新
+                          </Button>
+                          <Button
+                            className="whitespace-nowrap"
+                            onClick={() => setNewSearched(true)}
+                          >
+                            検索
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
 
                 {newSearched && (
                   <div className="space-y-3">
@@ -248,40 +256,47 @@ const UserManage = () => {
                   <CardDescription>表示名 / ユーザーID / メール / センターで絞り込み。</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
-                  <div className="flex flex-wrap gap-4">
-                    <div className="space-y-2 min-w-[220px] flex-1">
-                      <Label>表示名</Label>
-                      <Input
-                        placeholder="例: 鈴木"
-                        value={displayKeyword}
-                        onChange={(e) => setDisplayKeyword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 min-w-[180px] flex-[0.8]">
-                      <Label>ユーザーID</Label>
-                      <Input
-                        placeholder="例: u001"
-                        value={userIdKeyword}
-                        onChange={(e) => setUserIdKeyword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 min-w-[240px] flex-1">
-                      <Label>メールアドレス</Label>
-                      <Input
-                        placeholder="例: user@example.com"
-                        value={userEmailKeyword}
-                        onChange={(e) => setUserEmailKeyword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 min-w-[220px] flex-1">
-                      <Label>センター（Autocomplete想定）</Label>
-                      <Input
-                        placeholder="例: 東京"
-                        value={centerKeyword}
-                        onChange={(e) => setCenterKeyword(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <Accordion type="single" collapsible defaultValue="cond-edit">
+                    <AccordionItem value="cond-edit">
+                      <AccordionTrigger>検索条件</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-wrap gap-4">
+                          <div className="space-y-2 min-w-[220px] flex-1">
+                            <Label>表示名</Label>
+                            <Input
+                              placeholder="例: 鈴木"
+                              value={displayKeyword}
+                              onChange={(e) => setDisplayKeyword(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2 min-w-[180px] flex-[0.8]">
+                            <Label>ユーザーID</Label>
+                            <Input
+                              placeholder="例: u001"
+                              value={userIdKeyword}
+                              onChange={(e) => setUserIdKeyword(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2 min-w-[240px] flex-1">
+                            <Label>メールアドレス</Label>
+                            <Input
+                              placeholder="例: user@example.com"
+                              value={userEmailKeyword}
+                              onChange={(e) => setUserEmailKeyword(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2 min-w-[220px] flex-1">
+                            <Label>センター（Autocomplete想定）</Label>
+                            <Input
+                              placeholder="例: 東京"
+                              value={centerKeyword}
+                              onChange={(e) => setCenterKeyword(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
 
                     <div className="rounded-lg border bg-card/50 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted-foreground">
