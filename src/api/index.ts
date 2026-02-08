@@ -17,6 +17,20 @@ export type JobSearchParams = {
   per_page?: number
 }
 
+// 共通で使うページネーションレスポンス（Laravel風）
+export type Pagination = {
+  current_page: number
+  last_page: number
+  per_page: number
+  from: number
+  to: number
+  total: number
+  first_page_url: string
+  prev_page_url: string | null
+  next_page_url: string | null
+  last_page_url: string
+}
+
 // ---- Additional mock types/APIs used by redux slices ----
 
 export type AutoCompleteData = {

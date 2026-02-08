@@ -1,244 +1,224 @@
-import { useState } from "react";
 import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Pagination as PaginationProps } from "../../../api";
+import { useMemo } from "react";
 
-type Props<T> = {
-  pagination?: PaginationProps;
-  page?: number;
-  perPage?: number;
-  total?: number;
-  onPageChange?: (page: number) => void;
-  onPerPageChange?: (per: number) => void;
-  onHandle?: (params: T) => void;
-  buildParams?: (page: number, perPage: number) => T;
-};
+export const CustomPagination = <T,>(props: {
+  pagination: PaginationProps;
+  onHandle: (params: T) => void;
+}) => {
+  const urlParse = (url?: string| null) => {
+    if (!url) return;
+    const parser = new URL("http://localhost" + url);
+    props.onHandle(Object.fromEntries(parser.searchParams.entries()) as T);
+  };
+  const disabledClass = "pointer-events-none opacity-50";
+  const currentPage = props.pagination.current_page;
+  const lastPage = props.pagination.last_page;
+  const per = props.pagination.per_page;
+  const from = props.pagination.from;
+  const to = props.pagination.to;
+  const totalCount = props.pagination.total;
+  const firstUrl = props.pagination.first_page_url;
+  const prevUrl = props.pagination.prev_page_url ?? null;
+  const nextUrl = props.pagination.next_page_url ?? null;
+  const lastUrl = props.pagination.last_page_url;
 
-export const CustomPagination = <T,>({
-  pagination,
-  page,
-  perPage,
-  total,
-  onPageChange,
-  onPerPageChange,
-  onHandle,
-  buildParams,
-}: Props<T>) => {
-  // API pagination (with URL links)
-  if (pagination) {
-    const urlParse = (url?: string | null) => {
-      if (!url || !onHandle) return;
-      const parser = new URL("http://localhost" + url);
-      onHandle(Object.fromEntries(parser.searchParams.entries()) as T);
-    };
-    const disabledClass = "pointer-events-none opacity-50";
-    const per = pagination.per_page ?? 0;
-    const from = pagination.from ?? 0;
-    const to = pagination.to ?? 0;
-    const totalCount = pagination.total ?? 0;
-
-    return (
-      <div className="flex w-full flex-wrap items-center justify-center gap-6 rounded-lg border border-border/80 px-4 py-3 text-sm">
-        <div className="text-muted-foreground">
-          Items per Page: {per} {from} - {to} of {totalCount}
-        </div>
-        <Pagination className="w-auto">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationLink
-                href="#first"
-                aria-label="First page"
-                onClick={(e) => {
-                  e.preventDefault();
-                  urlParse(pagination.first_page_url);
-                }}
-                aria-disabled={!pagination.first_page_url}
-                tabIndex={!pagination.first_page_url ? -1 : 0}
-                className={cn(
-                  "size-10",
-                  !pagination.first_page_url && disabledClass
-                )}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#prev"
-                onClick={(e) => {
-                  e.preventDefault();
-                  urlParse(pagination.prev_page_url);
-                }}
-                aria-disabled={!pagination.prev_page_url}
-                tabIndex={!pagination.prev_page_url ? -1 : 0}
-                className={cn(
-                  !pagination.prev_page_url && disabledClass
-                )}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                href="#next"
-                onClick={(e) => {
-                  e.preventDefault();
-                  urlParse(pagination.next_page_url);
-                }}
-                aria-disabled={!pagination.next_page_url}
-                tabIndex={!pagination.next_page_url ? -1 : 0}
-                className={cn(
-                  !pagination.next_page_url && disabledClass
-                )}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink
-                href="#last"
-                aria-label="Last page"
-                onClick={(e) => {
-                  e.preventDefault();
-                  urlParse(pagination.last_page_url);
-                }}
-                aria-disabled={!pagination.last_page_url}
-                tabIndex={!pagination.last_page_url ? -1 : 0}
-                className={cn(
-                  "size-10",
-                  !pagination.last_page_url && disabledClass
-                )}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </PaginationLink>
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
-    );
+  const pages = useMemo(() => {
+  const nums: number[] = [];
+  for (let i = 1; i <= lastPage; i++) {
+    if (i === currentPage - 1 || i === currentPage || i === currentPage + 1) {
+      nums.push(i);
+    }
   }
-
-  // Fallback pagination (page/per/total numbers)
-  const [internalPage, setInternalPage] = useState(page ?? 1);
-  const [internalPer, setInternalPer] = useState(perPage ?? 10);
-
-  const currentPage = page ?? internalPage;
-  const currentPer = perPage ?? internalPer;
-  const totalCount = total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / (currentPer || 1)));
-
-  const emitHandle = (nextPage: number, nextPer: number) => {
-    if (!onHandle) return;
-    if (buildParams) {
-      onHandle(buildParams(nextPage, nextPer));
-    } else {
-      onHandle(({ page: nextPage, per_page: nextPer } as unknown) as T);
-    }
-  };
-
-  const setPageSafe = (next: number) => {
-    const safe = Math.min(Math.max(1, next), totalPages);
-    if (onHandle) {
-      emitHandle(safe, currentPer);
-    } else if (onPageChange) {
-      onPageChange(safe);
-    } else {
-      setInternalPage(safe);
-    }
-  };
-
-  const setPerSafe = (next: number) => {
-    const safe = next > 0 ? next : 10;
-    if (onHandle) {
-      emitHandle(1, safe);
-    } else if (onPerPageChange) {
-      onPerPageChange(safe);
-    } else {
-      setInternalPer(safe);
-      setInternalPage(1);
-    }
-  };
-
-  const start = totalCount === 0 ? 0 : (currentPage - 1) * currentPer + 1;
-  const end = Math.min(totalCount, currentPage * currentPer);
+  return nums;
+}, [currentPage, lastPage]);
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 px-4 py-3 text-sm">
-      <div className="flex items-center gap-2">
-        <Pagination className="w-auto">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#prev"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPageSafe(currentPage - 1);
-                }}
-                aria-disabled={currentPage <= 1}
-                tabIndex={currentPage <= 1 ? -1 : 0}
-                className={cn(currentPage <= 1 && "pointer-events-none opacity-50")}
-              />
-            </PaginationItem>
+    <div className="flex w-full flex-wrap items-center justify-center gap-6 rounded-lg border border-border/80 px-4 py-3 text-sm">
+      <div className="text-muted-foreground">
+        Items per Page: {per} {from} - {to} of {totalCount}
+      </div>
+      <Pagination className="w-auto">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationLink
+              onClick={(e) => {
+                e.preventDefault();
+                urlParse(firstUrl);
+              }}
+              aria-disabled={currentPage === 1}
+              tabIndex={currentPage === 1 ? -1 : 0}
+              className={cn("size-10", currentPage === 1 && disabledClass)}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </PaginationLink>
+          </PaginationItem>
+          {currentPage > 2 && (
             <PaginationItem>
               <PaginationEllipsis />
             </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                href="#next"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPageSafe(currentPage + 1);
-                }}
-                aria-disabled={currentPage >= totalPages}
-                tabIndex={currentPage >= totalPages ? -1 : 0}
-                className={cn(currentPage >= totalPages && "pointer-events-none opacity-50")}
-              />
+          )}
+          {pages.map((num) => (
+            <PaginationItem key={num}>
+              {num === currentPage - 1 ? (
+                <PaginationLink
+                  onClick={(e) => {
+                    e.preventDefault();
+                    urlParse(prevUrl);
+                  }}
+                >
+                  {num}
+                </PaginationLink>
+              ) : num === currentPage ? (
+                <PaginationLink isActive={true}>{num}</PaginationLink>
+              ) : num === currentPage + 1 ? (
+                <PaginationLink
+                  onClick={(e) => {
+                    e.preventDefault();
+                    urlParse(nextUrl);
+                  }}
+                >
+                  {num}
+                </PaginationLink>
+              ) : (
+                <></>
+              )}
             </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-        <span className="text-xs text-muted-foreground">
-          {start} - {end} / {totalCount} 件 ({currentPage}/{totalPages})
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">表示件数</span>
-        <select
-          className="h-9 rounded-md border border-input bg-background px-2"
-          value={currentPer}
-          onChange={(e) => setPerSafe(Number(e.target.value))}
-        >
-          {[10, 20, 50].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
           ))}
-        </select>
-      </div>
+          {currentPage < lastPage - 1 && (
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+          )}
+          <PaginationItem>
+            <PaginationLink
+              onClick={(e) => {
+                e.preventDefault();
+                urlParse(lastUrl);
+              }}
+              aria-disabled={currentPage === lastPage}
+              tabIndex={currentPage === lastPage ? -1 : 0}
+              className={cn(
+                "size-10",
+                currentPage === lastPage && disabledClass,
+              )}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </PaginationLink>
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
 
+//   // Fallback pagination (page/per/total numbers)
+//   const [internalPage, setInternalPage] = useState(page ?? 1);
+//   const [internalPer, setInternalPer] = useState(perPage ?? 10);
 
+//   const currentPage = page ?? internalPage;
+//   const currentPer = perPage ?? internalPer;
+//   const totalCount = total ?? 0;
+//   const totalPages = Math.max(1, Math.ceil(totalCount / (currentPer || 1)));
 
+//   const emitHandle = (nextPage: number, nextPer: number) => {
+//     if (!onHandle) return;
+//     if (buildParams) {
+//       onHandle(buildParams(nextPage, nextPer));
+//     } else {
+//       onHandle(({ page: nextPage, per_page: nextPer } as unknown) as T);
+//     }
+//   };
 
+//   const setPageSafe = (next: number) => {
+//     const safe = Math.min(Math.max(1, next), totalPages);
+//     if (onHandle) {
+//       emitHandle(safe, currentPer);
+//     } else if (onPageChange) {
+//       onPageChange(safe);
+//     } else {
+//       setInternalPage(safe);
+//     }
+//   };
 
+//   const setPerSafe = (next: number) => {
+//     const safe = next > 0 ? next : 10;
+//     if (onHandle) {
+//       emitHandle(1, safe);
+//     } else if (onPerPageChange) {
+//       onPerPageChange(safe);
+//     } else {
+//       setInternalPer(safe);
+//       setInternalPage(1);
+//     }
+//   };
 
+//   const start = totalCount === 0 ? 0 : (currentPage - 1) * currentPer + 1;
+//   const end = Math.min(totalCount, currentPage * currentPer);
 
-
-
-
-
-
-
-
+//   return (
+//     <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-lg border border-border/80 px-4 py-3 text-sm">
+//       <div className="flex items-center gap-2">
+//         <Pagination className="w-auto">
+//           <PaginationContent>
+//             <PaginationItem>
+//               <PaginationPrevious
+//                 href="#prev"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   setPageSafe(currentPage - 1);
+//                 }}
+//                 aria-disabled={currentPage <= 1}
+//                 tabIndex={currentPage <= 1 ? -1 : 0}
+//                 className={cn(currentPage <= 1 && "pointer-events-none opacity-50")}
+//               />
+//             </PaginationItem>
+//             <PaginationItem>
+//               <PaginationEllipsis />
+//             </PaginationItem>
+//             <PaginationItem>
+//               <PaginationNext
+//                 href="#next"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   setPageSafe(currentPage + 1);
+//                 }}
+//                 aria-disabled={currentPage >= totalPages}
+//                 tabIndex={currentPage >= totalPages ? -1 : 0}
+//                 className={cn(currentPage >= totalPages && "pointer-events-none opacity-50")}
+//               />
+//             </PaginationItem>
+//           </PaginationContent>
+//         </Pagination>
+//         <span className="text-xs text-muted-foreground">
+//           {start} - {end} / {totalCount} 件 ({currentPage}/{totalPages})
+//         </span>
+//       </div>
+//       <div className="flex items-center gap-2">
+//         <span className="text-xs text-muted-foreground">表示件数</span>
+//         <select
+//           className="h-9 rounded-md border border-input bg-background px-2"
+//           value={currentPer}
+//           onChange={(e) => setPerSafe(Number(e.target.value))}
+//         >
+//           {[10, 20, 50].map((n) => (
+//             <option key={n} value={n}>
+//               {n}
+//             </option>
+//           ))}
+//         </select>
+//       </div>
+//     </div>
+//   );
+// };
 
 // import { useState } from 'react'
 
@@ -369,4 +349,3 @@ export const CustomPagination = <T,>({
 //       </div>
 //     </div>
 //   )
-// }
