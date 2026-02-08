@@ -14,7 +14,7 @@ export const CustomPagination = <T,>(props: {
   pagination: PaginationProps;
   onHandle: (params: T) => void;
 }) => {
-  const urlParse = (url?: string| null) => {
+  const urlParse = (url?: string | null) => {
     if (!url) return;
     const parser = new URL("http://localhost" + url);
     props.onHandle(Object.fromEntries(parser.searchParams.entries()) as T);
@@ -31,20 +31,35 @@ export const CustomPagination = <T,>(props: {
   const nextUrl = props.pagination.next_page_url ?? null;
   const lastUrl = props.pagination.last_page_url;
 
-  const pages = useMemo(() => {
-  const nums: number[] = [];
-  for (let i = 1; i <= lastPage; i++) {
-    if (i === currentPage - 1 || i === currentPage || i === currentPage + 1) {
-      nums.push(i);
+  //   const pages = useMemo(() => {
+  //   const nums: number[] = [];
+  //   for (let i = 1; i <= lastPage; i++) {
+  //     if (i === currentPage - 1 || i === currentPage || i === currentPage + 1) {
+  //       nums.push(i);
+  //     }
+  //   }
+  //   return nums;
+  // }, [currentPage, lastPage]);
+
+  // これでもいい
+  const displayNums = () => {
+    const nums: number[] = [];
+    for (let i = 1; i <= lastPage; i++) {
+      if (i === currentPage - 1 || i === currentPage || i === currentPage + 1) {
+        nums.push(i);
+      }
     }
-  }
-  return nums;
-}, [currentPage, lastPage]);
+    return nums;
+  };
+  const pages = displayNums();
 
   return (
-    <div className="flex w-full flex-wrap items-center justify-center gap-6 rounded-lg border border-border/80 px-4 py-3 text-sm">
-      <div className="text-muted-foreground">
-        Items per Page: {per} {from} - {to} of {totalCount}
+    <div className="flex flex-col w-full flex-wrap items-center justify-center space-y-4 py-6">
+      <div className="text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">{from}</span>{" "}-{" "}
+        <span className="font-semibold text-foreground">{to}</span>{" "}/{" "}
+        <span className="font-semibold text-foreground">{totalCount}</span>件
+        {/* Items per Page: {per} {from} - {to} of {totalCount} */}
       </div>
       <Pagination className="w-auto">
         <PaginationContent>
