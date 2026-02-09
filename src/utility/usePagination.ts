@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export type UsePaginationResult<T> = {
   page: number;
@@ -17,11 +17,6 @@ export type UsePaginationResult<T> = {
 export const usePagination = <T,>(source: T[], initialPerPage = 10): UsePaginationResult<T> => {
   const [page, setPageState] = useState(1);
   const [perPage, setPerPageState] = useState(initialPerPage);
-
-  // データが変わったら 1 ページ目に戻す
-  useEffect(() => {
-    setPageState(1);
-  }, [source]);
 
   const total = source.length;
   const totalPages = Math.max(1, Math.ceil(total / (perPage || 1)));

@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SideMenu from "./SideMenu";
 import Header from "./Header";
 import TabsBar from "./TabsBar";
@@ -20,6 +20,13 @@ type LayoutProps = PropsWithChildren<{ isHide?: boolean }>;
 
 const Layout = ({ children, isHide }: LayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
+
+  // サイドバー幅に合わせてトースト位置のオフセットを更新
+  useEffect(() => {
+    const offset = collapsed ? 36 : 120; // 72/2 or 240/2
+    document.documentElement.style.setProperty("--sidebar-offset", `${offset}px`);
+  }, [collapsed]);
+
   return (
     <div className={layoutContainer}>
       {!isHide && (

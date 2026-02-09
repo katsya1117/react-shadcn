@@ -8,7 +8,6 @@ import {
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Pagination as PaginationProps } from "../../../api";
-import { useMemo } from "react";
 
 export const CustomPagination = <T,>(props: {
   pagination: PaginationProps;
@@ -22,7 +21,6 @@ export const CustomPagination = <T,>(props: {
   const disabledClass = "pointer-events-none opacity-50";
   const currentPage = props.pagination.current_page;
   const lastPage = props.pagination.last_page;
-  const per = props.pagination.per_page;
   const from = props.pagination.from;
   const to = props.pagination.to;
   const totalCount = props.pagination.total;
