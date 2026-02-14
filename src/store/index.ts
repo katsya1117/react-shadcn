@@ -3,6 +3,7 @@ import jobsReducer from './jobSlice'
 import { userSliceReducer } from '@/redux/slices/userSlice'
 import { autoCompleteReducer } from '@/redux/slices/autoCompleteSlice'
 import { centerSliceReducer } from '@/redux/slices/centerSlice'
+import { navSliceReducer } from '@/redux/slices/navSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     user: userSliceReducer,
     autoComplete: autoCompleteReducer,
     center: centerSliceReducer,
+    nav: navSliceReducer,
   },
 })
 

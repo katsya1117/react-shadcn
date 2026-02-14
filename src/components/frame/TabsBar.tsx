@@ -2,6 +2,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 import { TabsBarStyle } from "./TabsBar.css";
+import { useDispatch } from "react-redux";
+import { navActions } from "@/redux/slices/navSlice";
 
 const oaTabs = [
   { value: UrlPath.OAUsers, label: "OAユーザ表示" },
@@ -21,22 +23,33 @@ const manageTabs = [
 const TabsBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const currentPath = location.pathname;
+
   const isOA = currentPath.startsWith("/OA/");
   const isManage = currentPath.startsWith("/manage/");
 
   const items = isOA ? oaTabs : isManage ? manageTabs : [];
   if (items.length === 0) return null;
 
-  const active =
-    items.find((t) => currentPath.startsWith(t.value))?.value ?? items[0]?.value ?? "";
+  const getRootKey = (path: string) => {
+    const segments = path.split("/").filter(Boolean);
+    return segments.length > 0 ? `/${segments[0]}` : "/";
+  };
+
+  type TabValue = (typeof oaTabs | typeof manageTabs)[number]["value"];
+  const matched = items.find((t) => currentPath.startsWith(t.value));
+  const active: TabValue = (matched ? matched.value : items[0].value) as TabValue;
 
   return (
     <div className={TabsBarStyle.container}>
       <div className={TabsBarStyle.inner}>
         <Tabs
           value={active}
-          onValueChange={(v) => navigate(v)}
+          onValueChange={(v) => {
+            dispatch(navActions.setLastVisited({ key: getRootKey(v), path: v }));
+            navigate(v);
+          }}
           className="w-auto"
           orientation="horizontal"
         >
