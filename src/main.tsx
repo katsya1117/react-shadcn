@@ -7,10 +7,15 @@ import { store } from './store'
 import { Toaster } from './components/ui/sonner'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
+  //   <Provider store={store}>
+  //       <Toaster />
+  //       <App />
+  //   </Provider>
+  // </StrictMode>
     <Provider store={store}>
         <Toaster />
         <App />
     </Provider>
-  </StrictMode>
+  
 )

@@ -1,9 +1,10 @@
+import { useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 import { TabsBarStyle } from "./TabsBar.css";
-import { useDispatch } from "react-redux";
-import { navActions } from "@/redux/slices/navSlice";
+import { useDispatch, useSelector  } from "react-redux";
+import { navActions, navSelector } from "@/redux/slices/navSlice";
 
 const oaTabs = [
   { value: UrlPath.OAUsers, label: "OAユーザ表示" },
@@ -21,25 +22,31 @@ const manageTabs = [
 ];
 
 const TabsBar = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const currentPath = location.pathname;
+  const lastVisited = useSelector(navSelector.lastVisitedSelector());
 
-  const isOA = currentPath.startsWith("/OA/");
-  const isManage = currentPath.startsWith("/manage/");
-
+  const isOA = pathname.startsWith("/OA/");
+  const isManage = pathname.startsWith("/manage/");
   const items = isOA ? oaTabs : isManage ? manageTabs : [];
+
+  const matched = items.find((t) => 
+  pathname === t.value || pathname.startsWith(`${t.value}/`)
+);  
+  useEffect(()=>{
+    if (!matched) return;
+    if (lastVisited[matched.value] === pathname) return;
+      dispatch(navActions.setLastVisited({ key: matched.value, path: pathname }));
+  }, [pathname, matched, dispatch,lastVisited]);
+
   if (items.length === 0) return null;
 
-  const getRootKey = (path: string) => {
-    const segments = path.split("/").filter(Boolean);
-    return segments.length > 0 ? `/${segments[0]}` : "/";
-  };
+  // const getRootPrefix = (path: string) => {
+  // const first = path.split("/").filter(Boolean)[0];
+  // return first ? `/${first}` : "/";
 
-  type TabValue = (typeof oaTabs | typeof manageTabs)[number]["value"];
-  const matched = items.find((t) => currentPath.startsWith(t.value));
-  const active: TabValue = (matched ? matched.value : items[0].value) as TabValue;
+  const active = (matched ? matched.value : items[0].value)
 
   return (
     <div className={TabsBarStyle.container}>
@@ -47,8 +54,8 @@ const TabsBar = () => {
         <Tabs
           value={active}
           onValueChange={(v) => {
-            dispatch(navActions.setLastVisited({ key: getRootKey(v), path: v }));
-            navigate(v);
+            const target = lastVisited[v] || v;
+            navigate(target);
           }}
           className="w-auto"
           orientation="horizontal"

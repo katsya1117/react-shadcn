@@ -74,9 +74,10 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
       (item) => item.shouldRemember && item.prefix === currentPrefix
     );
     if (isRememberTarget) {
+      if (lastVisited[currentPrefix] === pathname) return;
       dispatch(navActions.setLastVisited({ key: currentPrefix, path: pathname }));
     }
-  }, [pathname, dispatch]);
+  }, [pathname, dispatch,lastVisited]);
 
   return (
     <aside
