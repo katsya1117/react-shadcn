@@ -51,6 +51,7 @@ const UserCreate = () => {
   const [accountKeyword, setAccountKeyword] = useState("");
   const [emailKeyword, setEmailKeyword] = useState("");
   const [newSearched, setNewSearched] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
 
   const filteredAd = useMemo(
     () =>
@@ -94,13 +95,38 @@ const UserCreate = () => {
     setNewSearched(true);
   };
 
+  const handleRefreshAD = () => {
+    // 実際には API で最新候補を取得する想定
+    setLastUpdatedAt(new Date());
+    adPagination.setPage(1);
+    toast.success("ADユーザー候補を更新しました");
+  };
+
   return (
     <UserTabsShell active="new">
       <div className="space-y-4">
         <Card>
-          <CardHeader>
-            <CardTitle>ADユーザーを検索</CardTitle>
-            <CardDescription>検索してダミーのADユーザーリストを表示します。</CardDescription>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>ADユーザーを検索</CardTitle>
+              <CardDescription>検索してダミーのADユーザーリストを表示します。</CardDescription>
+            </div>
+            <div className="flex flex-col items-start sm:items-end gap-1">
+              <Button size="sm" variant="secondary" onClick={handleRefreshAD}>
+                ADユーザー更新
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {lastUpdatedAt
+                  ? `最終更新: ${lastUpdatedAt.toLocaleString("ja-JP", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`
+                  : "最終更新: 未実行"}
+              </p>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <Accordion type="single" collapsible defaultValue="cond-new">
@@ -126,17 +152,12 @@ const UserCreate = () => {
                         onChange={(e) => setEmailKeyword(e.target.value)}
                       />
                     </div>
-                    <div className="flex items-end gap-2 justify-end">
-                      <Button variant="secondary" className="whitespace-nowrap">
-                        ADユーザー更新
-                      </Button>
-                      <Button
-                        className="whitespace-nowrap"
-                        onClick={() => setNewSearched(true)}
-                      >
-                        検索
-                      </Button>
-                    </div>
+                    <Button
+                      className="whitespace-nowrap"
+                      onClick={() => setNewSearched(true)}
+                    >
+                      検索
+                    </Button>
                   </div>
                 </AccordionContent>
               </AccordionItem>

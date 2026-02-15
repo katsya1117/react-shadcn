@@ -180,7 +180,7 @@ const CenterEdit = () => {
                   ゲスト追加
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="px-4 sm:px-8">
                 <SheetHeader>
                   <SheetTitle>ゲスト追加</SheetTitle>
                   <SheetDescription>このセンターに新しいメンバーを招待します。</SheetDescription>
@@ -202,14 +202,6 @@ const CenterEdit = () => {
                       placeholder="氏名"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <Label>権限</Label>
-                    <Input
-                      value={newRole}
-                      onChange={(e) => setNewRole(e.target.value)}
-                      placeholder="標準 / 閲覧のみ など"
-                    />
-                  </div>
                 </div>
                 <SheetFooter className="mt-6">
                   <SheetClose asChild>
@@ -221,7 +213,7 @@ const CenterEdit = () => {
                           {
                             id: newUserId,
                             name: newName,
-                            role: newRole || "閲覧のみ",
+                            role: "閲覧のみ",
                             isAdmin: false,
                             guestLabel: "ゲスト",
                           },
