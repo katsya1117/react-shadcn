@@ -65,6 +65,12 @@ export const AutoCompleteMulti = (props: {
       placeholder={props.placeholder ?? ""}
       onChange={props.onChange}
       value={props.value}
+      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+      menuPosition="fixed"
+      styles={{
+        ...autoCompleteStyles,
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+      }}
     />
   );
 };

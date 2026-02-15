@@ -8,32 +8,28 @@ type TabKey = "edit" | "new";
 
 type Props = {
   active: TabKey;
-  onTabChange?: (next: TabKey) => void;
   children: ReactNode;
 };
 
-export const UserTabsShell = ({ active, onTabChange, children }: Props) => {
+export const CenterTabsShell = ({ active, children }: Props) => {
   const navigate = useNavigate();
-  const handleChange = (value: string) => {
-    const next = value as TabKey;
-    if (onTabChange) {
-      onTabChange(next);
-    }
-    navigate(next === "new" ? UrlPath.UserCreate : UrlPath.UserManage);
-  };
-
   return (
     <Layout>
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">ユーザー設定</h1>
-        <Tabs value={active} onValueChange={handleChange}>
+        <h1 className="text-2xl font-semibold">センター設定</h1>
+        <Tabs
+          value={active}
+          onValueChange={(v) =>
+            navigate(v === "new" ? UrlPath.CenterCreate : UrlPath.CenterManage)
+          }
+        >
           <div className="w-full border-b border-border/70">
             <TabsList
               variant="line"
               className="w-auto justify-start gap-3 px-0"
             >
-              <TabsTrigger value="edit">編集</TabsTrigger>
-              <TabsTrigger value="new">登録（AD連携）</TabsTrigger>
+              <TabsTrigger value="edit">設定</TabsTrigger>
+              <TabsTrigger value="new">登録</TabsTrigger>
             </TabsList>
           </div>
         </Tabs>
@@ -43,4 +39,4 @@ export const UserTabsShell = ({ active, onTabChange, children }: Props) => {
   );
 };
 
-export type { TabKey };
+export type { TabKey as CenterTabKey };

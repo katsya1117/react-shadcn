@@ -18,7 +18,8 @@ export const layoutBody = style({
 export const mainArea = style({
   minHeight: 0,
   width: "100%",
-  maxWidth: "1200px",
+  // 共通の最大幅（約912px）
+  maxWidth: "912px",
   margin: "0 auto",
   padding: "1rem clamp(1rem, 1vw + 0.5rem, 2rem)",
   boxSizing: "border-box",

@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CustomPagination } from "../parts/Pagination/Pagination";
+import { usePagination } from "@/utility/usePagination";
 import { AutoCompleteMulti } from "../parts/AutoComplete/AutoCompleteMulti";
 import type { MultiValue } from "react-select";
-import type { AutoCompleteData } from "@/api";
+import type { Pagination, AutoCompleteData } from "@/api";
 
 type LogEntry = {
   datetime: string;
@@ -78,7 +79,8 @@ const LogSearch = () => {
     return mockLogs.filter((log) => {
       if (from && log.datetime < from) return false;
       if (to && log.datetime > `${to} 23:59`) return false;
-      if (users.length && !users.some((u) => u.label === log.user)) return false;
+      if (users.length && !users.some((u) => u.label === log.user))
+        return false;
       if (action && log.action !== action) return false;
       if (before && log.beforeStatus !== before) return false;
       if (after && log.afterStatus !== after) return false;
@@ -88,9 +90,35 @@ const LogSearch = () => {
   }, [from, to, users, action, before, after, jobName]);
 
   const total = filtered.length;
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+
+  const lastPage = Math.max(1, Math.ceil(total / perPage));
+  const currentPage = Math.min(Math.max(page, 1), lastPage);
+  const makeUrl = (p: number | null) =>
+    p ? `/logsearch?page=${p}&per_page=${perPage}` : null;
+
+  const pagination = {
+    current_page: currentPage,
+    last_page: lastPage,
+    per_page: perPage,
+    from: total === 0 ? 0 : (currentPage - 1) * perPage + 1,
+    to: Math.min(total, currentPage * perPage),
+    total,
+    first_page_url: makeUrl(1)!,
+    prev_page_url: makeUrl(currentPage > 1 ? currentPage - 1 : null),
+    next_page_url: makeUrl(currentPage < lastPage ? currentPage + 1 : null),
+    last_page_url: makeUrl(lastPage)!,
+  };
+
+  const paged = filtered.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage,
+  );
 
   const handleSearch = () => setPage(1);
+  const handlePagination = (params: { page?: string; per_page?: string }) => {
+    const nextPage = Number(params.page ?? params["page"]) || 1;
+    setPage(nextPage);
+  };
 
   return (
     <Layout>
@@ -105,11 +133,19 @@ const LogSearch = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label>期間 From</Label>
-                  <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label>期間 To</Label>
-                  <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-1">
@@ -128,7 +164,10 @@ const LogSearch = () => {
               </div>
               <div>
                 <Label>操作種別</Label>
-                <Select value={action} onChange={(e) => setAction(e.target.value)}>
+                <Select
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                >
                   <option value="">すべて</option>
                   {actionOptions.map((opt) => (
                     <option key={opt} value={opt}>
@@ -140,7 +179,10 @@ const LogSearch = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label>変更前ステータス</Label>
-                  <Select value={before} onChange={(e) => setBefore(e.target.value)}>
+                  <Select
+                    value={before}
+                    onChange={(e) => setBefore(e.target.value)}
+                  >
                     <option value="">すべて</option>
                     {statusOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -151,7 +193,10 @@ const LogSearch = () => {
                 </div>
                 <div>
                   <Label>変更後ステータス</Label>
-                  <Select value={after} onChange={(e) => setAfter(e.target.value)}>
+                  <Select
+                    value={after}
+                    onChange={(e) => setAfter(e.target.value)}
+                  >
                     <option value="">すべて</option>
                     {statusOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -163,7 +208,11 @@ const LogSearch = () => {
               </div>
               <div className="md:col-span-2">
                 <Label>JOB名称</Label>
-                <Input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="部分一致" />
+                <Input
+                  value={jobName}
+                  onChange={(e) => setJobName(e.target.value)}
+                  placeholder="部分一致"
+                />
               </div>
             </div>
             <div className="flex justify-end">
@@ -192,13 +241,19 @@ const LogSearch = () => {
                   <tbody className="divide-y">
                     {paged.length === 0 && (
                       <tr>
-                        <td className="px-3 py-4 text-center text-muted-foreground" colSpan={6}>
+                        <td
+                          className="px-3 py-4 text-center text-muted-foreground"
+                          colSpan={6}
+                        >
                           データはありません
                         </td>
                       </tr>
                     )}
                     {paged.map((log, idx) => (
-                      <tr key={`${log.datetime}-${idx}`} className="bg-background">
+                      <tr
+                        key={`${log.datetime}-${idx}`}
+                        className="bg-background"
+                      >
                         <td className="px-3 py-2">{log.datetime}</td>
                         <td className="px-3 py-2">{log.user}</td>
                         <td className="px-3 py-2">{log.jobName}</td>
@@ -212,11 +267,8 @@ const LogSearch = () => {
               </div>
               <div className="pt-2">
                 <CustomPagination
-                  page={page}
-                  perPage={perPage}
-                  total={total}
-                  onPageChange={setPage}
-                  onPerPageChange={() => {}}
+                  pagination={pagination}
+                  onHandle={handlePagination}
                 />
               </div>
             </CardContent>

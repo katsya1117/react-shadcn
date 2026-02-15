@@ -26,12 +26,22 @@ type ADUser = {
   registered: boolean;
 };
 
+const MAX_ACCOUNT_LEN = 100;
+const MAX_EMAIL_LEN = 254; // RFCで一般的に使われる上限
+
 const adUsersMock: ADUser[] = Array.from({ length: 24 }).map((_, i) => {
   const id = i + 1;
   const registered = id % 4 === 0;
   return {
-    account: `user${id.toString().padStart(3, "0")}`,
-    email: `user${id.toString().padStart(3, "0")}@example.com`,
+    // id 2 は意図的に文字数超過のダミー
+    account:
+      id === 2
+        ? "u".repeat(MAX_ACCOUNT_LEN + 5)
+        : `user${id.toString().padStart(3, "0")}`,
+    email:
+      id === 2
+        ? `${"verylong".repeat(40)}@example.com`
+        : `user${id.toString().padStart(3, "0")}@example.com`,
     name: `利用者 ${id.toString().padStart(3, "0")}`,
     registered,
   };
@@ -175,6 +185,22 @@ const UserCreate = () => {
                             size="sm"
                             variant={u.registered ? "ghost" : "default"}
                             onClick={() => {
+                              const errors: string[] = [];
+                              if (u.account.length > MAX_ACCOUNT_LEN) {
+                                errors.push(`アカウントは${MAX_ACCOUNT_LEN}文字以内`);
+                              }
+                              if (u.email.length > MAX_EMAIL_LEN) {
+                                errors.push(`メールアドレスは${MAX_EMAIL_LEN}文字以内`);
+                              }
+
+                              if (errors.length) {
+                                toast.error("入力値が長すぎます", {
+                                  description: errors.join(" / "),
+                                });
+                                return;
+                              }
+
+                              // 実際にはここで POST。失敗時は catch で toast.error を出す想定。
                               toast.success("登録しました", {
                                 description: `${u.name} (${u.account}) を登録しました。`,
                               });

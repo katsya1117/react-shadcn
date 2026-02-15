@@ -4,8 +4,9 @@ import {
   createSlice,
 } from "@reduxjs/toolkit";
 
-import { AutoCompleteApi, type AutoCompleteData } from "../../api";
-import Config from "../../config/apiConfig";
+// import Config from "../../config/apiConfig";
+// import { AutoCompleteApi } from "../../api";
+import type { AutoCompleteData } from "../../api";
 import {
   initialSliceError,
   rejectedMessage,
@@ -34,13 +35,14 @@ const userGroup: AutoCompleteData[] = [
 
 const sliceName = "autoComplete";
 
-const api = new AutoCompleteApi(Config.apiConfig);
+// const api = new AutoCompleteApi(Config.apiConfig);
 
 export const getAutoComplete = createAsyncThunk(
   sliceName + "/getList",
   async () => {
-    const response = api.getList(Config.apiOption);
-    return (await response).data;
+    // ローカルモックを即返す（API 呼び出し不要）
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    return { users, groups };
   }
 );
 

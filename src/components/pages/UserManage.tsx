@@ -10,6 +10,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
+import type { AutoCompleteData } from "@/api";
 import {
   Table,
   TableHeader,
@@ -33,6 +35,7 @@ const UserManage = () => {
   const [userIdKeyword, setUserIdKeyword] = useState("");
   const [userEmailKeyword, setUserEmailKeyword] = useState("");
   const [centerKeyword, setCenterKeyword] = useState("");
+  const [centerOption, setCenterOption] = useState<AutoCompleteData | null>(null);
 
   const [editSearched, setEditSearched] = useState(false);
   const navigate = useNavigate();
@@ -48,7 +51,11 @@ const UserManage = () => {
       setDisplayKeyword(savedCondition.user_name ?? "");
       setUserIdKeyword(savedCondition.user_account ?? "");
       setUserEmailKeyword(savedCondition.user_email ?? "");
-      setCenterKeyword(savedCondition.center_cd_list?.[0] ?? "");
+      const centerSaved = savedCondition.center_cd_list?.[0] ?? "";
+      setCenterKeyword(centerSaved);
+      if (centerSaved) {
+        setCenterOption({ label: centerSaved, value: centerSaved });
+      }
       setEditSearched(true);
     }
   }, [savedCondition]);
@@ -158,14 +165,18 @@ const UserManage = () => {
                               onChange={(e) => setUserEmailKeyword(e.target.value)}
                             />
                           </div>
-                          <div className="space-y-2 min-w-[220px] flex-1">
-                            <Label>センター（Autocomplete想定）</Label>
-                            <Input
-                              placeholder="例: 東京"
-                              value={centerKeyword}
-                              onChange={(e) => setCenterKeyword(e.target.value)}
-                            />
-                          </div>
+          <div className="space-y-2 min-w-[220px] flex-1">
+            <Label>センター（Autocomplete）</Label>
+            <AutoCompleteSingle
+              value={centerOption}
+              type="center"
+              placeholder="センターを選択"
+              onChange={(v) => {
+                setCenterOption(v ?? null);
+                setCenterKeyword(v?.value ?? "");
+              }}
+            />
+          </div>
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -182,6 +193,7 @@ const UserManage = () => {
                           setUserIdKeyword("");
                           setUserEmailKeyword("");
                           setCenterKeyword("");
+                          setCenterOption(null);
                           setEditSearched(false);
                         }}>
                           クリア

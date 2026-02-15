@@ -1,8 +1,8 @@
-import Layout from "@/components/frame/Layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { CenterTabsShell } from "@/components/pages/CenterTabsShell";
 
 const CenterCreate = () => (
-  <Layout>
+  <CenterTabsShell active="new">
     <Card>
       <CardHeader>
         <CardTitle>センター作成</CardTitle>
@@ -12,7 +12,7 @@ const CenterCreate = () => (
         入力項目を追加して作成処理を実装してください。
       </CardContent>
     </Card>
-  </Layout>
+  </CenterTabsShell>
 );
 
 export default CenterCreate;

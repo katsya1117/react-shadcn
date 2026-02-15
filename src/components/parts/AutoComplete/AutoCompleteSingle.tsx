@@ -74,6 +74,12 @@ export const AutoCompleteSingle = (props: {
       styles={autoCompleteStyles}
       value={props.value}
       onChange={props.onChange}
+      menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+      menuPosition="fixed"
+      styles={{
+        ...autoCompleteStyles,
+        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+      }}
     />
   );
 };
