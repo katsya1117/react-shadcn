@@ -51,11 +51,21 @@ export type UserSearchParams = {
   per_page?: number
 }
 
+export type UserUpdateParams = {
+  user_cd: string
+  user_name?: string
+  email?: string
+  center?: string
+  box_account?: string
+}
+
 export type UserInfo = {
   user?: {
     user_cd: string
     user_name?: string
     email?: string
+    box_account?: string
+    center?: string
   }
 }
 
@@ -75,7 +85,8 @@ export class UsersApi {
   constructor(public config?: any) {}
 
   async getUser(userCd: string, _opts?: any) {
-    const data: UserInfo = { user: { user_cd: userCd } }
+    const { mockUserDb } = await import("./mock/usersDb")
+    const data: UserInfo = mockUserDb.get(userCd) ?? { user: { user_cd: userCd } }
     return { data }
   }
 
@@ -91,15 +102,37 @@ export class UsersApi {
     per_page: number = 10,
     _opts?: any,
   ) {
-    const dummy: UserInfo[] = [
-      { user: { user_cd: 'sre-user', user_name: 'SRE' } },
-      { user: { user_cd: 'ops-admin', user_name: 'Ops Admin' } },
-    ]
-    const data: PaginationResultMUser = {
-      data: dummy,
-      pagination: { total: dummy.length, page, per_page },
-    }
+    const { mockUserDb } = await import("./mock/usersDb")
+    const data: PaginationResultMUser = mockUserDb.list({
+      user_name,
+      user_account,
+      user_email,
+      center_cd_list,
+      page,
+      per_page,
+    })
     return { data }
+  }
+
+  async updateUser(
+    userCd: string,
+    param: Omit<UserUpdateParams, 'user_cd'>,
+    _opts?: any,
+  ) {
+    const { mockUserDb } = await import("./mock/usersDb")
+    const patch: {
+      user_name?: string
+      email?: string
+      center?: string
+      box_account?: string
+    } = {}
+    if (param.user_name !== undefined) patch.user_name = param.user_name
+    if (param.email !== undefined) patch.email = param.email
+    if (param.center !== undefined) patch.center = param.center
+    if (param.box_account !== undefined) patch.box_account = param.box_account
+
+    const updated = mockUserDb.update(userCd, patch)
+    return { data: updated ? mockUserDb.get(userCd) ?? null : null }
   }
 }
 

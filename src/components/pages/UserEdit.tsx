@@ -1,3 +1,4 @@
+import { useEffect, useState, type FormEvent } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   Card,
@@ -12,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select } from "@/components/ui/select";
-import { ArrowLeft, List, Check, X } from "lucide-react";
+import { List, Check, X } from "lucide-react";
 import { UserTabsShell } from "@/components/pages/UserTabsShell";
 import { UrlPath } from "@/constant/UrlPath";
 import {
@@ -27,22 +28,84 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/sonner";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getUserInfo, updateUserInfo, userSelector } from "@/redux/slices/userSlice";
+import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
+import type { AutoCompleteData } from "@/api";
 
 const permissionTemplates = ["標準", "閲覧のみ", "管理者", "運用", "監査"];
 
 const UserEdit = () => {
   const { user_cd } = useParams();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const userInfo = useAppSelector(userSelector.loginUserSelector());
+  const isLoading = useAppSelector(userSelector.isLoadingSelector());
+  // ユーザーごとの編集中センター値。未編集なら null のまま。
+  const [centerDraft, setCenterDraft] = useState<{ userId: string; value: string } | null>(null);
 
-  // ここではモック値。実際は API や Redux から取得して埋めてください。
-  const mockUser = {
-    user_cd: user_cd ?? "u001",
-    user_name: "山田 太郎",
-    email: "taro@example.com",
-    center: "東京センター",
-    box_account: "box-taro",
-    langJa: true,
-    template: "標準",
+  useEffect(() => {
+    if (user_cd) {
+      dispatch(getUserInfo(user_cd));
+    }
+  }, [dispatch, user_cd]);
+
+  const u = userInfo?.user;
+  if (!u) {
+    return (
+      <UserTabsShell active="edit">
+        <div className="p-4 text-sm text-muted-foreground">読込中...</div>
+      </UserTabsShell>
+    );
+  }
+
+  const userName = u.user_name ?? "";
+  const userId = u.user_cd ?? user_cd ?? "";
+  const email = u.email ?? "";
+  const serverCenter = u.center ?? "";
+  const template = "標準";
+
+  const effectiveCenter =
+    centerDraft && centerDraft.userId === userId ? centerDraft.value : serverCenter;
+
+  const centerOption: AutoCompleteData | null = effectiveCenter
+    ? { label: effectiveCenter, value: effectiveCenter }
+    : null;
+
+  const centerValue = effectiveCenter;
+  const centerLabel = effectiveCenter || "-";
+
+  const handleSaveBasic = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!userId) {
+      toast.error("ユーザーIDが不正です");
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const nextUserName = String(formData.get("user_name") ?? "").trim();
+    const nextEmail = String(formData.get("email") ?? "").trim();
+
+    if (!nextUserName) {
+      toast.error("表示名を入力してください");
+      return;
+    }
+
+    const action = await dispatch(
+      updateUserInfo({
+        user_cd: userId,
+        user_name: nextUserName,
+        email: nextEmail || undefined,
+        center: centerValue || undefined,
+      })
+    );
+
+    if (updateUserInfo.fulfilled.match(action) && action.payload) {
+      toast.success("基本設定を保存しました");
+      return;
+    }
+
+    toast.error("保存に失敗しました");
   };
 
   return (
@@ -61,11 +124,11 @@ const UserEdit = () => {
             </Button>
           </div>
           <div className="space-y-1">
-            <p className="text-xl font-semibold">{mockUser.user_name}</p>
+            <p className="text-xl font-semibold">{userName || "ユーザー詳細"}</p>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline">ユーザーID: {mockUser.user_cd}</Badge>
+              <Badge variant="outline">ユーザーID: {userId}</Badge>
               <span className="rounded-full bg-muted px-3 py-1 text-foreground/70">
-                所属 {mockUser.center}
+                所属 {centerLabel}
               </span>
             </div>
           </div>
@@ -79,27 +142,42 @@ const UserEdit = () => {
               <CardDescription>ユーザーの基本属性を編集します。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-4">
-                <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                  <Label>ユーザーID</Label>
-                  <Input value={mockUser.user_cd} readOnly />
+              <form className="space-y-3" onSubmit={handleSaveBasic}>
+                <div className="flex flex-wrap gap-4">
+                  <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
+                    <Label>ユーザーID</Label>
+                    <Input name="user_cd" value={userId} readOnly />
+                  </div>
+                  <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
+                    <Label>表示名</Label>
+                    <Input name="user_name" defaultValue={userName} />
+                  </div>
+                  <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
+                    <Label>アカウント名（ドメイン）</Label>
+                    <Input name="user_account" defaultValue={email.split("@")[0] ?? ""} />
+                  </div>
+                  <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
+                    <Label>メールアドレス</Label>
+                    <Input name="email" defaultValue={email} />
+                  </div>
+                  <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
+                    <Label>所属センター</Label>
+                  <AutoCompleteSingle
+                    type="center"
+                    value={centerOption}
+                    placeholder="センターを選択"
+                    onChange={(v) => {
+                      setCenterDraft(v?.value ?? "");
+                    }}
+                  />
+                  </div>
                 </div>
-                <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                  <Label>表示名</Label>
-                  <Input defaultValue={mockUser.user_name} />
+                <div className="flex justify-end">
+                  <Button size="sm" type="submit" disabled={isLoading}>
+                    {isLoading ? "保存中..." : "保存"}
+                  </Button>
                 </div>
-                <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                  <Label>アカウント名（ドメイン）</Label>
-                  <Input defaultValue={mockUser.email.split("@")[0]} />
-                </div>
-                <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                  <Label>メールアドレス</Label>
-                  <Input defaultValue={mockUser.email} />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button size="sm">保存</Button>
-              </div>
+              </form>
             </CardContent>
           </Card>
 
@@ -116,7 +194,7 @@ const UserEdit = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">EN</span>
-                  <Switch defaultChecked={mockUser.langJa} />
+                  <Switch defaultChecked />
                   <span className="text-xs font-medium">JA</span>
                 </div>
               </div>
@@ -133,7 +211,7 @@ const UserEdit = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Select defaultValue={mockUser.template}>
+                <Select defaultValue={template}>
                   {permissionTemplates.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -148,7 +226,7 @@ const UserEdit = () => {
                     <p className="text-xs text-muted-foreground">テンプレートに紐づく権限の一覧です</p>
                   </div>
                   <Badge variant="secondary" className="px-3 py-1 rounded-full">
-                    {mockUser.template}
+                    {template}
                   </Badge>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm">
@@ -196,14 +274,14 @@ const UserEdit = () => {
                   <AlertDialogHeader>
                     <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
                     <AlertDialogDescription>
-                      {mockUser.user_name}（ID: {mockUser.user_cd}）を削除します。この操作は取り消せません。
+                      {userName || "ユーザー"}（ID: {userId}）を削除します。この操作は取り消せません。
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>キャンセル</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => {
-                        toast(`${mockUser.user_name} を削除しました`);
+                        toast(`${userName || userId} を削除しました`);
                         navigate(UrlPath.UserManage);
                       }}
                     >

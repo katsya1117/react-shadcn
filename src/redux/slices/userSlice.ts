@@ -13,6 +13,7 @@ import {
   type AccessToken,
   type PaginationResultMUser,
   type UserInfo,
+  type UserUpdateParams,
   type UserSearchParams,
 } from "../../api";
 
@@ -61,6 +62,24 @@ export const getUserList = createAsyncThunk(
       param.order,
       param.page,
       param.per_page,
+      Config.apiOption
+    );
+    return (await response).data;
+  }
+);
+
+/** ユーザー情報更新 Action */
+export const updateUserInfo = createAsyncThunk(
+  `${sliceName}/updateUserInfo`,
+  async (param: UserUpdateParams) => {
+    const response = userApi.updateUser(
+      param.user_cd,
+      {
+        user_name: param.user_name,
+        email: param.email,
+        center: param.center,
+        box_account: param.box_account,
+      },
       Config.apiOption
     );
     return (await response).data;
@@ -188,6 +207,32 @@ const userSlice = createSlice({
         state.isLoading = false;
       })
       .addCase(getUserList.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+
+    builder
+      // updateUserInfo
+      .addCase(updateUserInfo.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
+      })
+      .addCase(updateUserInfo.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.userInfo = action.payload;
+          if (state.list.data?.data) {
+            state.list.data.data = state.list.data.data.map((row) =>
+              row.user?.user_cd === action.payload.user?.user_cd
+                ? action.payload
+                : row
+            );
+          }
+        } else {
+          state.error = setSliceError("更新対象のユーザーが見つかりません。");
+        }
+        state.isLoading = false;
+      })
+      .addCase(updateUserInfo.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
       });
