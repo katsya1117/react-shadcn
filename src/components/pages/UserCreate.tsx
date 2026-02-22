@@ -1,251 +1,394 @@
-import { useMemo, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import type { AdUserList, UserCreationParams, UserSearchParams } from "@/api";
+import { UserTabsShell } from "@/components/pages/UserTabsShell";
+import { CustomPagination } from "@/components/parts/Pagination/Pagination";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "@/components/ui/sonner";
 import {
   Table,
-  TableHeader,
-  TableHead,
   TableBody,
-  TableRow,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { CustomPagination } from "@/components/parts/Pagination/Pagination";
-import { usePagination } from "@/utility/usePagination";
-import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import type { Pagination } from "@/api";
-import { toast } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
+import {
+  getAdUserList,
+  userCreation,
+  userSelector,
+} from "@/redux/slices/userSlice";
+import type { AppDispatch } from "@/store";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import ConfirmButton from "../ui/confirm-button";
 
-type ADUser = {
-  account: string;
-  email: string;
-  name: string;
-  registered: boolean;
-};
+// type ADUser = {
+//   account: string;
+//   email: string;
+//   name: string;
+//   registered: boolean;
+// };
 
+const MAX_USERID_LEN = 31;
+const MAX_DISP_LEN = 100;
 const MAX_ACCOUNT_LEN = 100;
-const MAX_EMAIL_LEN = 254; // RFCで一般的に使われる上限
+const MAX_EMAIL_LEN = 200;
 
-const adUsersMock: ADUser[] = Array.from({ length: 24 }).map((_, i) => {
-  const id = i + 1;
-  const registered = id % 4 === 0;
-  return {
-    // id 2 は意図的に文字数超過のダミー
-    account:
-      id === 2
-        ? "u".repeat(MAX_ACCOUNT_LEN + 5)
-        : `user${id.toString().padStart(3, "0")}`,
-    email:
-      id === 2
-        ? `${"verylong".repeat(40)}@example.com`
-        : `user${id.toString().padStart(3, "0")}@example.com`,
-    name: `利用者 ${id.toString().padStart(3, "0")}`,
-    registered,
-  };
-});
+const REG_STATUS = {
+  UNREGISTERED: "0",
+  REGISTERED: "1",
+  ALL: "",
+} as const;
 
-const UserCreate = () => {
-  const [accountKeyword, setAccountKeyword] = useState("");
-  const [emailKeyword, setEmailKeyword] = useState("");
-  const [newSearched, setNewSearched] = useState(false);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
+// const adUsersMock: ADUser[] = Array.from({ length: 24 }).map((_, i) => {
+//   const id = i + 1;
+//   const registered = id % 4 === 0;
+//   return {
+//     // id 2 は意図的に文字数超過のダミー
+//     account:
+//       id === 2
+//         ? "u".repeat(MAX_ACCOUNT_LEN + 5)
+//         : `user${id.toString().padStart(3, "0")}`,
+//     email:
+//       id === 2
+//         ? `${"verylong".repeat(40)}@example.com`
+//         : `user${id.toString().padStart(3, "0")}@example.com`,
+//     name: `利用者 ${id.toString().padStart(3, "0")}`,
+//     registered,
+//   };
+// });
 
-  const filteredAd = useMemo(
-    () =>
-      adUsersMock.filter(
-        (u) =>
-          (accountKeyword ? u.account.includes(accountKeyword) : true) &&
-          (emailKeyword ? u.email.includes(emailKeyword) : true),
-      ),
-    [accountKeyword, emailKeyword],
+export const UserCreate = () => {
+  const dispatch: AppDispatch = useDispatch();
+  const list = useSelector(userSelector.asUserListSelector());
+  const searchCondition = useSelector(
+    userSelector.adUserSearchConditionSelector(),
+  );
+  const isSearched = useSelector(
+    userSelector.searchResultDispSelector(),
+  ).addSearched;
+
+  const [searchDispName, setSearchDispName] = useState(
+    searchCondition?.disp_name ?? "",
   );
 
-  const adPagination = usePagination(filteredAd, 10);
+  const [searchAccountName, setSearchAccountName] = useState(
+    searchCondition?.account_name ?? "",
+  );
 
-  const pagination = useMemo<Pagination>(() => {
-    const { page, perPage, total } = adPagination;
-    const last = Math.max(1, Math.ceil(total / (perPage || 1)));
-    const from = total === 0 ? 0 : (page - 1) * perPage + 1;
-    const to = Math.min(total, page * perPage);
-    const url = (p: number | null) => (p ? `/api/ad-users?page=${p}&per_page=${perPage}` : null);
-    return {
-      current_page: page,
-      last_page: last,
-      per_page: perPage,
-      from,
-      to,
-      total,
-      first_page_url: url(1)!,
-      prev_page_url: url(page > 1 ? page - 1 : null),
-      next_page_url: url(page < last ? page + 1 : null),
-      last_page_url: url(last)!,
-    };
-  }, [adPagination.page, adPagination.perPage, adPagination.total]);
+  const [searchMailAddress, setSearchMailAddress] = useState(
+    searchCondition?.mail_addr ?? "",
+  );
 
-  const handlePagination = (params: Record<string, string>) => {
-    const nextPer = Number(params.per_page ?? pagination.per_page) || pagination.per_page;
-    const nextPage = Number(params.page ?? pagination.current_page) || pagination.current_page;
-    if (nextPer !== adPagination.perPage) {
-      adPagination.setPerPage(nextPer);
+  type regStatus = (typeof REG_STATUS)[keyof typeof REG_STATUS];
+
+  const [statusFilter, setStatusFilter] = useState(
+    searchCondition?.status ?? REG_STATUS.ALL,
+  );
+
+  const [adLastUpdatedAt, setAdLastUpdatedAt] = useState<Date | undefined>(
+    undefined,
+  );
+
+  const onHandleSearch = () => {
+    dispatch(
+      getAdUserList({
+        account_name: searchAccountName,
+        mail_addr: searchMailAddress,
+        distinguished_name: "",
+        disp_name: searchDispName,
+        organization_unit: "",
+        status: statusFilter,
+        sort: "disp_name",
+        order: "asc",
+        page: 1,
+        per_page: undefined,
+      }),
+    );
+  };
+
+  const onHandleRegist = async (user: AdUserList) => {
+    const errors: string[] = [];
+    if (user.mail_addr.split("@")[0].length > MAX_USERID_LEN) {
+      errors.push("ユーザーIDの文字数制限を超えています");
     }
-    adPagination.setPage(nextPage);
-    setNewSearched(true);
+    if (user.disp_name.length > MAX_DISP_LEN) {
+      errors.push("表示名の文字数制限を超えています");
+    }
+    if (user.account_name.length > MAX_ACCOUNT_LEN) {
+      errors.push("アカウント名の文字数制限を超えています");
+    }
+    if (user.mail_addr.length > MAX_EMAIL_LEN) {
+      errors.push("メールアドレスの文字数制限を超えています");
+    }
+
+    if (errors.length) {
+      toast.error("入力値が長すぎます", {
+        description: errors.join(" / "),
+      });
+      return;
+    }
+    const params: UserCreationParams = {
+      user_cd: user.mail_addr.split("@")[0],
+      disp_name: user.disp_name,
+      account: user.account_name,
+      email: user.mail_addr,
+      language_code: 0,
+    };
+    console.log("実際に送信するデータ:", params);
+    const result = await dispatch(userCreation(params));
+    if (userCreation.fulfilled.match(result)) {
+      toast.success("ユーザーを登録しました", {
+        description: `${user.disp_name} (${user.account_name}) を登録しました。`,
+      });
+      dispatch(
+        getAdUserList({
+          account_name: searchAccountName,
+          mail_addr: searchMailAddress,
+          distinguished_name: "",
+          disp_name: searchDispName,
+          organization_unit: "",
+          status: statusFilter,
+          sort: "disp_name",
+          order: "asc",
+          page: 1,
+          per_page: undefined,
+        }),
+      );
+    }
+    console.log(
+      "[" + user.mail_addr.split("@")[0] + "]の登録処理が完了しました。結果:",
+      result,
+    );
   };
 
   const handleRefreshAD = () => {
-    // 実際には API で最新候補を取得する想定
-    setLastUpdatedAt(new Date());
-    adPagination.setPage(1);
-    toast.success("ADユーザー候補を更新しました");
+    setAdLastUpdatedAt(new Date());
+    toast.success("ADユーザーを更新しました");
   };
 
   return (
-    <UserTabsShell active="new">
-      <div className="space-y-4">
-        <Card>
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle>ADユーザーを検索</CardTitle>
-              <CardDescription>検索してダミーのADユーザーリストを表示します。</CardDescription>
-            </div>
-            <div className="flex flex-col items-start sm:items-end gap-1">
-              <Button size="sm" variant="secondary" onClick={handleRefreshAD}>
-                ADユーザー更新
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                {lastUpdatedAt
-                  ? `最終更新: ${lastUpdatedAt.toLocaleString("ja-JP", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}`
-                  : "最終更新: 未実行"}
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Accordion type="single" collapsible defaultValue="cond-new">
-              <AccordionItem value="cond-new">
-                <AccordionTrigger>検索条件</AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-wrap gap-4 items-end">
-                    <div className="space-y-2 min-w-[240px] flex-1">
-                      <Label htmlFor="account">アカウント名</Label>
-                      <Input
-                        id="account"
-                        placeholder="例: suzuki.taro"
-                        value={accountKeyword}
-                        onChange={(e) => setAccountKeyword(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 min-w-[260px] flex-1">
-                      <Label htmlFor="email">メールアドレス</Label>
-                      <Input
-                        id="email"
-                        placeholder="例: user@example.com"
-                        value={emailKeyword}
-                        onChange={(e) => setEmailKeyword(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      className="whitespace-nowrap"
-                      onClick={() => setNewSearched(true)}
-                    >
-                      検索
-                    </Button>
+    <UserTabsShell active="add">
+      <div className="flex items-start justify-between">
+        <div className="flex flex-row gap-6 items-end">
+          <h2 className="text-left text-base font-semibold">
+            JCLユーザー新規登録
+          </h2>
+          <span className="text-muted-foreground text-sm">
+            登録したいADユーザーを検索
+          </span>
+        </div>
+        <div className="flex flex-col items-start sm:items-end gap-1">
+          <Button size="sm" variant="secondary" onClick={handleRefreshAD}>
+            ADユーザー更新
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {adLastUpdatedAt
+              ? `最終更新: ${adLastUpdatedAt?.toLocaleString("ja-JP", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+              : "最終更新: 未実行"}
+          </p>
+        </div>
+      </div>
+      <Card className="shadow-sm">
+        <CardContent>
+          <div className="border-b space-y-5 pb-6">
+            <form>
+              <FieldGroup>
+                <FieldSet>
+                  <h3 className="text-left font-semibold">検索条件</h3>
+                  <div className="flex flex-wrap flex-row gap-4 w-full">
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputDisplayName">表示名</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputDisplayName"
+                          value={searchDispName}
+                          onChange={(e) => setSearchDispName(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          部分一致
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputAccountName">
+                        アカウント名
+                      </FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputAccountName"
+                          value={searchAccountName}
+                          onChange={(e) => setSearchDispName(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          部分一致
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputMail">
+                        メールアドレス
+                      </FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputMail"
+                          value={searchMailAddress}
+                          onChange={(e) => setSearchMailAddress(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>xxxxx.jp</InputGroupText>
+                          <InputGroupText>|</InputGroupText>
+                          <InputGroupText>部分一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel>登録状況</FieldLabel>
+                      <RadioGroup
+                        className="flex gap-3"
+                        value={statusFilter}
+                        onValueChange={(v: regStatus) => setStatusFilter(v)}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value={REG_STATUS.UNREGISTERED}
+                            id="unregistered"
+                          />
+                          <Label htmlFor="unregistered" className="font-normal">
+                            未登録のみ
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value={REG_STATUS.REGISTERED}
+                            id="registered"
+                          />
+                          <Label htmlFor="registered" className="font-normal">
+                            登録済みのみ
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value={REG_STATUS.ALL} id="all" />
+                          <Label htmlFor="all" className="font-normal">
+                            すべて
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </Field>
                   </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                </FieldSet>
+              </FieldGroup>
+            </form>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  setSearchDispName("");
+                  setSearchAccountName("");
+                  setSearchMailAddress("");
+                  setStatusFilter("");
+                }}
+              >
+                クリア
+              </Button>
+              <Button size="lg" onClick={onHandleSearch}>
+                検索
+              </Button>
+            </div>
+          </div>
 
-            {newSearched && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>検索結果 {pagination.total} 件</span>
-                  <span>
-                    {pagination.from} - {pagination.to} / {pagination.total}
-                  </span>
-                </div>
-                <Table>
+          {isSearched && list && (list?.items?.length ?? 0) > 0 ? (
+            <div className="space-y-5 pt-6">
+              <h3 className="text-base font-semibold">検索結果</h3>
+              <div className="w-full [&>div]:max-h-[420px] overflow-auto rounded border">
+                <Table className="table-fixed">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>アカウント</TableHead>
-                      <TableHead>氏名</TableHead>
-                      <TableHead>メール</TableHead>
-                      <TableHead>JCL登録状況</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
+                    <TableRow className="sticky top-0 bg-background hover:bg-muted [&>th]:py-3.5 *:whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:content-['']">
+                      <TableHead className="w-[20%] pl-4">表示名</TableHead>
+                      <TableHead className="w-[25%]">アカウント名</TableHead>
+                      <TableHead className="w-[25%]">メール</TableHead>
+                      <TableHead className="w-[20%]">所属</TableHead>
+                      <TableHead className="w-[10%] text-right pr-4">
+                        操作
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {adPagination.items.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
-                          該当するADユーザーが見つかりませんでした。
+                    {list.items.map((item) => (
+                      <TableRow
+                        key={item.mail_addr}
+                        className="*:whitespace-nowrap"
+                      >
+                        <TableCell className="pl-4 py-3 truncate">
+                          {item.disp_name}
                         </TableCell>
-                      </TableRow>
-                    )}
-                    {adPagination.items.map((u) => (
-                      <TableRow key={u.account}>
-                        <TableCell>{u.account}</TableCell>
-                        <TableCell>{u.name}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell>
-                          {u.registered ? (
-                            <Badge variant="outline">登録済み</Badge>
-                          ) : (
-                            <Badge variant="secondary">未登録</Badge>
+                        <TableCell className="py-3 truncate">
+                          {item.account_name}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.mail_addr}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.organization_unit}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right pr-4",
+                            item.status1 === "1" ? "text-muted-foreground" : "",
                           )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant={u.registered ? "ghost" : "default"}
-                            onClick={() => {
-                              const errors: string[] = [];
-                              if (u.account.length > MAX_ACCOUNT_LEN) {
-                                errors.push(`アカウントは${MAX_ACCOUNT_LEN}文字以内`);
+                        >
+                          {item.status1 === "1" ? (
+                            "登録済み"
+                          ) : (
+                            <ConfirmButton
+                              size="sm"
+                              buttonLabel={"登録"}
+                              dialogTitle="確認"
+                              dialogBody={
+                                <>ユーザー{item.disp_name}を登録しますか？</>
                               }
-                              if (u.email.length > MAX_EMAIL_LEN) {
-                                errors.push(`メールアドレスは${MAX_EMAIL_LEN}文字以内`);
-                              }
-
-                              if (errors.length) {
-                                toast.error("入力値が長すぎます", {
-                                  description: errors.join(" / "),
-                                });
-                                return;
-                              }
-
-                              // 実際にはここで POST。失敗時は catch で toast.error を出す想定。
-                              toast.success("登録しました", {
-                                description: `${u.name} (${u.account}) を登録しました。`,
-                              });
-                            }}
-                          >
-                            {u.registered ? "登録済" : "登録"}
-                          </Button>
+                              onClick={() => onHandleRegist(item)}
+                            />
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                <CustomPagination
-                  pagination={pagination}
-                  onHandle={handlePagination}
-                />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <CustomPagination<UserSearchParams>
+                pagination={list.pagination}
+                onHandle={(t) => {
+                  dispatch(getAdUserList(t));
+                }}
+              />
+            </div>
+          ) : isSearched ? (
+            <div className="py-6 text-muted-foreground text-center">
+              条件に合うユーザーが見つかりませんでした
+            </div>
+          ) : (
+            <></>
+          )}
+        </CardContent>
+      </Card>
     </UserTabsShell>
   );
 };
-
-export default UserCreate;
-export { UserCreate };

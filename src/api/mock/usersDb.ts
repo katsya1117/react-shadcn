@@ -3,9 +3,12 @@ import type { PaginationResultMUser, UserInfo } from "../index";
 type MockUser = {
   user_cd: string;
   user_name: string;
+  user_account?: string;
   email: string;
   box_account?: string;
   center?: string;
+  language_code?: number;
+  perm_cd?: string;
 };
 
 // シンプルなインメモリDB（セッション中のみ保持）
@@ -34,14 +37,46 @@ const db: MockUser[] = [
 export const mockUserDb = {
   get(userCd: string): UserInfo | undefined {
     const hit = db.find((u) => u.user_cd === userCd);
-    return hit ? { user: { user_cd: hit.user_cd, user_name: hit.user_name, email: hit.email, box_account: hit.box_account, center: hit.center } } : undefined;
+    return hit
+      ? {
+          user: {
+            user_cd: hit.user_cd,
+            user_name: hit.user_name,
+            user_account: hit.user_account,
+            email: hit.email,
+            box_account: hit.box_account,
+            center: hit.center
+              ? [
+                  {
+                    center_cd: hit.center,
+                    belonging_flg: 0,
+                  },
+                ]
+              : [],
+            language_code: hit.language_code ?? 0,
+            perm_cd: hit.perm_cd ?? "standard",
+          },
+          user_cd: hit.user_cd,
+          disp_name: hit.user_name,
+          email: hit.email,
+          box_user_id: hit.box_account,
+          center: hit.center
+            ? [
+                {
+                  center_cd: hit.center,
+                  belonging_flg: 0,
+                },
+              ]
+            : [],
+        }
+      : undefined;
   },
 
   list(params: {
     user_name?: string;
     user_account?: string;
     user_email?: string;
-    center_cd_list?: string[];
+    center_cd_list?: string | string[];
     page?: number;
     per_page?: number;
   }): PaginationResultMUser {
@@ -58,8 +93,9 @@ export const mockUserDb = {
     if (user_name) rows = rows.filter((u) => u.user_name.toLowerCase().includes(user_name.toLowerCase()));
     if (user_account) rows = rows.filter((u) => u.user_cd.toLowerCase().includes(user_account.toLowerCase()));
     if (user_email) rows = rows.filter((u) => u.email.toLowerCase().includes(user_email.toLowerCase()));
-    if (center_cd_list && center_cd_list.length) {
-      rows = rows.filter((u) => center_cd_list.includes(u.center ?? ""));
+    if (center_cd_list && (Array.isArray(center_cd_list) ? center_cd_list.length : true)) {
+      const list = Array.isArray(center_cd_list) ? center_cd_list : [center_cd_list];
+      rows = rows.filter((u) => list.includes(u.center ?? ""));
     }
 
     const total = rows.length;
@@ -68,15 +104,54 @@ export const mockUserDb = {
       user: {
         user_cd: u.user_cd,
         user_name: u.user_name,
+        user_account: u.user_account,
         email: u.email,
         box_account: u.box_account,
-        center: u.center,
+        center: u.center
+          ? [
+              {
+                center_cd: u.center,
+                belonging_flg: 0,
+              },
+            ]
+          : [],
+        language_code: u.language_code ?? 0,
+        perm_cd: u.perm_cd ?? "standard",
       },
+      // 互換のためトップレベルにもフィールドを展開
+      user_cd: u.user_cd,
+      disp_name: u.user_name,
+      email: u.email,
+      box_user_id: u.box_account,
+      center: u.center
+        ? [
+            {
+              center_cd: u.center,
+              belonging_flg: 0,
+            },
+          ]
+        : [],
     }));
+
+    const pagination: PaginationResultMUser["pagination"] = {
+      total,
+      page,
+      per_page,
+      current_page: page,
+      last_page: Math.max(1, Math.ceil(total / per_page)),
+      from: total === 0 ? 0 : start + 1,
+      to: Math.min(total, start + per_page),
+      first_page_url: `/api/users?page=1&per_page=${per_page}`,
+      prev_page_url: page > 1 ? `/api/users?page=${page - 1}&per_page=${per_page}` : null,
+      next_page_url:
+        start + per_page < total ? `/api/users?page=${page + 1}&per_page=${per_page}` : null,
+      last_page_url: `/api/users?page=${Math.max(1, Math.ceil(total / per_page))}&per_page=${per_page}`,
+    };
 
     return {
       data,
-      pagination: { total, page, per_page },
+      items: data, // 互換用
+      pagination,
     };
   },
 
@@ -86,5 +161,11 @@ export const mockUserDb = {
     db[idx] = { ...db[idx], ...payload };
     return true;
   },
-};
 
+  remove(userCd: string) {
+    const idx = db.findIndex((u) => u.user_cd === userCd);
+    if (idx === -1) return false;
+    db.splice(idx, 1);
+    return true;
+  },
+};

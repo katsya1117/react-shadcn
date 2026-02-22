@@ -1,10 +1,10 @@
 import Layout from "@/components/frame/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlPath } from "@/constant/UrlPath";
-import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router";
 
-type TabKey = "edit" | "new";
+type TabKey = "add" | "setting";
 
 type Props = {
   active: TabKey;
@@ -19,7 +19,7 @@ export const UserTabsShell = ({ active, onTabChange, children }: Props) => {
     if (onTabChange) {
       onTabChange(next);
     }
-    navigate(next === "new" ? UrlPath.UserCreate : UrlPath.UserManage);
+    navigate(next === "add" ? UrlPath.UserCreate : UrlPath.UserManage);
   };
 
   return (
@@ -32,8 +32,8 @@ export const UserTabsShell = ({ active, onTabChange, children }: Props) => {
               variant="line"
               className="w-auto justify-start gap-3 px-0"
             >
-              <TabsTrigger value="edit">編集</TabsTrigger>
-              <TabsTrigger value="new">登録（AD連携）</TabsTrigger>
+              <TabsTrigger value="setting">編集</TabsTrigger>
+              <TabsTrigger value="add">登録（AD連携）</TabsTrigger>
             </TabsList>
           </div>
         </Tabs>

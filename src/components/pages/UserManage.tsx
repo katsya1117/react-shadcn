@@ -1,277 +1,234 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import type { AutoCompleteData, UserSearchParams } from "@/api";
+import { UserTabsShell } from "@/components/pages/UserTabsShell";
+import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
+import { CustomPagination } from "@/components/parts/Pagination/Pagination";
 import { Button } from "@/components/ui/button";
-import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
-import type { AutoCompleteData } from "@/api";
+import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import {
   Table,
-  TableHeader,
-  TableHead,
   TableBody,
-  TableRow,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { CustomPagination } from "@/components/parts/Pagination/Pagination";
-import { usePagination } from "@/utility/usePagination";
-import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { getUserList, userSelector } from "@/redux/slices/userSlice";
 import { UrlPath } from "@/constant/UrlPath";
-import { useNavigate } from "react-router";
-import type { Pagination, UserInfo, UserSearchParams } from "@/api";
+import { getUserList, userSelector } from "@/redux/slices/userSlice";
+import { useAppDispatch } from "@/store/hooks";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { NavLink } from "react-router";
+import type { MultiValue } from "react-select";
 
 const UserManage = () => {
   // 編集 検索条件
-  const [displayKeyword, setDisplayKeyword] = useState("");
-  const [userIdKeyword, setUserIdKeyword] = useState("");
-  const [userEmailKeyword, setUserEmailKeyword] = useState("");
-  const [centerKeyword, setCenterKeyword] = useState("");
-  const [centerOption, setCenterOption] = useState<AutoCompleteData | null>(null);
-
-  const [editSearched, setEditSearched] = useState(false);
-  const navigate = useNavigate();
-  const [sort, setSort] = useState<{ key: "id" | "display" | "email" | "box" | "center"; order: "asc" | "desc" } | null>(null);
-
   const dispatch = useAppDispatch();
-  const savedCondition = useAppSelector(userSelector.searchConditionSelector());
-  const userList = useAppSelector(userSelector.userListSelector());
+  const list = useSelector(userSelector.userListSelector());
+  const searchCondition = useSelector(userSelector.searchConditionSelector());
+  const isSearched = useSelector(
+    userSelector.searchResultDispSelector(),
+  ).settingSearched;
 
-  // フォーム初期値を savedCondition で復元
-  useEffect(() => {
-    if (savedCondition) {
-      setDisplayKeyword(savedCondition.user_name ?? "");
-      setUserIdKeyword(savedCondition.user_account ?? "");
-      setUserEmailKeyword(savedCondition.user_email ?? "");
-      const centerSaved = savedCondition.center_cd_list?.[0] ?? "";
-      setCenterKeyword(centerSaved);
-      if (centerSaved) {
-        setCenterOption({ label: centerSaved, value: centerSaved });
-      }
-      setEditSearched(true);
-    }
-  }, [savedCondition]);
+  const [searchDispName, setSearchDispName] = useState(
+    searchCondition?.user_name ?? "",
+  );
+  const [searchUserId, setSearchUserId] = useState(
+    searchCondition?.user_account ?? "",
+  );
+  const [searchMailAddress, setSearchMailAddress] = useState(
+    searchCondition?.user_email ?? "",
+  );
+  const [searchCenterCds, setSearchCenterCds] = useState(
+    searchCondition?.center_cd_list ?? "",
+  );
+  const [selectCenterList, setSelectCenterList] = useState<
+    MultiValue<AutoCompleteData>
+  >(searchCondition?.auto_complete ?? []);
 
-  const jclRecords = useMemo<UserInfo[]>(() => userList?.data ?? [], [userList]);
-
-  const sortedRecords = useMemo(() => {
-    if (!sort) return jclRecords;
-    const arr = [...jclRecords];
-    const { key, order } = sort;
-    const dir = order === "asc" ? 1 : -1;
-    arr.sort((a, b) => {
-      const av = (a.user?.user_cd ?? "") + "";
-      const bv = (b.user?.user_cd ?? "") + "";
-      const map: Record<typeof key, [string, string]> = {
-        id: [av, bv],
-        display: [a.user?.user_name ?? "", b.user?.user_name ?? ""],
-        email: [a.user?.email ?? "", b.user?.email ?? ""],
-        box: [a.user?.box_account ?? "", b.user?.box_account ?? ""],
-        center: [a.user?.center ?? "", b.user?.center ?? ""],
-      };
-      const [va, vb] = map[key];
-      return va.localeCompare(vb, "ja") * dir;
-    });
-    return arr;
-  }, [jclRecords, sort]);
-
-  const jclPagination = usePagination(sortedRecords, userList?.pagination?.per_page ?? 10);
-
-  const handleUserSearch = (page = 1, per = jclPagination.perPage) => {
-    const params: UserSearchParams = {
-      user_name: displayKeyword || undefined,
-      user_account: userIdKeyword || undefined,
-      user_email: userEmailKeyword || undefined,
-      center_cd_list: centerKeyword ? [centerKeyword] : undefined,
-      page,
-      per_page: per,
-    };
-    dispatch(getUserList(params));
-    setEditSearched(true);
-    setSort(null);
-  };
-
-  const pagination = useMemo<Pagination>(() => {
-    const current = userList?.pagination?.page ?? jclPagination.page;
-    const per = userList?.pagination?.per_page ?? jclPagination.perPage;
-    const total = userList?.pagination?.total ?? jclPagination.total;
-    const last = Math.max(1, Math.ceil(total / (per || 1)));
-    const from = total === 0 ? 0 : (current - 1) * per + 1;
-    const to = Math.min(total, current * per);
-    const url = (p: number | null) => (p ? `/api/users?page=${p}&per_page=${per}` : null);
-    return {
-      current_page: current,
-      last_page: last,
-      per_page: per,
-      from,
-      to,
-      total,
-      first_page_url: url(1)!,
-      prev_page_url: url(current > 1 ? current - 1 : null),
-      next_page_url: url(current < last ? current + 1 : null),
-      last_page_url: url(last)!,
-    };
-  }, [userList, jclPagination.page, jclPagination.perPage, jclPagination.total]);
-
-  const handlePagination = (params: Record<string, string>) => {
-    const nextPage = Number(params.page ?? pagination.current_page) || 1;
-    const nextPer = Number(params.per_page ?? pagination.per_page) || pagination.per_page;
-    handleUserSearch(nextPage, nextPer);
+  const onHandleSearch = () => {
+    dispatch(
+      getUserList({
+        user_name: searchDispName,
+        user_account: searchUserId,
+        user_email: searchMailAddress,
+        center_cd_list: searchCenterCds,
+        sort: "id",
+        order: "asc",
+        page: 1,
+        per_page: undefined,
+        auto_complete: selectCenterList,
+      }),
+    );
   };
 
   return (
-    <UserTabsShell active="edit">
-      <div className="space-y-4">
-              <Card className="shadow-sm border border-border/80">
-                <CardHeader>
-                  <CardTitle>ユーザー検索</CardTitle>
-                  <CardDescription>表示名 / ユーザーID / メール / センターで絞り込み。</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <Accordion type="single" collapsible defaultValue="cond-edit">
-                    <AccordionItem value="cond-edit">
-                      <AccordionTrigger>検索条件</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="flex flex-wrap gap-4">
-                          <div className="space-y-2 min-w-[220px] flex-1">
-                            <Label>表示名</Label>
-                            <Input
-                              placeholder="例: 鈴木"
-                              value={displayKeyword}
-                              onChange={(e) => setDisplayKeyword(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2 min-w-[180px] flex-[0.8]">
-                            <Label>ユーザーID</Label>
-                            <Input
-                              placeholder="例: u001"
-                              value={userIdKeyword}
-                              onChange={(e) => setUserIdKeyword(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2 min-w-[240px] flex-1">
-                            <Label>メールアドレス</Label>
-                            <Input
-                              placeholder="例: user@example.com"
-                              value={userEmailKeyword}
-                              onChange={(e) => setUserEmailKeyword(e.target.value)}
-                            />
-                          </div>
-          <div className="space-y-2 min-w-[220px] flex-1">
-            <Label>センター（Autocomplete）</Label>
-            <AutoCompleteSingle
-              value={centerOption}
-              type="center"
-              placeholder="センターを選択"
-              onChange={(v) => {
-                setCenterOption(v ?? null);
-                setCenterKeyword(v?.value ?? "");
-              }}
-            />
-          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-
-                    <div className="rounded-lg border bg-card/60 shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground/80">
-                        検索結果 {userList?.pagination?.total ?? jclRecords.length} 件
-                      </span>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => {
-                          setDisplayKeyword("");
-                          setUserIdKeyword("");
-                          setUserEmailKeyword("");
-                          setCenterKeyword("");
-                          setCenterOption(null);
-                          setEditSearched(false);
-                        }}>
-                          クリア
-                        </Button>
-                        <Button size="sm" onClick={() => handleUserSearch(jclPagination.page, jclPagination.perPage)}>再検索</Button>
-                      </div>
-                    </div>
-                    {editSearched && (
-                      <div className="space-y-2">
-                        <div className="max-h-[420px] overflow-auto rounded-lg border bg-background/60">
-                          <Table>
-                        <TableHeader className="sticky top-0 bg-background">
-                              <TableRow>
-                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "id" && prev.order === "asc" ? { key: "id", order: "desc" } : { key: "id", order: "asc" })}>
-                                  ユーザーID
-                                </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "display" && prev.order === "asc" ? { key: "display", order: "desc" } : { key: "display", order: "asc" })}>
-                                  表示名
-                                </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "email" && prev.order === "asc" ? { key: "email", order: "desc" } : { key: "email", order: "asc" })}>
-                                  メール
-                                </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "box" && prev.order === "asc" ? { key: "box", order: "desc" } : { key: "box", order: "asc" })}>
-                                  BOX
-                                </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => setSort((prev) => prev?.key === "center" && prev.order === "asc" ? { key: "center", order: "desc" } : { key: "center", order: "asc" })}>
-                                  センター
-                                </TableHead>
-                                <TableHead className="text-right">操作</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                        {jclPagination.items.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
-                              該当するユーザーが見つかりませんでした。
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        {jclPagination.items.map((u: UserInfo, i) => (
-                            <TableRow key={u.user?.user_cd ?? `row-${i}`} className="last:border-0">
-                              <TableCell>{u.user?.user_cd ?? "-"}</TableCell>
-                              <TableCell>{u.user?.user_name ?? "-"}</TableCell>
-                              <TableCell>{u.user?.email ?? "-"}</TableCell>
-                              <TableCell>{u.user?.box_account ?? "-"}</TableCell>
-                              <TableCell>{u.user?.center ?? "-"}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() => {
-                                    const userId = u.user?.user_cd;
-                                    if (userId) {
-                                      navigate(UrlPath.UserEdit.replace(":user_cd", userId));
-                                    }
-                                  }}
-                                >
-                                  選択
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                        <div className="px-2 pb-2">
-                          <CustomPagination
-                            pagination={pagination}
-                            onHandle={handlePagination}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
+    <UserTabsShell active="setting">
+      <div className="flex flex-row gap-6 items-end">
+        <h2 className="text-left text-base font-semibold">JCLユーザー検索</h2>
+        <span className="text-muted-foreground text-sm">
+          設定を確認したいユーザーを検索
+        </span>
       </div>
+      <Card className="shadow-sm">
+        <CardContent>
+          <div className="border-b space-y-5 pb-6">
+            <form>
+              <FieldGroup>
+                <FieldSet>
+                  <h3 className="text-left font-semibold">検索条件</h3>
+                  <FieldGroup className="flex flex-wrap flex-row gap-4 w-full">
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputDisplayName">表示名</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputDisplayName"
+                          value={searchDispName}
+                          onChange={(e) => setSearchDispName(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>部分一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputUserId">ユーザーID</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputUserId"
+                          value={searchUserId}
+                          onChange={(e) => setSearchUserId(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>部分一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputMail">
+                        メールアドレス
+                      </FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputMail"
+                          value={searchMailAddress}
+                          onChange={(e) => setSearchMailAddress(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>xxxxx.jp</InputGroupText>
+                          <InputGroupText>|</InputGroupText>
+                          <InputGroupText>前方一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputCenter">センター</FieldLabel>
+                      <AutoCompleteMulti
+                        type="center"
+                        value={selectCenterList}
+                        onChange={(e) => {
+                          setSelectCenterList(e);
+                          setSearchCenterCds(e.map((v) => v.value).join(","));
+                        }}
+                        placeholder="センターを選択"
+                      />
+                    </Field>
+                  </FieldGroup>
+                </FieldSet>
+              </FieldGroup>
+            </form>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => {
+                  setSearchDispName("");
+                  setSearchUserId("");
+                  setSearchMailAddress("");
+                  setSelectCenterList([]);
+                  setSearchCenterCds("");
+                }}
+              >
+                クリア
+              </Button>
+              <Button size="lg" onClick={onHandleSearch}>
+                検索
+              </Button>
+            </div>
+          </div>
+          {isSearched && list && (list?.items?.length ?? 0) > 0 ? (
+            <div className="space-y-5 pt-6">
+              <h3 className="text-base font-semibold">検索結果</h3>
+              <div className="w-full [&>div]:max-h-[420px] overflow-auto rounded border">
+                <Table className="table-fixed">
+                  <TableHeader>
+                    <TableRow className="sticky top-0 bg-background hover:bg-muted [&>th]:py-3.5 *:whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:content-['']">
+                      <TableHead className="w-[20%] pl-4">ユーザーID</TableHead>
+                      <TableHead className="w-[25%]">表示名</TableHead>
+                      <TableHead className="w-[25%]">メール</TableHead>
+                      <TableHead className="w-[25%]">BOXアカウント</TableHead>
+                      <TableHead className="w-[10%] text-right pr-4">
+                        操作
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {list.items.map((item) => (
+                      <TableRow
+                        key={item.user_cd}
+                        className="*:whitespace-nowrap"
+                      >
+                        <TableCell className="pl-4 py-3 truncate">
+                          {item.user_cd}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.disp_name}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.email}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.box_user_id ? "&#x3007;" : ""}
+                        </TableCell>
+                        <TableCell className="py-3 text-right pr-4">
+                          <Button size="sm" variant="secondary">
+                            <NavLink
+                              to={UrlPath.UserEdit.replace(
+                                ":user_cd",
+                                item.user_cd,
+                              )}
+                            >
+                              選択
+                            </NavLink>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <CustomPagination<UserSearchParams>
+                pagination={list.pagination}
+                onHandle={(t) => {
+                  dispatch(getUserList(t));
+                }}
+              />
+            </div>
+          ) : isSearched ? (
+            <div className="py-6 text-center text-muted-foreground">
+              該当するユーザーが見つかりませんでした。
+            </div>
+          ) : (
+            <></>
+          )}
+        </CardContent>
+      </Card>
     </UserTabsShell>
   );
 };
