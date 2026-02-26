@@ -10,14 +10,15 @@ import {
 import {
   BoxApi,
   UsersApi,
+  ADUserApi,
   type AccessToken,
-  type AdUserList,
-  type Pagination,
   type PaginationResultMUser,
-  type UserCreationParams,
+  type PaginationResultAdUserList,
   type UserInfo,
   type UserSearchParams,
   type UserUpdateParams,
+  type AdUserSearchParams,
+  type UserCreationParams,
 } from "../../api";
 
 import Config from "../../config/apiConfig";
@@ -29,6 +30,8 @@ import {
 } from "../common/error";
 
 import type { AppRootState } from "../store";
+import type { MultiValue } from "react-select";
+import type { AutoCompleteData } from "../../api";
 
 /**
  * UserSlice
@@ -41,6 +44,36 @@ const sliceName = "user";
 // 利用するAPI
 const userApi = new UsersApi(Config.apiConfig);
 const boxApi = new BoxApi(Config.apiConfig);
+const adUserApi = new ADUserApi(Config.apiConfig);
+
+/** ログインユーザー情報取得 Action */
+export const getLoginUserInfo = createAsyncThunk(
+  `${sliceName}/getLoginUserInfo`,
+  async (userCd: string) => {
+    const response = userApi.getUser(userCd, Config.apiOption);
+    return (await response).data;
+  },
+);
+
+/** ユーザー一覧取得 Action */
+export const getUserList = createAsyncThunk(
+  `${sliceName}/getUserList`,
+  async (param: UserSearchParamsExt) => {
+    const response = userApi.getUserList(
+      param.user_name,
+      param.user_account,
+      param.user_email,
+      param.center_cd_list,
+      param.delete_flag,
+      param.sort,
+      param.order,
+      param.page,
+      param.per_page,
+      Config.apiOption,
+    );
+    return (await response).data;
+  },
+);
 
 /** ユーザー情報取得 Action */
 export const getUserInfo = createAsyncThunk(
@@ -51,102 +84,41 @@ export const getUserInfo = createAsyncThunk(
   },
 );
 
-/** ユーザー一覧取得 Action */
-export const getUserList = createAsyncThunk(
-  `${sliceName}/getUserList`,
-  async (param: UserSearchParams) => {
-    const response = userApi.getUserList(param);
+export const updateUserInfo = createAsyncThunk(
+  `${sliceName}/updateUserInfo`,
+  async (param: { userCd: string; params: UserUpdateParams }) => {
+    const response = userApi.updateUser(
+      param.userCd,
+      param.params,
+      Config.apiOption,
+    );
     return (await response).data;
   },
 );
 
-// AD ユーザー一覧取得 Action（モック）
-const adUsersMock: AdUserList[] = Array.from({ length: 24 }).map((_, i) => {
-  const id = i + 1;
-  const registered = id % 4 === 0;
-  return {
-    mail_addr: `user${id.toString().padStart(3, "0")}@example.com`,
-    account_name: `user${id.toString().padStart(3, "0")}`,
-    disp_name: `利用者 ${id.toString().padStart(3, "0")}`,
-    organization_unit: id % 2 === 0 ? "営業部" : "開発部",
-    distinguished_name: `cn=user${id},dc=example,dc=com`,
-    status1: registered ? "1" : "0",
-    status2: registered ? "1" : "0",
-  };
-});
-
 export const getAdUserList = createAsyncThunk(
   `${sliceName}/getAdUserList`,
-  async (param: UserSearchParams) => {
-    const {
-      disp_name,
-      account_name,
-      mail_addr,
-      status = "",
-      page = 1,
-      per_page = 10,
-    } = param;
-
-    let rows = adUsersMock;
-    if (disp_name) {
-      const q = disp_name.toLowerCase();
-      rows = rows.filter((u) => u.disp_name.toLowerCase().includes(q));
-    }
-    if (account_name) {
-      const q = account_name.toLowerCase();
-      rows = rows.filter((u) => u.account_name.toLowerCase().includes(q));
-    }
-    if (mail_addr) {
-      const q = mail_addr.toLowerCase();
-      rows = rows.filter((u) => u.mail_addr.toLowerCase().includes(q));
-    }
-    if (status !== "") {
-      rows = rows.filter((u) =>
-        status === "1" ? u.status1 === "1" : u.status1 !== "1",
-      );
-    }
-
-    const total = rows.length;
-    const start = (page - 1) * per_page;
-    const items = rows.slice(start, start + per_page);
-    const last_page = Math.max(1, Math.ceil(total / per_page));
-    const pagination: Pagination = {
-      current_page: page,
-      last_page,
-      per_page,
-      from: total === 0 ? 0 : start + 1,
-      to: Math.min(total, start + per_page),
-      total,
-      first_page_url: `/api/ad_users?page=1&per_page=${per_page}`,
-      prev_page_url:
-        page > 1 ? `/api/ad_users?page=${page - 1}&per_page=${per_page}` : null,
-      next_page_url:
-        start + per_page < total
-          ? `/api/ad_users?page=${page + 1}&per_page=${per_page}`
-          : null,
-      last_page_url: `/api/ad_users?page=${last_page}&per_page=${per_page}`,
-    };
-
-    return { items, pagination };
+  async (param: AdUserSearchParams) => {
+    const response = adUserApi.getAdUserList(
+      param.account_name,
+      param.mail_addr,
+      param.distinguished_name,
+      param.organization_unit,
+      param.status,
+      param.sort,
+      param.order,
+      param.page,
+      param.per_page,
+      Config.apiOption,
+    );
+    return (await response).data;
   },
 );
 
-/** AD ユーザー登録 Action（モック） */
 export const userCreation = createAsyncThunk(
   `${sliceName}/userCreation`,
   async (param: UserCreationParams) => {
-    // 実際の API では param を送信する想定。ここではモックで即時成功を返却
-    return { ok: true, user: param };
-  },
-);
-
-/** ユーザー情報更新 Action */
-type UpdateUserArgs = { userCd: string; params: UserUpdateParams };
-
-export const updateUserInfo = createAsyncThunk(
-  `${sliceName}/updateUserInfo`,
-  async ({ userCd, params }: UpdateUserArgs) => {
-    const response = userApi.updateUser(userCd, params, Config.apiOption);
+    const response = userApi.createUser(param, Config.apiOption);
     return (await response).data;
   },
 );
@@ -156,7 +128,7 @@ export const removeUser = createAsyncThunk(
   `${sliceName}/removeUser`,
   async (userCd: string) => {
     const response = userApi.removeUser(userCd, Config.apiOption);
-    return (await response).data as boolean;
+    return (await response).data;
   },
 );
 
@@ -178,63 +150,67 @@ export const getBoxAccessToken = createAsyncThunk(
   },
 );
 
+export interface UserSearchParamsExt extends UserSearchParams {
+  auto_complete?: MultiValue<AutoCompleteData>;
+}
+
 // UserState の型定義
 interface UserState {
   isLogin: boolean;
   isLoading: boolean;
   error: SliceError;
 
-  userCd: string;
-  userInfo: UserInfo | undefined;
+  loginUserCd: string;
+  loginUserInfo: UserInfo | undefined;
 
   list: {
-    searchCondition: UserSearchParams | undefined;
+    searchCondition: UserSearchParamsExt | undefined;
     data: PaginationResultMUser | undefined;
   };
 
   // AD連携で利用する一覧
-  ad: {
-    searchCondition: UserSearchParams | undefined;
-    data:
-      | {
-          items: AdUserList[];
-          pagination: Pagination;
-        }
-      | undefined;
-    addSearched: boolean;
+  adList: {
+    searchCondition: AdUserSearchParams | undefined;
+    data: PaginationResultAdUserList | undefined;
   };
+
+  target: UserInfo | undefined;
 
   box: {
     boxAccountId: string;
     token: AccessToken | undefined;
     tokenDt: number;
   };
+  searchResultDisp: {
+    settingSearched: boolean;
+    addSearched: boolean;
+  };
 }
 
 // userState の初期値
-const initialState: UserState = {
+export const initialState: UserState = {
   isLogin: false,
   isLoading: false,
   error: initialSliceError,
-
-  userCd: "",
-  userInfo: undefined,
-
+  loginUserCd: "",
+  loginUserInfo: undefined,
   list: {
     searchCondition: undefined,
     data: undefined,
   },
-
-  ad: {
+  adList: {
     searchCondition: undefined,
     data: undefined,
-    addSearched: false,
   },
-
+  target: undefined,
   box: {
     boxAccountId: "",
     token: undefined,
     tokenDt: -1,
+  },
+  searchResultDisp: {
+    settingSearched: false,
+    addSearched: false,
   },
 };
 
@@ -245,7 +221,7 @@ const userSlice = createSlice({
   reducers: {
     setUserId: (state, action: PayloadAction<string>) => {
       state.isLogin = true;
-      state.userCd = action.payload;
+      state.loginUserCd = action.payload;
     },
     resetCondition: (state) => {
       state.list.searchCondition = undefined;
@@ -253,15 +229,14 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // getUserInfo
-      .addCase(getUserInfo.pending, (state, action) => {
-        state.userCd = action.meta.arg;
+      .addCase(getLoginUserInfo.pending, (state, action) => {
+        state.loginUserCd = action.meta.arg;
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(getUserInfo.fulfilled, (state, action) => {
+      .addCase(getLoginUserInfo.fulfilled, (state, action) => {
         if (action.payload !== null) {
-          state.userInfo = action.payload;
+          state.loginUserInfo = action.payload;
           state.isLogin = true;
 
           // APIのカスタムヘッダを更新する
@@ -278,26 +253,27 @@ const userSlice = createSlice({
         }
         state.isLoading = false;
       })
-      .addCase(getUserInfo.rejected, (state) => {
+      .addCase(getLoginUserInfo.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
-      })
+      });
 
+    builder
       // getUserList
       .addCase(getUserList.pending, (state, action) => {
         state.isLoading = true;
         state.error = initialSliceError;
-        const autoComplete = action.meta.arg.auto_complete
-          ? [...action.meta.arg.auto_complete]
-          : undefined;
         state.list.searchCondition = {
           ...action.meta.arg,
-          auto_complete: autoComplete,
+          auto_complete: action.meta.arg.auto_complete
+            ? [...action.meta.arg.auto_complete]
+            : undefined,
         };
       })
       .addCase(getUserList.fulfilled, (state, action) => {
         if (action.payload !== null) {
           state.list.data = action.payload;
+          state.searchResultDisp.settingSearched = true;
         } else {
           state.error = setSliceError(
             "データの取得に失敗しました。",
@@ -309,81 +285,109 @@ const userSlice = createSlice({
       .addCase(getUserList.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
-      })
-      // getAdUserList
-      .addCase(getAdUserList.pending, (state, action) => {
-        state.isLoading = true;
-        state.error = initialSliceError;
-        const autoComplete = action.meta.arg.auto_complete
-          ? [...action.meta.arg.auto_complete]
-          : undefined;
-        state.ad.searchCondition = {
-          ...action.meta.arg,
-          auto_complete: autoComplete,
-        };
-        state.ad.addSearched = false;
-      })
-      .addCase(getAdUserList.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.ad.data = action.payload;
-        state.ad.addSearched = true;
-      })
-      .addCase(getAdUserList.rejected, (state) => {
-        state.isLoading = false;
-        state.error = setSliceError(rejectedMessage);
-        state.ad.addSearched = true;
-      })
-
-      // userCreation
-      .addCase(userCreation.pending, (state) => {
+      });
+    builder
+      .addCase(getUserInfo.pending, (state) => {
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(userCreation.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const email = action.meta.arg.email;
-        if (state.ad.data) {
-          state.ad.data.items = state.ad.data.items.map((u) =>
-            u.mail_addr === email ? { ...u, status1: "1" } : u,
+      .addCase(getUserInfo.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.target = action.payload;
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました。",
+            "not found payload",
           );
         }
+        state.isLoading = false;
       })
-      .addCase(userCreation.rejected, (state) => {
+      .addCase(getUserInfo.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
       });
-
     builder
-      // updateUserInfo
       .addCase(updateUserInfo.pending, (state) => {
         state.isLoading = true;
         state.error = initialSliceError;
       })
       .addCase(updateUserInfo.fulfilled, (state, action) => {
         if (action.payload !== null) {
-          state.userInfo = action.payload;
+          state.error = initialSliceError;
         } else {
-          state.error = setSliceError("更新対象のユーザーが見つかりません。");
+          state.error = setSliceError(
+            "データの更新に失敗しました。",
+            "invalid response",
+          );
         }
         state.isLoading = false;
       })
       .addCase(updateUserInfo.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
-      })
+      });
 
+    builder
       // removeUser
       .addCase(removeUser.pending, (state) => {
         state.isLoading = true;
         state.error = initialSliceError;
       })
       .addCase(removeUser.fulfilled, (state, action) => {
-        state.isLoading = false;
-        if (!action.payload) {
-          state.error = setSliceError("削除に失敗しました", "payload");
+        if (action.payload !== null) {
+          state.error = initialSliceError;
+        } else {
+          state.error = setSliceError(
+            "削除に失敗しました",
+            "Failed to delete user",
+          );
         }
+        state.isLoading = false;
       })
       .addCase(removeUser.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+    builder
+      .addCase(getAdUserList.pending, (state, action) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
+        state.adList.searchCondition = action.meta.arg;
+      })
+      .addCase(getAdUserList.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.adList.data = action.payload;
+          state.searchResultDisp.addSearched = true;
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました",
+            "not found payload",
+          );
+        }
+        state.isLoading = false;
+      })
+      .addCase(getAdUserList.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+    builder
+      // userCreation
+      .addCase(userCreation.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
+      })
+      .addCase(userCreation.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.error = initialSliceError;
+        } else {
+          state.error = setSliceError(
+            "ユーザーの作成に失敗しました。",
+            "invalid response",
+          );
+        }
+        state.isLoading = false;
+      })
+      .addCase(userCreation.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
       });
@@ -434,28 +438,16 @@ export const userActions = userSlice.actions;
 
 // selector
 const userRootSelector = (state: AppRootState) => state.user;
-const emptyPagination: Pagination = {
-  current_page: 1,
-  last_page: 1,
-  per_page: 10,
-  from: 0,
-  to: 0,
-  total: 0,
-  first_page_url: "",
-  prev_page_url: null,
-  next_page_url: null,
-  last_page_url: "",
-};
 
 export const userSelector = {
   loginUserSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return state.userInfo;
+      return state.loginUserInfo;
     }),
 
-  userCdSelector: () =>
+  loginUserCdSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return state.userCd;
+      return state.loginUserCd;
     }),
 
   isLoadingSelector: () =>
@@ -468,7 +460,7 @@ export const userSelector = {
       return state.isLogin;
     }),
 
-  searchConditionSelector: () =>
+  userSearchConditionSelector: () =>
     createSelector(userRootSelector, (state) => {
       return state.list.searchCondition;
     }),
@@ -477,39 +469,27 @@ export const userSelector = {
     createSelector(userRootSelector, (state) => {
       return state.list.data;
     }),
-
-  // AD連携の一覧
-  asUserListSelector: () =>
+  userTargetSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return (
-        state.ad.data ?? {
-          items: [],
-          pagination: emptyPagination,
-        }
-      );
+      return state.adList.data;
+    }),
+  // AD連携の一覧
+  adUserListSelector: () =>
+    createSelector(userRootSelector, (state) => {
+      return state.adList.data;
     }),
 
   adUserSearchConditionSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return state.ad.searchCondition ?? {};
-    }),
-
-  // UserEdit などでターゲットユーザーを参照するためのセレクタ
-  userTargetSelector: () =>
-    createSelector(userRootSelector, (state) => {
-      return state.userInfo;
+      return state.adList.searchCondition;
     }),
 
   // UserManage が参照する互換用セレクタ（モックでは常に undefined）
   searchResultDispSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return {
-        settingSearched: state.list.searchCondition !== undefined,
-        addSearched: state.ad.addSearched,
-      };
+      return state.searchResultDisp;
     }),
 };
-
 export const boxSelector = {
   accountIdSelector: () =>
     createSelector(userRootSelector, (state) => {
@@ -527,6 +507,4 @@ export const boxSelector = {
     }),
 };
 
-// reducerをexport
-// exportしたreducerはstoreで登録します
 export const userSliceReducer = userSlice.reducer;

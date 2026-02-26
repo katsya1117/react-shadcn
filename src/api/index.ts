@@ -1,268 +1,319 @@
 import type { MultiValue } from "react-select";
 
 export type SearchSetConditionItem = {
-  field: string
-  op: string
-  value: string
-}
+  field: string;
+  op: string;
+  value: string;
+};
 
 export type JobSearchParams = {
-  language: string
-  user_cd: string
-  center_name: string
-  search_condition_list: string
-  operation: string
-  status_definition: string
-  sort: string
-  order: 'asc' | 'desc'
-  page: number
-  per_page?: number
-}
+  language: string;
+  user_cd: string;
+  center_name: string;
+  search_condition_list: string;
+  operation: string;
+  status_definition: string;
+  sort: string;
+  order: "asc" | "desc";
+  page: number;
+  per_page?: number;
+};
 
 // 共通で使うページネーションレスポンス（Laravel風）
 export type Pagination = {
-  current_page: number
-  last_page: number
-  per_page: number
-  from: number
-  to: number
-  total: number
-  first_page_url: string
-  prev_page_url: string | null
-  next_page_url: string | null
-  last_page_url: string
-}
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  from: number;
+  to: number;
+  total: number;
+  first_page_url: string;
+  prev_page_url: string | null;
+  next_page_url: string | null;
+  last_page_url: string;
+};
 
 // ---- Additional mock types/APIs used by redux slices ----
 
 export type AutoCompleteData = {
-  label: string
-  value: string
-  color?: string
-}
+  label: string;
+  value: string;
+  color?: string;
+};
 
 export type UserSearchParams = {
-  user_name?: string
-  user_account?: string
-  user_email?: string
-  center_cd_list?: string | string[]
-  delete_flag?: boolean
-  sort?: string
-  order?: 'asc' | 'desc'
-  page?: number
-  per_page?: number
-  auto_complete?: MultiValue<AutoCompleteData>
+  user_name?: string;
+  user_account?: string;
+  user_email?: string;
+  center_cd_list?: string | string[];
+  delete_flag?: boolean;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  per_page?: number;
+  auto_complete?: MultiValue<AutoCompleteData>;
 
   // ADユーザー検索用パラメータ（UserCreate で利用）
-  disp_name?: string
-  account_name?: string
-  mail_addr?: string
-  organization_unit?: string
-  distinguished_name?: string
-  status?: string
-}
+  disp_name?: string;
+  account_name?: string;
+  mail_addr?: string;
+  organization_unit?: string;
+  distinguished_name?: string;
+  status?: string;
+};
 
 // AD連携の検索結果アイテム（UserCreate で利用）
 export type AdUserList = {
-  mail_addr: string
-  account_name: string
-  disp_name: string
-  organization_unit?: string
-  distinguished_name?: string
-  status1?: string
-  status2?: string
-}
+  mail_addr: string;
+  account_name: string;
+  disp_name: string;
+  organization_unit?: string;
+  distinguished_name?: string;
+  status1?: string;
+  status2?: string;
+};
+
+export type AdUserSearchParams = {
+  account_name?: string;
+  mail_addr?: string;
+  disp_name?: string;
+  organization_unit?: string;
+  distinguished_name?: string;
+  status?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  per_page?: number;
+};
+
+export type PaginationResultAdUserList = {
+  data: AdUserList[];
+  items: AdUserList[]; // UserCreate は items を参照するため互換用エイリアス
+  pagination: Pagination;
+};
 
 // ADユーザーをアプリに登録する際のパラメータ
 export type UserCreationParams = {
-  user_cd: string
-  disp_name: string
-  account: string
-  email: string
-  language_code: number
-}
+  user_cd: string;
+  disp_name: string;
+  account: string;
+  email: string;
+  language_code: number;
+};
 
 export type UserUpdateParams = {
-  user_cd?: string
-  user_name?: string
-  disp_name?: string
-  account?: string
-  email?: string
-  center?: string
-  center_cd?: string
-  box_account?: string
-  language_code?: number
-  perm_cd?: string
-}
+  user_cd?: string;
+  user_name?: string;
+  disp_name?: string;
+  account?: string;
+  email?: string;
+  center?: string;
+  center_cd?: string;
+  box_account?: string;
+  language_code?: number;
+  perm_cd?: string;
+};
 
 export type UserCenterInfo = {
-  center_cd: string
-  belonging_flg?: number
-}
+  center_cd: string;
+  belonging_flg?: number;
+};
 
 export type UserInfo = {
   user: {
     // user_cd は比較式で boolean 扱いされることがあるため幅広く許容
-    user_cd: string | boolean
-    user_name?: string
-    user_account?: string
-    email?: string
-    box_account?: string
-    center?: UserCenterInfo[]
-    language_code?: number
-    perm_cd?: string
-  }
+    user_cd: string | boolean;
+    disp_name?: string;
+    user_account?: string;
+    email?: string;
+    box_account?: string;
+    center?: UserCenterInfo[];
+    language_code?: number;
+    perm_cd?: string;
+  };
   // 互換用のトップレベル項目（既存画面が参照）
-  user_cd: string
-  disp_name?: string
-  email?: string
-  box_user_id?: string
-  center?: UserCenterInfo[]
-}
+  user_cd: string;
+  disp_name?: string;
+  email?: string;
+  box_user_id?: string;
+  center?: UserCenterInfo[];
+};
 
 // 権限テンプレート（最小構成のモック）
 export type DefaultSelection36PermissionPayload = {
-  perm_cd: string
-  perm_name: string
-  id?: number
-  can_group_adduser?: number
-  can_status_force_close?: number
-  can_status_openclose?: number
-  search_cd1?: number
-  search_cd2?: number
-  search_cd3?: number
+  perm_cd: string;
+  perm_name: string;
+  id?: number;
+  can_group_adduser?: number;
+  can_status_force_close?: number;
+  can_status_openclose?: number;
+  search_cd1?: number;
+  search_cd2?: number;
+  search_cd3?: number;
   // 個別権限フラグ（0/1）
-  can_job_create?: number
-  can_status_import?: number
-  can_access_authority?: number
-  can_status_change?: number
-  can_job_change_expiry?: number
-  can_job_change?: number
-  can_status_reissue?: number
-  can_job_arrow_user?: number
-  can_log_search?: number
-  can_manage?: number
-  can_ng_word?: number
-  can_auto_delete?: number
-}
+  can_job_create?: number;
+  can_status_import?: number;
+  can_access_authority?: number;
+  can_status_change?: number;
+  can_job_change_expiry?: number;
+  can_job_change?: number;
+  can_status_reissue?: number;
+  can_job_arrow_user?: number;
+  can_log_search?: number;
+  can_manage?: number;
+  can_ng_word?: number;
+  can_auto_delete?: number;
+};
 
 export type PaginationResultMUser = {
-  data: UserInfo[]
-  items: UserInfo[] // UserManage は items を参照するため互換用エイリアス
-  pagination: Pagination
-}
+  data: UserInfo[];
+  items: UserInfo[]; // UserManage は items を参照するため互換用エイリアス
+  pagination: Pagination;
+};
 
-export type AccessToken = string
+export type AccessToken = string;
 
 export class UsersApi {
   // config is ignored in mock
   constructor(public config?: unknown) {}
 
   async getUser(userCd: string, _opts?: unknown) {
-    const { mockUserDb } = await import("./mock/usersDb")
-    const data: UserInfo = mockUserDb.get(userCd) ?? { user: { user_cd: userCd } }
-    return { data }
+    const { mockUserDb } = await import("./mock/usersDb");
+    const data: UserInfo = mockUserDb.get(userCd) ?? {
+      user: { user_cd: userCd },
+    };
+    return { data };
   }
 
-  async getUserList(param: UserSearchParams, _opts?: unknown) {
+  async getUserList(
+    paramOrName?: UserSearchParams | string,
+    user_account?: string,
+    user_email?: string,
+    center_cd_list?: string | string[],
+    delete_flag?: boolean,
+    sort?: string,
+    order?: "asc" | "desc",
+    page: number = 1,
+    per_page: number = 10,
+    _opts?: unknown,
+  ) {
+    const param: UserSearchParams =
+      typeof paramOrName === "object" && paramOrName !== null
+        ? paramOrName
+        : {
+            user_name: paramOrName as string | undefined,
+            user_account,
+            user_email,
+            center_cd_list,
+            delete_flag,
+            sort,
+            order,
+            page,
+            per_page,
+          };
+
     const {
       user_name,
-      user_account,
-      user_email,
-      center_cd_list,
+      user_account: account,
+      user_email: userEmail,
+      center_cd_list: centerList,
       auto_complete,
-      page = 1,
-      per_page = 10,
-    } = param ?? {}
+      page: p = page,
+      per_page: per = per_page,
+    } = param ?? {};
 
-    const { userManageMock } = await import("./mock/userManageList")
+    const { userManageMock } = await import("./mock/userManageList");
 
     const centers =
-      center_cd_list ??
-      (auto_complete ? auto_complete.map((c) => c.value) : undefined)
+      centerList ??
+      (auto_complete ? auto_complete.map((c) => c.value) : undefined);
 
-    let rows = userManageMock
+    let rows = userManageMock;
     if (user_name) {
-      const q = user_name.toLowerCase()
-      rows = rows.filter((u) => (u.disp_name ?? "").toLowerCase().includes(q))
+      const q = user_name.toLowerCase();
+      rows = rows.filter((u) => (u.disp_name ?? "").toLowerCase().includes(q));
     }
-    if (user_account) {
-      const q = user_account.toLowerCase()
-      rows = rows.filter((u) => u.user_cd.toLowerCase().includes(q))
+    if (account) {
+      const q = account.toLowerCase();
+      rows = rows.filter((u) => u.user_cd.toLowerCase().includes(q));
     }
-    if (user_email) {
-      const q = user_email.toLowerCase()
-      rows = rows.filter((u) => (u.email ?? "").toLowerCase().includes(q))
+    if (userEmail) {
+      const q = userEmail.toLowerCase();
+      rows = rows.filter((u) => (u.email ?? "").toLowerCase().includes(q));
     }
     if (centers && (Array.isArray(centers) ? centers.length : true)) {
-      const list = Array.isArray(centers) ? centers : String(centers).split(",")
+      const list = Array.isArray(centers)
+        ? centers
+        : String(centers).split(",");
       rows = rows.filter((u) =>
         u.center?.some((c) => list.includes(c.center_cd ?? "")),
-      )
+      );
     }
 
-    const total = rows.length
-    const start = (page - 1) * per_page
-    const items = rows.slice(start, start + per_page)
-    const last_page = Math.max(1, Math.ceil(total / per_page))
+    const total = rows.length;
+    const start = (p - 1) * per;
+    const items = rows.slice(start, start + per);
+    const last_page = Math.max(1, Math.ceil(total / per));
     const pagination: Pagination = {
-      current_page: page,
+      current_page: p,
       last_page,
-      per_page,
+      per_page: per,
       from: total === 0 ? 0 : start + 1,
-      to: Math.min(total, start + per_page),
+      to: Math.min(total, start + per),
       total,
-      first_page_url: `/api/users?page=1&per_page=${per_page}`,
-      prev_page_url:
-        page > 1 ? `/api/users?page=${page - 1}&per_page=${per_page}` : null,
+      first_page_url: `/api/users?page=1&per_page=${per}`,
+      prev_page_url: p > 1 ? `/api/users?page=${p - 1}&per_page=${per}` : null,
       next_page_url:
-        start + per_page < total
-          ? `/api/users?page=${page + 1}&per_page=${per_page}`
-          : null,
-      last_page_url: `/api/users?page=${last_page}&per_page=${per_page}`,
-    }
+        start + per < total ? `/api/users?page=${p + 1}&per_page=${per}` : null,
+      last_page_url: `/api/users?page=${last_page}&per_page=${per}`,
+    };
 
     const data: PaginationResultMUser = {
       data: items,
       items,
       pagination,
-    }
-    return { data }
+    };
+    return { data };
+  }
+
+  async createUser(param: UserCreationParams, _opts?: unknown) {
+    return { data: { ok: true, user: param } };
   }
 
   async updateUser(
     userCd: string,
-    param: Omit<UserUpdateParams, 'user_cd'>,
+    param: Omit<UserUpdateParams, "user_cd">,
     _opts?: unknown,
   ) {
-    const { mockUserDb } = await import("./mock/usersDb")
+    const { mockUserDb } = await import("./mock/usersDb");
     const patch: {
-      user_name?: string
-      user_account?: string
-      email?: string
-      center?: string
-      box_account?: string
-      language_code?: number
-      perm_cd?: string
-    } = {}
-    if (param.user_name !== undefined) patch.user_name = param.user_name
-    if (param.disp_name !== undefined) patch.user_name = param.disp_name
-    if (param.account !== undefined) patch.user_account = param.account
-    if (param.email !== undefined) patch.email = param.email
-    if (param.center_cd !== undefined) patch.center = param.center_cd
-    if (param.center !== undefined) patch.center = param.center
-    if (param.box_account !== undefined) patch.box_account = param.box_account
-    if (param.language_code !== undefined) patch.language_code = param.language_code
-    if (param.perm_cd !== undefined) patch.perm_cd = param.perm_cd
+      user_name?: string;
+      user_account?: string;
+      email?: string;
+      center?: string;
+      box_account?: string;
+      language_code?: number;
+      perm_cd?: string;
+    } = {};
+    if (param.user_name !== undefined) patch.user_name = param.user_name;
+    if (param.disp_name !== undefined) patch.user_name = param.disp_name;
+    if (param.account !== undefined) patch.user_account = param.account;
+    if (param.email !== undefined) patch.email = param.email;
+    if (param.center_cd !== undefined) patch.center = param.center_cd;
+    if (param.center !== undefined) patch.center = param.center;
+    if (param.box_account !== undefined) patch.box_account = param.box_account;
+    if (param.language_code !== undefined)
+      patch.language_code = param.language_code;
+    if (param.perm_cd !== undefined) patch.perm_cd = param.perm_cd;
 
-    const updated = mockUserDb.update(userCd, patch)
-    return { data: updated ? mockUserDb.get(userCd) ?? null : null }
+    const updated = mockUserDb.update(userCd, patch);
+    return { data: updated ? (mockUserDb.get(userCd) ?? null) : null };
   }
 
   async removeUser(userCd: string, _opts?: unknown) {
-    const { mockUserDb } = await import("./mock/usersDb")
-    const ok = mockUserDb.remove(userCd)
-    return { data: ok }
+    const { mockUserDb } = await import("./mock/usersDb");
+    const ok = mockUserDb.remove(userCd);
+    return { data: ok };
   }
 }
 
@@ -272,40 +323,132 @@ export class SearchSetApi {
 
   async clearSearchSet(userCd: string, _opts?: unknown) {
     // 実際はユーザーの検索条件を初期化する API 想定
-    return { data: { user_cd: userCd, cleared: true } }
+    return { data: { user_cd: userCd, cleared: true } };
+  }
+}
+
+// ---------- AD User (mock) ----------
+export class ADUserApi {
+  constructor(public config?: unknown) {}
+
+  async getAdUserList(
+    account_name?: string,
+    mail_addr?: string,
+    distinguished_name?: string,
+    organization_unit?: string,
+    status?: string,
+    sort?: string,
+    order?: "asc" | "desc",
+    page: number = 1,
+    per_page: number = 10,
+    _opts?: unknown,
+  ) {
+    const base: AdUserList[] = [
+      {
+        mail_addr: "user001@example.com",
+        account_name: "user001",
+        disp_name: "利用者 001",
+        organization_unit: "営業部",
+        distinguished_name: "cn=user001,dc=example,dc=com",
+        status1: "1",
+        status2: "1",
+      },
+      {
+        mail_addr: "user002@example.com",
+        account_name: "user002",
+        disp_name: "利用者 002",
+        organization_unit: "開発部",
+        distinguished_name: "cn=user002,dc=example,dc=com",
+        status1: "0",
+        status2: "0",
+      },
+    ];
+
+    let rows = base;
+    if (account_name) {
+      const q = account_name.toLowerCase();
+      rows = rows.filter((u) => u.account_name.toLowerCase().includes(q));
+    }
+    if (mail_addr) {
+      const q = mail_addr.toLowerCase();
+      rows = rows.filter((u) => u.mail_addr.toLowerCase().includes(q));
+    }
+    if (distinguished_name) {
+      const q = distinguished_name.toLowerCase();
+      rows = rows.filter((u) =>
+        (u.distinguished_name ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (organization_unit) {
+      const q = organization_unit.toLowerCase();
+      rows = rows.filter((u) =>
+        (u.organization_unit ?? "").toLowerCase().includes(q),
+      );
+    }
+    if (status) {
+      rows = rows.filter((u) => u.status1 === status || u.status2 === status);
+    }
+
+    const total = rows.length;
+    const start = (page - 1) * per_page;
+    const items = rows.slice(start, start + per_page);
+    const last_page = Math.max(1, Math.ceil(total / per_page));
+    const pagination: Pagination = {
+      current_page: page,
+      last_page,
+      per_page,
+      from: total === 0 ? 0 : start + 1,
+      to: Math.min(total, start + per_page),
+      total,
+      first_page_url: `/api/ad-users?page=1&per_page=${per_page}`,
+      prev_page_url:
+        page > 1 ? `/api/ad-users?page=${page - 1}&per_page=${per_page}` : null,
+      next_page_url:
+        start + per_page < total
+          ? `/api/ad-users?page=${page + 1}&per_page=${per_page}`
+          : null,
+      last_page_url: `/api/ad-users?page=${last_page}&per_page=${per_page}`,
+    };
+
+    const data: PaginationResultAdUserList = {
+      data: items,
+      items,
+      pagination,
+    };
+    return { data };
   }
 }
 
 // ---------- Center (mock) ----------
 export type CenterCreationParams = {
-  center_name: string
-  folder_name?: string
-}
+  center_name: string;
+  folder_name?: string;
+};
 
 export type CenterInfo = {
-  center_cd: string
-  center_name: string
-  folder_name: string
-  guest?: boolean
-}
+  center_cd: string;
+  center_name: string;
+  folder_name: string;
+  guest?: boolean;
+};
 
 export type CenterSearchParams = {
-  center_name?: string
-  user_list?: string[]
-  sort?: string
-  order?: "asc" | "desc"
-  page?: number
-  per_page?: number
-}
+  center_name?: string;
+  user_list?: string[];
+  sort?: string;
+  order?: "asc" | "desc";
+  page?: number;
+  per_page?: number;
+};
 
 export type PaginationResultCenterListItem = {
-  data: CenterInfo[]
+  data: CenterInfo[];
   pagination: {
-    total: number
-    page: number
-    per_page: number
-  }
-}
+    total: number;
+    page: number;
+    per_page: number;
+  };
+};
 
 export class CenterApi {
   constructor(public config?: unknown) {}
@@ -332,8 +475,8 @@ export class CenterApi {
         },
       ],
       pagination: { total: 2, page, per_page },
-    }
-    return { data }
+    };
+    return { data };
   }
 
   async getCenter(center_cd: string) {
@@ -344,11 +487,11 @@ export class CenterApi {
         folder_name: `/centers/${center_cd}`,
         guest: false,
       } as CenterInfo,
-    }
+    };
   }
 
   async createCenter() {
-    return { data: "created" }
+    return { data: "created" };
   }
 }
 
@@ -361,12 +504,12 @@ export class AutoCompleteApi {
       { label: "sre-user", value: "sre-user", color: "#2563eb" },
       { label: "ops-admin", value: "ops-admin", color: "#10b981" },
       { label: "dev-lead", value: "dev-lead", color: "#f59e0b" },
-    ]
+    ];
     const groups = [
       { label: "東京センター", value: "tokyo", color: "#6366f1" },
       { label: "大阪DR", value: "osaka-dr", color: "#ef4444" },
-    ]
-    return { data: { users, groups } }
+    ];
+    return { data: { users, groups } };
   }
 }
 
@@ -374,11 +517,11 @@ export class BoxApi {
   constructor(public config?: unknown) {}
 
   async getBoxAccountId(userCd: string, _opts?: unknown) {
-    return { data: `box-${userCd}` }
+    return { data: `box-${userCd}` };
   }
 
   async getContentsPickerToken(accountId: string, _opts?: unknown) {
-    const token: AccessToken = `token-${accountId}`
-    return { data: token }
+    const token: AccessToken = `token-${accountId}`;
+    return { data: token };
   }
 }

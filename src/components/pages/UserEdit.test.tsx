@@ -5,10 +5,11 @@ import {
   updateUserInfo,
   userSliceReducer,
 } from "@/redux/slices/userSlice";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { screen, waitFor } from "@testing-library/react";
+import { setup } from "@test-utils";
 import React from "react";
 import { MemoryRouter } from "react-router";
+import { useSelector } from "react-redux";
 import { UserEdit } from "./UserEdit";
 
 // ----- mocks ----- //
@@ -145,7 +146,7 @@ jest.mock("@/redux/slices/permissionSlice", () => {
 });
 
 // ----- helpers ----- //
-const useSelectorMock = require("react-redux").useSelector as jest.Mock;
+const useSelectorMock = useSelector as jest.Mock;
 
 const buildUserState = (
   overrides: Partial<ReturnType<typeof userSliceReducer>> = {},
@@ -179,7 +180,7 @@ describe("UserEdit", () => {
     };
     useSelectorMock.mockImplementation((selector: any) => selector(state));
 
-    render(
+    setup(
       <MemoryRouter>
         <UserEdit />
       </MemoryRouter>,
@@ -202,7 +203,7 @@ describe("UserEdit", () => {
     };
     useSelectorMock.mockImplementation((selector: any) => selector(state));
 
-    render(
+    const { user } = setup(
       <MemoryRouter>
         <UserEdit />
       </MemoryRouter>,
@@ -210,9 +211,9 @@ describe("UserEdit", () => {
 
     const inputs = screen.getAllByRole("textbox");
     // 0: user_cd (readonly), 1: 表示名, 2: アカウント, 3: メール
-    await userEvent.type(inputs[1], "a".repeat(101)); // over MAX_DISP_LEN
+    await user.type(inputs[1], "a".repeat(101)); // over MAX_DISP_LEN
 
-    fireEvent.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存"));
 
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("表示名の文字数制限"),
@@ -243,19 +244,21 @@ describe("UserEdit", () => {
       },
     ];
 
+    const target = {
+      user: {
+        user_cd: "u123",
+        user_name: "Name",
+        user_account: "acc",
+        email: "mail",
+        perm_cd: "perm1",
+        language_code: 0,
+      },
+      center: [{ center_cd: "c1", belonging_flg: 0 }],
+    };
+
     const state = {
       ...buildUserState({
-        userInfo: {
-          user: {
-            user_cd: "u123",
-            user_name: "Name",
-            user_account: "acc",
-            email: "mail",
-            perm_cd: "perm1",
-            language_code: 0,
-          },
-          center: [{ center_cd: "c1", belonging_flg: 0 }],
-        },
+        adList: { searchCondition: undefined, data: target as any },
         isLoading: false,
       }),
       permission: { permissionList },
@@ -272,21 +275,21 @@ describe("UserEdit", () => {
       .mockResolvedValueOnce({}) // getUserInfo
       .mockResolvedValueOnce({ type: "user/updateUserInfo/fulfilled" }); // updateUserInfo
 
-    render(
+    const { user } = setup(
       <MemoryRouter>
         <UserEdit />
       </MemoryRouter>,
     );
 
     const inputs = screen.getAllByRole("textbox");
-    await userEvent.clear(inputs[1]);
-    await userEvent.type(inputs[1], "New Name");
-    await userEvent.clear(inputs[2]);
-    await userEvent.type(inputs[2], "newacc");
-    await userEvent.clear(inputs[3]);
-    await userEvent.type(inputs[3], "new@example.com");
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], "New Name");
+    await user.clear(inputs[2]);
+    await user.type(inputs[2], "newacc");
+    await user.clear(inputs[3]);
+    await user.type(inputs[3], "new@example.com");
 
-    fireEvent.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存"));
 
     await waitFor(() => {
       expect(updateUserInfo).toHaveBeenCalledWith({

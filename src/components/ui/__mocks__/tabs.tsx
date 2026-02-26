@@ -1,7 +1,10 @@
+import React from "react";
+
 export const Tabs = ({ children, onValueChange }: any) => (
   <div
-    onClick={(e: any) => {
-      const btn = e.target.closest("button");
+    onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest("button");
       const val = btn?.getAttribute("data-value");
       if (val) onValueChange?.(val);
     }}
@@ -17,3 +20,7 @@ export const TabsTrigger = ({ value, children }: any) => (
     {children}
   </button>
 );
+
+export const TabsContent = ({ children }: any) => <div>{children}</div>;
+
+export const tabsListVariants = () => "";

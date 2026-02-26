@@ -1,22 +1,35 @@
 import type { UserInfo } from "@/api";
-import { getUserList } from "@/redux/slices/userSlice";
-import "@testing-library/jest-dom";
+import { autoCompleteSliceReducer } from "@/redux/slices/autoCompleteSlice";
+import { getUserList, userSliceReducer } from "@/redux/slices/userSlice";
 import { screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import {
-  createMockPagination,
-  renderWithRedux,
-} from "../../../test/test-utils";
+import { createMockPagination, setupWithStore } from "@test-utils";
 import UserManage from "./UserManage";
 
 const mockedGetUserList = getUserList as unknown as jest.MockedFunction<
   typeof getUserList
 >;
 
+const reducers = {
+  user: userSliceReducer,
+  autoComplete: autoCompleteSliceReducer,
+};
+const baseUserState = userSliceReducer(undefined, { type: "@@INIT" });
+const baseAutoCompleteState = autoCompleteSliceReducer(undefined, {
+  type: "@@INIT",
+});
+const basePreloadedState = {
+  user: baseUserState,
+  autoComplete: baseAutoCompleteState,
+};
+
 jest.mock("@/redux/slices/userSlice", () => {
   const actual = jest.requireActual("@/redux/slices/userSlice");
   return {
     ...actual,
+    userSelector: {
+      ...actual.userSelector,
+      searchConditionSelector: actual.userSelector.userSearchConditionSelector,
+    },
     getUserList: jest.fn((arg: unknown) => ({
       type: "getUserList",
       payload: arg,
@@ -24,41 +37,25 @@ jest.mock("@/redux/slices/userSlice", () => {
   };
 });
 
-const paginationOnHandle = jest.fn();
-jest.mock("@/components/parts/Pagination/Pagination", () => {
-  return {
-    __esModule: true,
-    CustomPagination: ({
-      onHandle,
-    }: {
-      onHandle: (p: { page: number }) => void;
-    }) => {
-      paginationOnHandle(onHandle);
-      return (
-        <button
-          data-testid="pagination-mock"
-          onClick={() => onHandle({ page: 2 })}
-        >
-          paginate
-        </button>
-      );
-    },
-  };
-});
-
 describe("UserManage", () => {
-  let user: ReturnType<typeof userEvent.setup>;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    user = userEvent.setup();
   });
 
   it("初期表示（未検索）のときは、検索結果やメッセージが表示されない", () => {
-    renderWithRedux(<UserManage />, {
-      preloadedUserState: {
-        list: { searchCondition: undefined, data: undefined },
-        ad: { addSearched: false, searchCondition: undefined, data: undefined },
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          list: { ...baseUserState.list, searchCondition: undefined, data: undefined },
+          adList: {
+            ...baseUserState.adList,
+            searchCondition: undefined,
+            data: undefined,
+          },
+        },
       },
     });
 
@@ -70,7 +67,10 @@ describe("UserManage", () => {
   });
 
   it("検索ボタンで getUserList を dispatch する", async () => {
-    const { dispatchSpy } = renderWithRedux(<UserManage />);
+    const { user, dispatchSpy } = setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: basePreloadedState,
+    });
     await user.type(screen.getByLabelText("表示名"), "disp");
     await user.type(screen.getByLabelText("ユーザーID"), "uid");
     await user.type(screen.getByLabelText("メールアドレス"), "mail");
@@ -88,10 +88,41 @@ describe("UserManage", () => {
   });
 
   it("検索結果なしのメッセージを表示する", () => {
-    renderWithRedux(<UserManage />, {
-      preloadedUserState: {
-        list: { searchCondition: {}, data: undefined },
-        ad: { addSearched: false, searchCondition: undefined, data: undefined },
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: { ...baseUserState.list, searchCondition: {}, data: undefined },
+          adList: {
+            ...baseUserState.adList,
+            searchCondition: undefined,
+            data: undefined,
+          },
+        },
+      },
+    });
+    expect(
+      screen.getByText("該当するユーザーが見つかりませんでした。"),
+    ).toBeInTheDocument();
+  });
+
+  it("items が undefined のときは検索結果なしメッセージを表示する", () => {
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: {
+            ...baseUserState.list,
+            searchCondition: {},
+            data: { items: undefined as any, pagination: createMockPagination() } as any,
+          },
+        },
       },
     });
     expect(
@@ -106,20 +137,27 @@ describe("UserManage", () => {
       email: "u1@example.com",
     } as unknown as UserInfo;
 
-    renderWithRedux(<UserManage />, {
-      preloadedUserState: {
-        list: {
-          searchCondition: {},
-          data: {
-            items: [mockUser],
-            data: [mockUser],
-            pagination: createMockPagination(),
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: {
+            ...baseUserState.list,
+            searchCondition: {},
+            data: {
+              items: [mockUser],
+              data: [mockUser],
+              pagination: createMockPagination(),
+            },
           },
-        },
-        ad: {
-          addSearched: true,
-          searchCondition: undefined,
-          data: undefined,
+          adList: {
+            ...baseUserState.adList,
+            searchCondition: undefined,
+            data: undefined,
+          },
         },
       },
     });
@@ -133,8 +171,45 @@ describe("UserManage", () => {
     );
   });
 
+  it("box_user_id があるときはマークを表示する", () => {
+    const mockUser = {
+      user_cd: "u002",
+      disp_name: "User 2",
+      email: "u2@example.com",
+      box_user_id: "box-1",
+    } as unknown as UserInfo;
+
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: {
+            ...baseUserState.searchResultDisp,
+            settingSearched: true,
+          },
+          list: {
+            ...baseUserState.list,
+            searchCondition: {},
+            data: {
+              items: [mockUser],
+              data: [mockUser],
+              pagination: createMockPagination(),
+            },
+          },
+        },
+      },
+    });
+
+    expect(screen.getByText(/&#x3007;|○/)).toBeInTheDocument();
+  });
+
   it("センター選択の AutoCompleteMulti が payload.auto_complete に反映される", async () => {
-    const { dispatchSpy } = renderWithRedux(<UserManage />);
+    const { user, dispatchSpy } = setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: basePreloadedState,
+    });
 
     // center を選択
     const centerSelect = screen.getByTestId(
@@ -152,7 +227,10 @@ describe("UserManage", () => {
   });
 
   it("クリアボタンで入力がリセットされる", async () => {
-    renderWithRedux(<UserManage />);
+    const { user } = setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: basePreloadedState,
+    });
 
     const nameInput = screen.getByLabelText("表示名") as HTMLInputElement;
     const userIdInput = screen.getByLabelText("ユーザーID") as HTMLInputElement;
@@ -167,33 +245,44 @@ describe("UserManage", () => {
   });
 
   it("ページネーション操作時に getUserList が dispatch される", async () => {
-    renderWithRedux(<UserManage />, {
-      preloadedUserState: {
-        list: {
-          searchCondition: {},
-          data: {
-            items: [
-              {
-                user: { user_cd: "u001" },
-                user_cd: "u001",
-                disp_name: "User 1",
-              } as UserInfo,
-            ],
-            data: [
-              {
-                user: { user_cd: "u001" },
-                user_cd: "u001",
-                disp_name: "User 1",
-              } as UserInfo,
-            ],
-            pagination: createMockPagination({
-              total: 100,
-              last_page: 10,
-              current_page: 1,
-            }),
+    const { user } = setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: {
+            ...baseUserState.list,
+            searchCondition: {},
+            data: {
+              items: [
+                {
+                  user: { user_cd: "u001" },
+                  user_cd: "u001",
+                  disp_name: "User 1",
+                } as UserInfo,
+              ],
+              data: [
+                {
+                  user: { user_cd: "u001" },
+                  user_cd: "u001",
+                  disp_name: "User 1",
+                } as UserInfo,
+              ],
+              pagination: createMockPagination({
+                total: 100,
+                last_page: 10,
+                current_page: 1,
+              }),
+            },
+          },
+          adList: {
+            ...baseUserState.adList,
+            searchCondition: undefined,
+            data: undefined,
           },
         },
-        ad: { addSearched: true, searchCondition: undefined, data: undefined },
       },
     });
 

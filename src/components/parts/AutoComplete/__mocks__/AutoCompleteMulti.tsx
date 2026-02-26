@@ -1,6 +1,6 @@
 import React from "react";
 
-const AutoCompleteMultiMock = ({ value, onChange }: any) => (
+export const AutoCompleteMulti = ({ value, onChange }: any) => (
   <select
     data-testid="auto-complete-multi"
     multiple
@@ -12,5 +12,3 @@ const AutoCompleteMultiMock = ({ value, onChange }: any) => (
     <option value="center1">center1</option>
   </select>
 );
-
-export { AutoCompleteMultiMock as AutoCompleteMulti };

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Information } from "../parts/Information/Information";
 import { VersionInfo } from "../parts/Version/VersionInfo";
 import { userSelector } from "@/redux/slices/userSlice";
@@ -11,13 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { UrlPath } from "@/constant/UrlPath";
 import { NavLink as RouterNavLink, useLocation } from "react-router";
+import { ChevronUp, ChevronDown, UserRound } from "lucide-react";
 
 /**
  * サイドレイアウト用ヘッダー（タイトルなし、操作系のみ）
  */
-const Header = () => {
+export const Header = () => {
   const loginUser = useSelector(userSelector.loginUserSelector());
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const [userOpen, setUserOpen] = useState(false);
 
   const title =
     [
@@ -29,32 +32,46 @@ const Header = () => {
       { prefix: UrlPath.JobCreate, title: "JOB作成" },
       { prefix: UrlPath.Tool, title: "TOOL" },
       { prefix: UrlPath.ShareArea, title: "センター専用領域" },
-    ].find(({ prefix }) => location.pathname.startsWith(prefix))?.title ?? "Ops Console";
+    ].find((item) => pathname.startsWith(item.prefix))?.title ?? "Ops Console";
 
+  if (!loginUser) {
+    return <></>;
+  }
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-base font-semibold text-foreground">{title}</span>
+          <span className="text-base font-semibold text-foreground">
+            {title}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Information className="h-8 w-8 p-0" />
           <VersionInfo className="h-8 w-8 p-0" />
-          <DropdownMenu>
+          <DropdownMenu open={userOpen} onOpenChange={setUserOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
+                <UserRound className="text-muted-foreground" />
                 <span className="truncate">
-                  {loginUser?.user?.disp_name ?? loginUser?.user?.user_cd ?? "guest"}
+                  {loginUser?.user?.user_cd}({loginUser?.user?.disp_name})
                 </span>
-                <span className="text-xs text-muted-foreground">▼</span>
+                {userOpen ? (
+                  <ChevronUp className="text-xs text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="text-xs text-muted-foreground" />
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <RouterNavLink to={UrlPath.MyPageEdit}>MyPage設定変更</RouterNavLink>
+                <RouterNavLink to={UrlPath.MyPageEdit}>
+                  MyPage設定変更
+                </RouterNavLink>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <RouterNavLink to={UrlPath.UserProfile}>ユーザー情報設定変更</RouterNavLink>
+                <RouterNavLink to={UrlPath.UserProfile}>
+                  ユーザー情報設定変更
+                </RouterNavLink>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -63,5 +80,3 @@ const Header = () => {
     </header>
   );
 };
-
-export default Header;

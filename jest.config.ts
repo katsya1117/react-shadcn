@@ -20,6 +20,7 @@ const config: Config = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@test-utils$": "<rootDir>/test/test-utils/index.ts",
     "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/test/mocks/fileMocks.js",
     "\\.(css|scss)$": "<rootDir>/test/mocks/fileMock.js",
   },

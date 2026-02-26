@@ -1,6 +1,6 @@
 import { UrlPath } from "@/constant/UrlPath";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { screen } from "@testing-library/react";
+import { setup } from "@test-utils";
 import { MemoryRouter } from "react-router";
 import { UserTabsShell } from "./UserTabsShell";
 
@@ -14,7 +14,7 @@ describe("UserTabsShell", () => {
 
   it("編集タブをクリックすると UserManage へナビゲートし、onTabChangeも呼ばれる", async () => {
     const onTabChangeMock = jest.fn();
-    render(
+    const { user } = setup(
       <MemoryRouter>
         <UserTabsShell active="add" onTabChange={onTabChangeMock}>
           <div data-testid="child">child</div>
@@ -22,14 +22,14 @@ describe("UserTabsShell", () => {
       </MemoryRouter>,
     );
 
-    await userEvent.click(screen.getByText("編集"));
+    await user.click(screen.getByText("編集"));
 
     expect(mockNavigate).toHaveBeenCalledWith(UrlPath.UserManage);
     expect(onTabChangeMock).toHaveBeenCalledWith("setting");
   });
 
   it("登録タブをクリックすると UserCreate へナビゲートする", async () => {
-    render(
+    const { user } = setup(
       <MemoryRouter>
         <UserTabsShell active="setting">
           <div>child</div>
@@ -37,7 +37,7 @@ describe("UserTabsShell", () => {
       </MemoryRouter>,
     );
 
-    await userEvent.click(screen.getByText("登録（AD連携）"));
+    await user.click(screen.getByText("登録（AD連携）"));
     expect(mockNavigate).toHaveBeenCalledWith(UrlPath.UserCreate);
   });
 });
