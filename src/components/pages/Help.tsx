@@ -1,6 +1,12 @@
-import { CircleHelp } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { CircleHelp } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const Help = () => (
   <Layout>
@@ -17,6 +23,6 @@ const Help = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default Help
+export default Help;

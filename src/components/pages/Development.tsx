@@ -1,4 +1,4 @@
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,

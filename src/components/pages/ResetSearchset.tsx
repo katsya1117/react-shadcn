@@ -1,13 +1,15 @@
-import { useDispatch } from 'react-redux';
-import axios from 'axios';
-import { fetchMySearchsetIds } from './searchsetSlice'; // 先ほど作ったスライスからインポート
+import { useDispatch } from "react-redux";
+import axios from "axios";
+import { fetchMySearchsetIds } from "./searchsetSlice"; // 先ほど作ったスライスからインポート
 
 const AdminUserSettingPage = ({ targetUserCd }: { targetUserCd: string }) => {
-  const dispatch = useDispatch();
+  const dispatch: AppDispatch = useDispatch();
 
   const handleResetToDefault = async () => {
     // 1. ユーザーへの確認（任意）
-    if (!window.confirm('このユーザーのマイページ設定をデフォルトに戻しますか？')) {
+    if (
+      !window.confirm("このユーザーのマイページ設定をデフォルトに戻しますか？")
+    ) {
       return;
     }
 
@@ -20,10 +22,10 @@ const AdminUserSettingPage = ({ targetUserCd }: { targetUserCd: string }) => {
       //    これにより、他の画面（検索画面や設定画面）の表示も自動で「デフォルト」に切り替わります
       dispatch(getMySearchsetIds(targetUserCd));
 
-      alert('デフォルトに戻しました');
+      alert("デフォルトに戻しました");
     } catch (error) {
-      console.error('リセットに失敗しました', error);
-      alert('エラーが発生しました');
+      console.error("リセットに失敗しました", error);
+      alert("エラーが発生しました");
     }
   };
 

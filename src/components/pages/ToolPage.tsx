@@ -1,6 +1,12 @@
-import { Wrench } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Wrench } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const ToolPage = () => (
   <Layout>
@@ -17,6 +23,6 @@ const ToolPage = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default ToolPage
+export default ToolPage;

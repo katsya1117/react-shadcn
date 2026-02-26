@@ -1,6 +1,12 @@
-import { Link2 } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Link2 } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const OAIntegration = () => (
   <Layout>
@@ -17,6 +23,6 @@ const OAIntegration = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default OAIntegration
+export default OAIntegration;

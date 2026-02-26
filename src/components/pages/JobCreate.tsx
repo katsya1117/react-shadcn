@@ -1,6 +1,12 @@
-import { FilePenLine } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { FilePenLine } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const JobCreate = () => (
   <Layout>
@@ -17,7 +23,7 @@ const JobCreate = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default JobCreate
-export { JobCreate }
+export default JobCreate;
+export { JobCreate };

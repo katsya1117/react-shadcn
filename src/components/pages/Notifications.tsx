@@ -1,6 +1,12 @@
-import { Bell } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Bell } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const Notifications = () => (
   <Layout>
@@ -17,6 +23,6 @@ const Notifications = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default Notifications
+export default Notifications;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardContent,
@@ -48,7 +48,9 @@ const CenterArea = () => {
   const sorted = useMemo(
     () =>
       [...areas].sort((a, b) =>
-        a.guest === b.guest ? a.name.localeCompare(b.name) : Number(a.guest) - Number(b.guest),
+        a.guest === b.guest
+          ? a.name.localeCompare(b.name)
+          : Number(a.guest) - Number(b.guest),
       ),
     [areas],
   );
@@ -84,7 +86,9 @@ const CenterArea = () => {
                 {sorted.map((area) => (
                   <tr key={area.folder} className="bg-background">
                     <td className="px-3 py-2 font-medium">{area.name}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{area.folder}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {area.folder}
+                    </td>
                     <td className="px-3 py-2">
                       {area.guest ? (
                         <Badge variant="secondary">ゲスト</Badge>

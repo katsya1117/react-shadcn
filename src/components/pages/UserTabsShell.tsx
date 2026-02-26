@@ -1,4 +1,4 @@
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlPath } from "@/constant/UrlPath";
 import type { ReactNode } from "react";

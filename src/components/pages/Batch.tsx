@@ -1,5 +1,11 @@
-import Layout from "@/components/frame/Layout";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 
 const Batch = () => (
   <Layout>

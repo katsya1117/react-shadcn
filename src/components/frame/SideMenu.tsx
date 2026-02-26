@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import {
   Home,
@@ -20,40 +20,63 @@ import type { LucideIcon } from "lucide-react";
 
 type Props = {
   collapsed: boolean;
-  onToggle: () => void;
+  onHandle: () => void;
 };
 
 type NavItem = {
   label: string;
+  collapsedLabel: string;
   to: string;
   icon: LucideIcon;
   hasSubPages?: boolean;
   shouldRemember?: boolean;
-  prefix?:string
+  prefix?: string;
 };
 
 const navItems: NavItem[] = [
-  { label: "MyPage", to: UrlPath.MyPage, icon: Home},
-  { label: "JOB SEARCH", to: UrlPath.JobSearch, icon: Search },
-  { label: "センター専用領域", to: UrlPath.ShareArea, icon: Database },
-  { label: "LOG SEARCH", to: UrlPath.LogSearch, icon: FileSearch },
-  { label: "JOB作成", to: UrlPath.JobCreate, icon: FilePlus2 },
-  { label: "TOOL", to: UrlPath.Tool, icon: Wrench },
+  { label: "MyPage", collapsedLabel: "MyPage", to: UrlPath.MyPage, icon: Home },
+  {
+    label: "JOB SEARCH",
+    collapsedLabel: "JOB¥nSEARCH",
+    to: UrlPath.JobSearch,
+    icon: Search,
+  },
+  {
+    label: "センター専用領域",
+    collapsedLabel: "センター¥n専用¥n領域",
+    to: UrlPath.ShareArea,
+    icon: Database,
+  },
+  {
+    label: "LOG SEARCH",
+    collapsedLabel: "LOG¥nSEARCH",
+    to: UrlPath.LogSearch,
+    icon: FileSearch,
+  },
+  {
+    label: "JOB作成",
+    collapsedLabel: "JOB¥n作成",
+    to: UrlPath.JobCreate,
+    icon: FilePlus2,
+  },
+  { label: "TOOL", collapsedLabel: "TOOL", to: UrlPath.Tool, icon: Wrench },
   {
     label: "OA連携",
+    collapsedLabel: "OA¥n連携",
     to: UrlPath.OAUsers,
     icon: Cloud,
     hasSubPages: true,
     shouldRemember: true,
-    prefix: "/OA"
+    prefix: "/OA",
   },
   {
     label: "管理",
+    collapsedLabel: "管理",
     to: UrlPath.UserManage,
     icon: Lock,
     hasSubPages: true,
     shouldRemember: true,
-    prefix: "/manage"
+    prefix: "/manage",
   },
 ];
 
@@ -64,20 +87,22 @@ const getRootPrefix = (path: string) => {
 
 const SideMenu = ({ collapsed, onToggle }: Props) => {
   const { pathname } = useLocation();
-  const dispatch = useDispatch();
+  const dispatch: AppDispatch = useDispatch();
   const lastVisited = useSelector(navSelector.lastVisitedSelector());
 
   // ページ遷移後に現在パスを記録（直接URL遷移でも更新される）
   useEffect(() => {
     const currentPrefix = getRootPrefix(pathname);
     const isRememberTarget = navItems.some(
-      (item) => item.shouldRemember && item.prefix === currentPrefix
+      (item) => item.shouldRemember && item.prefix === currentPrefix,
     );
     if (isRememberTarget) {
       if (lastVisited[currentPrefix] === pathname) return;
-      dispatch(navActions.setLastVisited({ key: currentPrefix, path: pathname }));
+      dispatch(
+        navActions.setLastVisited({ key: currentPrefix, path: pathname }),
+      );
     }
-  }, [pathname, dispatch,lastVisited]);
+  }, [pathname, dispatch, lastVisited]);
 
   return (
     <aside
@@ -106,8 +131,16 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
           </div>
         )}
         {navItems.map((item) => {
-          const { label, to, icon:Icon, hasSubPages, shouldRemember, prefix } = item;
-          const resolvedTo = (shouldRemember && prefix && lastVisited[prefix]) || to;
+          const {
+            label,
+            to,
+            icon: Icon,
+            hasSubPages,
+            shouldRemember,
+            prefix,
+          } = item;
+          const resolvedTo =
+            (shouldRemember && prefix && lastVisited[prefix]) || to;
 
           return (
             <RouterNavLink

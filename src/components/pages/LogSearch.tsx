@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardContent,

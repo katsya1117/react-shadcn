@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -96,7 +96,9 @@ const RoleManage = () => {
       setName("新しい権限");
       setDefaults(["", "", ""]);
       setFlags(
-        Object.fromEntries(flagLabels.map(({ key }) => [key, false])) as Template["flags"],
+        Object.fromEntries(
+          flagLabels.map(({ key }) => [key, false]),
+        ) as Template["flags"],
       );
     } else if (selectedTemplate) {
       setName(selectedTemplate.name);
@@ -118,13 +120,18 @@ const RoleManage = () => {
         <Card>
           <CardHeader>
             <CardTitle>テンプレート選択</CardTitle>
-            <CardDescription>既存を編集するか、新規を追加します。</CardDescription>
+            <CardDescription>
+              既存を編集するか、新規を追加します。
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <div className="space-y-2">
                 <Label>操作権限</Label>
-                <Select value={selectedId} onChange={(e) => handleSelect(e.target.value)}>
+                <Select
+                  value={selectedId}
+                  onChange={(e) => handleSelect(e.target.value)}
+                >
                   {templatesMock.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
@@ -146,7 +153,9 @@ const RoleManage = () => {
                 <Label>MyPageデフォルト検索条件1</Label>
                 <Select
                   value={defaults[0]}
-                  onChange={(e) => setDefaults([e.target.value, defaults[1], defaults[2]])}
+                  onChange={(e) =>
+                    setDefaults([e.target.value, defaults[1], defaults[2]])
+                  }
                 >
                   <option value="">未設定</option>
                   <option value="条件A">条件A</option>
@@ -156,7 +165,9 @@ const RoleManage = () => {
                 <Label>MyPageデフォルト検索条件2</Label>
                 <Select
                   value={defaults[1]}
-                  onChange={(e) => setDefaults([defaults[0], e.target.value, defaults[2]])}
+                  onChange={(e) =>
+                    setDefaults([defaults[0], e.target.value, defaults[2]])
+                  }
                 >
                   <option value="">未設定</option>
                   <option value="条件A">条件A</option>
@@ -166,7 +177,9 @@ const RoleManage = () => {
                 <Label>MyPageデフォルト検索条件3</Label>
                 <Select
                   value={defaults[2]}
-                  onChange={(e) => setDefaults([defaults[0], defaults[1], e.target.value])}
+                  onChange={(e) =>
+                    setDefaults([defaults[0], defaults[1], e.target.value])
+                  }
                 >
                   <option value="">未設定</option>
                   <option value="条件A">条件A</option>
@@ -178,11 +191,16 @@ const RoleManage = () => {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   {flagLabels.map(({ key, label }) => (
-                    <label key={key} className="flex items-center justify-between rounded-md border p-2 text-sm">
+                    <label
+                      key={key}
+                      className="flex items-center justify-between rounded-md border p-2 text-sm"
+                    >
                       <span>{label}</span>
                       <Switch
                         checked={!!flags[key]}
-                        onCheckedChange={(v) => setFlags({ ...flags, [key]: v })}
+                        onCheckedChange={(v) =>
+                          setFlags({ ...flags, [key]: v })
+                        }
                       />
                     </label>
                   ))}

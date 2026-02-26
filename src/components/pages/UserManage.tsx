@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import { UrlPath } from "@/constant/UrlPath";
 import { getUserList, userSelector } from "@/redux/slices/userSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useDispatch } from "react-redux";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { NavLink } from "react-router";
@@ -29,7 +29,7 @@ import type { MultiValue } from "react-select";
 
 const UserManage = () => {
   // 編集 検索条件
-  const dispatch = useAppDispatch();
+  const dispatch: AppDispatch = useDispatch();
   const list = useSelector(userSelector.userListSelector());
   const searchCondition = useSelector(userSelector.searchConditionSelector());
   const isSearched = useSelector(

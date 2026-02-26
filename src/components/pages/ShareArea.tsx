@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import { Folder, Monitor, Box } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 type Area = {
   code: string;
@@ -59,11 +70,13 @@ const ShareArea = () => {
 
   const toggleMount = (code: string) => {
     setAreas((prev) =>
-      prev.map((a) => (a.code === code ? { ...a, mounted: !a.mounted } : a))
+      prev.map((a) => (a.code === code ? { ...a, mounted: !a.mounted } : a)),
     );
     const target = areas.find((a) => a.code === code);
     if (target) {
-      toast(`${target.label} を${target.mounted ? "アンマウント" : "マウント"}しました`);
+      toast(
+        `${target.label} を${target.mounted ? "アンマウント" : "マウント"}しました`,
+      );
     }
   };
 
@@ -76,7 +89,9 @@ const ShareArea = () => {
       <Layout>
         <div className="space-y-6">
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Center Area</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Center Area
+            </p>
             <h1 className="text-2xl font-semibold">センター専用領域</h1>
             <p className="text-sm text-muted-foreground">
               部署やプロジェクト単位で区切られた領域のうち、あなたがアクセスできるものを一覧表示しています。
@@ -100,7 +115,9 @@ const ShareArea = () => {
                         <span className="font-mono text-base font-semibold tracking-tight">
                           {area.folderName}
                         </span>
-                        {area.isGuest && <Badge variant="outline">ゲスト</Badge>}
+                        {area.isGuest && (
+                          <Badge variant="outline">ゲスト</Badge>
+                        )}
                       </div>
                       <CardTitle className="text-sm font-medium text-muted-foreground">
                         {area.label}

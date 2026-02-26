@@ -5,7 +5,7 @@ import { getJobList, jobSelector } from "../../redux/slices/jobSlice";
 import { userSelector } from "../../redux/slices/userSlice";
 import type { AppDispatch } from "../../redux/store";
 import { toConditionString } from "../../utility/JobCondition";
-import Layout from "@/components/frame/Layout";
+import { Layout } from "@/components/frame/Layout";
 import { Conditions } from "../parts/JobSearch/Conditions";
 import { SearchSet, SearchSetMode } from "../parts/JobSearch/SearchSet";
 // import { FolderLock, ShieldCheck } from "lucide-react";
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import { CustomPagination } from "../parts/Pagination/Pagination";
 
 const JobSearch = () => {
@@ -108,62 +108,62 @@ const JobSearch = () => {
         </Card>
 
         {/* <div className="grid gap-4 lg:grid-cols-[1.8fr_1fr]"> */}
-          <Card className="lg:col-span-1">
-            <CardHeader className="pb-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>検索結果</CardTitle>
-                  {/* <CardDescription>条件に合致したジョブ一覧</CardDescription> */}
-                  {list && (
-                    <span className="text-xs text-muted-foreground">
-                      {list.pagination?.total ?? 0}件ヒットしました。
-                    </span>
-                  )}
-                </div>
-                {/* <div className="text-xs text-muted-foreground">
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>検索結果</CardTitle>
+                {/* <CardDescription>条件に合致したジョブ一覧</CardDescription> */}
+                {list && (
+                  <span className="text-xs text-muted-foreground">
+                    {list.pagination?.total ?? 0}件ヒットしました。
+                  </span>
+                )}
+              </div>
+              {/* <div className="text-xs text-muted-foreground">
                   件数: {list?.pagination?.total ?? 0}
                 </div> */}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {list && (
-                <>
-                  <CustomPagination<JobSearchParams>
-                    pagination={list.pagination}
-                    onHandle={(t) =>{
-                      dispatch(getJobList(t));
-                    }}
-                  />
-                  <div className="overflow-hidden rounded-lg border border-border/70">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          {list.headers.map((e, i) => (
-                            <TableHead key={i} className="px-3 py-3">
-                              {e.name}
-                            </TableHead>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {list && (
+              <>
+                <CustomPagination<JobSearchParams>
+                  pagination={list.pagination}
+                  onHandle={(t) => {
+                    dispatch(getJobList(t));
+                  }}
+                />
+                <div className="overflow-hidden rounded-lg border border-border/70">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        {list.headers.map((e, i) => (
+                          <TableHead key={i} className="px-3 py-3">
+                            {e.name}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {list.items.map((e, i) => (
+                        <TableRow key={i}>
+                          {e.items.map((f, j) => (
+                            <TableCell key={j} className="px-3 py-3 text-left">
+                              {f.data}
+                            </TableCell>
                           ))}
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {list.items.map((e, i) => (
-                          <TableRow key={i}>
-                            {e.items.map((f, j) => (
-                              <TableCell key={j} className="px-3 py-3 text-left">
-                                {f.data}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* <Card>
+        {/* <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

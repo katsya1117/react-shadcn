@@ -1,6 +1,12 @@
-import { UserRound } from 'lucide-react'
-import Layout from '@/components/frame/Layout'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { UserRound } from "lucide-react";
+import { Layout } from "@/components/frame/Layout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 const MyPage = () => (
   <Layout>
@@ -17,7 +23,7 @@ const MyPage = () => (
       </CardContent>
     </Card>
   </Layout>
-)
+);
 
-export default MyPage
-export { MyPage }
+export default MyPage;
+export { MyPage };
