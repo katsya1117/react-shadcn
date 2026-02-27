@@ -15,8 +15,9 @@ import {
 import { UrlPath } from "@/constant/UrlPath";
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
-import { navActions, navSelector } from "@/redux/slices/navSlice";
+import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 import type { LucideIcon } from "lucide-react";
+import type { AppDispatch } from "../../redux/store";
 
 type Props = {
   collapsed: boolean;
@@ -78,17 +79,17 @@ const navItems: NavItem[] = [
     shouldRemember: true,
     prefix: "/manage",
   },
-];
+] as const;
 
 const getRootPrefix = (path: string) => {
   const first = path.split("/").filter(Boolean)[0];
   return first ? `/${first}` : "/";
 };
 
-const SideMenu = ({ collapsed, onToggle }: Props) => {
+export const SideMenu = ({ collapsed, onHandle }: Props) => {
   const { pathname } = useLocation();
   const dispatch: AppDispatch = useDispatch();
-  const lastVisited = useSelector(navSelector.lastVisitedSelector());
+  const lastVisited = useSelector(uiSelector.lastVisited);
 
   // ページ遷移後に現在パスを記録（直接URL遷移でも更新される）
   useEffect(() => {
@@ -99,7 +100,10 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
     if (isRememberTarget) {
       if (lastVisited[currentPrefix] === pathname) return;
       dispatch(
-        navActions.setLastVisited({ key: currentPrefix, path: pathname }),
+        uiActions.setLastVisited({
+          key: currentPrefix,
+          path: pathname,
+        }),
       );
     }
   }, [pathname, dispatch, lastVisited]);
@@ -108,31 +112,27 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
     <aside
       className={cn(
         "border-r bg-background/85 backdrop-blur-sm flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
-        collapsed ? "w-[72px] min-w-[72px]" : "w-[240px] min-w-[240px]",
+        collapsed ? "w-20 min-w-20" : "w-60 min-w-60",
       )}
     >
       <nav className="p-3 pb-16 space-y-2 text-[15px] flex-1 min-h-0 overflow-auto">
         <div className="flex items-center justify-between px-3 pt-1">
           <div className="text-lg font-semibold leading-tight text-foreground">
-            {collapsed ? "OC" : "Ops Console"}
+            {collapsed ? "" : "Ops Console"}
           </div>
           <button
             type="button"
-            onClick={onToggle}
+            onClick={onHandle}
             aria-label={collapsed ? "Expand menu" : "Collapse menu"}
             className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
-        {!collapsed && (
-          <div className="px-3 pb-1 text-xs text-muted-foreground">
-            ナビゲーション
-          </div>
-        )}
         {navItems.map((item) => {
           const {
             label,
+            collapsedLabel,
             to,
             icon: Icon,
             hasSubPages,
@@ -149,21 +149,24 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
               end={!hasSubPages}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-muted text-left",
+                  "flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-muted/70 text-left",
                   isActive
                     ? "bg-muted text-foreground font-semibold"
                     : "text-muted-foreground",
                 )
               }
             >
-              <Icon size={18} className="shrink-0 text-muted-foreground" />
+              {Icon && (
+                <Icon size={18} className="shrink-0 text-muted-foreground" />
+              )}
               <span
                 className={cn(
                   "truncate",
-                  collapsed && "text-[11px] leading-none",
+                  collapsed &&
+                    "text-[11px] text-center leading-snug whitespace-pre",
                 )}
               >
-                {label}
+                {collapsed ? collapsedLabel : label}
               </span>
             </RouterNavLink>
           );
@@ -172,5 +175,3 @@ const SideMenu = ({ collapsed, onToggle }: Props) => {
     </aside>
   );
 };
-
-export default SideMenu;

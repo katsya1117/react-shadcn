@@ -1,8 +1,8 @@
 import type { PropsWithChildren } from "react";
 import { useEffect, useState } from "react";
-import SideMenu from "./SideMenu";
+import { SideMenu } from "./SideMenu";
 import { Header } from "./Header";
-import TabsBar from "./TabsBar";
+import { TabsBar } from "./TabsBar";
 import {
   layoutContainer,
   layoutBody,
@@ -13,8 +13,9 @@ import {
 import { cn } from "@/lib/utils";
 import { userSelector } from "@/redux/slices/userSlice";
 import type { AppDispatch } from "../../redux/store";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import SimpleSingleSignOn from "../parts/SimpleSingleSignOn/SimpleSingleSignOn";
+import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 
 /**
  * Side navigation layout with a global top header.
@@ -23,7 +24,7 @@ import SimpleSingleSignOn from "../parts/SimpleSingleSignOn/SimpleSingleSignOn";
 type LayoutProps = PropsWithChildren<{ isHide?: boolean }>;
 
 export const Layout = ({ children, isHide }: LayoutProps) => {
-  const inLogin = useSelector(userSelector.isLoginSelector());
+  const isLogin = useSelector(userSelector.isLoginSelector());
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
   const dispatch: AppDispatch = useDispatch();
 

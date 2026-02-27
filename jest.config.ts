@@ -6,9 +6,14 @@ const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/test/jest.setup.ts"],
   collectCoverageFrom: [
     "src/redux/slices/userSlice.ts",
+    "src/redux/slices/uiSlice.ts",
     "src/components/pages/UserCreate.tsx",
     "src/components/pages/UserManage.tsx",
     "src/components/pages/UserTabsShell.tsx",
+    "src/components/frame/Header.tsx",
+    "src/components/frame/Layout.tsx",
+    "src/components/frame/TabsBar.tsx",
+    "src/components/frame/SideMenu.tsx",
   ],
   coveragePathIgnorePatterns: [
     "/node_modules/",
