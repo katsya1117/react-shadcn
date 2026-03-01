@@ -31,7 +31,9 @@ const UserManage = () => {
   // 編集 検索条件
   const dispatch: AppDispatch = useDispatch();
   const list = useSelector(userSelector.userListSelector());
-  const searchCondition = useSelector(userSelector.searchConditionSelector());
+  const searchCondition = useSelector(
+    userSelector.userSearchConditionSelector(),
+  );
   const isSearched = useSelector(
     userSelector.searchResultDispSelector(),
   ).settingSearched;

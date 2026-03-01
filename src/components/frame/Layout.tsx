@@ -27,6 +27,8 @@ export const Layout = ({ children, isHide }: LayoutProps) => {
   const isLogin = useSelector(userSelector.isLoginSelector());
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
   const dispatch: AppDispatch = useDispatch();
+  // NOTE: リリース時はログイン状態に応じて表示制御する
+  // const showFrame = isLogin || import.meta.env.DEV;
 
   // サイドバー幅に合わせてトースト位置のオフセットを更新
   // useEffect(() => {
@@ -39,33 +41,29 @@ export const Layout = ({ children, isHide }: LayoutProps) => {
 
   return (
     <div className={layoutContainer}>
-      <SimpleSingleSignOn />
-      {isLogin && (
-        <>
-          {!isHide && (
-            <div className="fixed inset-y-0 left-0 z-50">
-              <SideMenu
-                collapsed={isCollapsed}
-                onHandle={() => dispatch(uiActions.toggleSideMenu())}
-              />
-            </div>
-          )}
-
-          <div
-            className={cn(
-              layoutBody,
-              !isHide &&
-                (isCollapsed
-                  ? layoutBodyWithMenuCollapsed
-                  : layoutBodyWithMenuExpanded),
-            )}
-          >
-            {!isHide && <Header />}
-            {!isHide && <TabsBar />}
-            <main className={mainArea}>{children}</main>
-          </div>
-        </>
+      {/* <SimpleSingleSignOn /> */}
+      {!isHide && (
+        <div className="fixed inset-y-0 left-0 z-50">
+          <SideMenu
+            collapsed={isCollapsed}
+            onHandle={() => dispatch(uiActions.toggleSideMenu())}
+          />
+        </div>
       )}
+
+      <div
+        className={cn(
+          layoutBody,
+          !isHide &&
+            (isCollapsed
+              ? layoutBodyWithMenuCollapsed
+              : layoutBodyWithMenuExpanded),
+        )}
+      >
+        {!isHide && <Header />}
+        {!isHide && <TabsBar />}
+        <main className={mainArea}>{children}</main>
+      </div>
     </div>
   );
 };

@@ -38,7 +38,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path={UrlPath.Root} element={<SimpleSingleSignOn />} />
+        {/* <Route path={UrlPath.Root} element={<SimpleSingleSignOn />} /> */}
+        <Route path={UrlPath.Root} element={<MyPage />} />
         <Route path={UrlPath.MyPage} element={<MyPage />} />
         <Route path={UrlPath.JobSearch} element={<JobSearch />} />
         <Route path={UrlPath.ShareArea} element={<ShareArea />} />

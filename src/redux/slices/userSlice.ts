@@ -464,6 +464,7 @@ export const userSelector = {
     createSelector(userRootSelector, (state) => {
       return state.list.searchCondition;
     }),
+  // 互換用エイリアス（既存画面が参照）
 
   userListSelector: () =>
     createSelector(userRootSelector, (state) => {

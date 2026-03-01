@@ -58,6 +58,7 @@ export const AutoCompleteSingle = (props: {
       ...styles,
       flexGrow: 1,
     }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   };
 
   const options =
@@ -76,10 +77,6 @@ export const AutoCompleteSingle = (props: {
       onChange={props.onChange}
       menuPortalTarget={typeof document !== "undefined" ? document.body : null}
       menuPosition="fixed"
-      styles={{
-        ...autoCompleteStyles,
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-      }}
     />
   );
 };

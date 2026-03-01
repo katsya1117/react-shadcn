@@ -48,6 +48,7 @@ export const AutoCompleteMulti = (props: {
         backgroundColor: color.alpha(0.1).css(),
       };
     },
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   };
 
   const options =
@@ -67,10 +68,6 @@ export const AutoCompleteMulti = (props: {
       value={props.value}
       menuPortalTarget={typeof document !== "undefined" ? document.body : null}
       menuPosition="fixed"
-      styles={{
-        ...autoCompleteStyles,
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-      }}
     />
   );
 };

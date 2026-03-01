@@ -42,6 +42,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useParams } from "react-router";
 import type { SingleValue } from "react-select";
+import { z } from "zod";
 import Config from "../../config/apiConfig";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Skeleton } from "../ui/skeleton";
@@ -148,6 +149,70 @@ const SearchConditionValMap: SearchConditionValMap = {
 const MAX_DISP_LEN = 100;
 const MAX_ACCOUNT_LEN = 100;
 const MAX_EMAIL_LEN = 200;
+// 半角のみ（スペース含めず、ASCII 0x21-0x7E）
+const asciiNoSpaceRegex = /^[\x21-\x7E]*$/;
+// 半角の英数字を1文字以上含む（記号だけを禁止）
+const hasAsciiAlphaNum = /[A-Za-z0-9]/;
+// 文字 or 数字を1文字以上含む（記号だけを禁止）
+const hasLetterOrNumber = /[\p{L}\p{N}]/u;
+const emailSchema = z.string().email();
+const deriveUserId = (accountName: string) =>
+  accountName.replace(/^Y[\\¥]/, "");
+
+const userIdSchema = z
+  .string()
+  .trim()
+  .min(1, "ユーザーIDは必須です")
+  .refine(
+    (value) => asciiNoSpaceRegex.test(value),
+    "ユーザーIDは1バイト文字のみ入力できます",
+  )
+  .refine(
+    (value) => hasAsciiAlphaNum.test(value),
+    "ユーザーIDは記号だけは不可です",
+  );
+
+const userUpdateSchema = z.object({
+  dispName: z
+    .string()
+    .trim()
+    .min(1, "表示名は必須です")
+    .max(MAX_DISP_LEN, "表示名の文字数制限を超えています")
+    .refine(
+      (value) => hasLetterOrNumber.test(value),
+      "表示名は記号だけは不可です",
+    ),
+  account: z
+    .string()
+    .trim()
+    .min(1, "ユーザー名は必須です")
+    .max(MAX_ACCOUNT_LEN, "ユーザー名の文字数制限を超えています")
+    .refine(
+      (value) => asciiNoSpaceRegex.test(value),
+      "ユーザー名は1バイト文字のみ入力できます",
+    )
+    .refine(
+      (value) => hasAsciiAlphaNum.test(value),
+      "ユーザー名は記号だけは不可です",
+    ),
+  mail: z
+    .string()
+    .trim()
+    .min(1, "メールアドレスは必須です")
+    .max(MAX_EMAIL_LEN, "メールアドレスの文字数制限を超えています")
+    .refine(
+      (value) => asciiNoSpaceRegex.test(value),
+      "メールアドレスは1バイト文字のみ入力できます",
+    )
+    .refine(
+      (value) => hasAsciiAlphaNum.test(value),
+      "メールアドレスは記号だけは不可です",
+    )
+    .refine(
+      (value) => emailSchema.safeParse(value).success,
+      "メールアドレスの形式が不正です",
+    ),
+});
 
 export const UserEdit = () => {
   const { user_cd } = useParams();
@@ -267,24 +332,28 @@ export const UserEdit = () => {
 
   const handleUserSave = async () => {
     if (!user_cd) return;
-    const errors: string[] = [];
-    if (dispName.length > MAX_DISP_LEN) {
-      errors.push("表示名の文字数制限を超えています");
+    const parsed = userUpdateSchema.safeParse({
+      dispName,
+      account,
+      mail,
+    });
+    if (!parsed.success) {
+      const message = parsed.error.errors.map((e) => e.message).join("\n");
+      toast.error(message);
+      return;
     }
-    if (account.length > MAX_ACCOUNT_LEN) {
-      errors.push("アカウント名の文字数制限を超えています");
-    }
-    if (mail.length > MAX_EMAIL_LEN) {
-      errors.push("メールアドレスの文字数制限を超えています");
-    }
-    if (errors.length > 0) {
-      toast.error(errors.join("\n"));
+    const { dispName: trimmedDisp, account: trimmedAcc, mail: trimmedMail } =
+      parsed.data;
+    const derivedUserId = deriveUserId(trimmedAcc);
+    const userIdParsed = userIdSchema.safeParse(derivedUserId);
+    if (!userIdParsed.success) {
+      toast.error(userIdParsed.error.errors[0]?.message ?? "ユーザーIDが不正です");
       return;
     }
     const params: UserUpdateParams = {
-      disp_name: dispName,
-      account: account,
-      email: mail,
+      disp_name: trimmedDisp,
+      account: trimmedAcc,
+      email: trimmedMail,
       language_code: lang === "ja" ? 0 : lang === "en" ? 1 : undefined,
       center_cd: belonging?.value ?? "",
       perm_cd: permission,

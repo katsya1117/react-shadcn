@@ -34,9 +34,10 @@ export const Header = () => {
       { prefix: UrlPath.ShareArea, title: "センター専用領域" },
     ].find((item) => pathname.startsWith(item.prefix))?.title ?? "Ops Console";
 
-  if (!loginUser) {
-    return <></>;
-  }
+  const userLabel = loginUser
+    ? `${loginUser.user?.user_cd ?? ""}(${loginUser.user?.disp_name ?? ""})`
+    : "Guest";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
@@ -52,9 +53,7 @@ export const Header = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <UserRound className="text-muted-foreground" />
-                <span className="truncate">
-                  {loginUser?.user?.user_cd}({loginUser?.user?.disp_name})
-                </span>
+                <span className="truncate">{userLabel}</span>
                 {userOpen ? (
                   <ChevronUp className="text-xs text-muted-foreground" />
                 ) : (

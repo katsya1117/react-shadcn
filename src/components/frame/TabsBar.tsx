@@ -112,6 +112,7 @@ export const TabsBar = () => {
                     value={item.to}
                     className={cn(
                       "tab-item relative h-9 rounded-none data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                      "after:hidden",
                       isHidden &&
                         "opacity-0 pointer-events-none absolute inset-0",
                     )}

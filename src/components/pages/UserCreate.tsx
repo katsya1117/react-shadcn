@@ -70,7 +70,7 @@ const REG_STATUS = {
 
 export const UserCreate = () => {
   const dispatch: AppDispatch = useDispatch();
-  const list = useSelector(userSelector.asUserListSelector());
+  const list = useSelector(userSelector.adUserListSelector());
   const searchCondition = useSelector(
     userSelector.adUserSearchConditionSelector(),
   );
