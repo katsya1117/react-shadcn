@@ -28,7 +28,7 @@ import type { AppRootState } from "../store";
 const sliceName = "searchSet";
 
 // 利用するAPI
-const searchsetApi = new searchsetApi(Config.apiConfig);
+const searchsetApi = new SearchsetApi(Config.apiConfig);
 
 /** ユーザーの全ての検索セット取得 Action */
 export const getAllSearchsets = createAsyncThunk(
@@ -141,14 +141,14 @@ export const userSelector = {
   mySearchsetSelector: () =>
     createSelector(searchsetSelector, (state) => {
       const { entities, mySearchsetIds } = state;
-      return entries.filter(item=>mySearchsetIds.includes(item.search_cd));
-  }),
+      return entries.filter((item) => mySearchsetIds.includes(item.search_cd));
+    }),
 
   notMySearchsetSelector: () =>
     createSelector(searchsetSelector, (state) => {
       const { entities, mySearchsetIds } = state;
-      return entries.filter(item=>!mySearchsetIds.includes(item.search_cd));
-  }),
+      return entries.filter((item) => !mySearchsetIds.includes(item.search_cd));
+    }),
 };
 
 // reducerをexport
