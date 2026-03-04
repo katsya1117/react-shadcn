@@ -5,6 +5,7 @@ export const UrlPath = {
   ShareArea: "/job/ShareArea",
   LogSearch: "/job/LogSearch",
   JobCreate: "/job/JobCreate",
+  BoxElements: "/job/BoxElements",
   Tool: "/job/Tool",
   OAUsers: "/OA/Users",
   OAOrders: "/OA/Orders",

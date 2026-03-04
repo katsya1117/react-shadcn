@@ -30,6 +30,7 @@ export const Header = () => {
       { prefix: UrlPath.JobSearch, title: "JOB SEARCH" },
       { prefix: UrlPath.LogSearch, title: "LOG SEARCH" },
       { prefix: UrlPath.JobCreate, title: "JOB作成" },
+      { prefix: UrlPath.BoxElements, title: "Box Elements" },
       { prefix: UrlPath.Tool, title: "TOOL" },
       { prefix: UrlPath.ShareArea, title: "センター専用領域" },
     ].find((item) => pathname.startsWith(item.prefix))?.title ?? "Ops Console";

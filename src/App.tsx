@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import "./App.css";
 
 import { Batch } from "./components/pages/Batch";
+import { BoxElements } from "./components/pages/BoxElements";
 import { CenterCreate } from "./components/pages/CenterCreate";
 import { CenterEdit } from "./components/pages/CenterEdit";
 import { CenterManage } from "./components/pages/CenterManage";
@@ -45,6 +46,7 @@ function App() {
         <Route path={UrlPath.ShareArea} element={<ShareArea />} />
         <Route path={UrlPath.LogSearch} element={<LogSearch />} />
         <Route path={UrlPath.JobCreate} element={<JobCreate />} />
+        <Route path={UrlPath.BoxElements} element={<BoxElements />} />
         <Route path={UrlPath.Tool} element={<Tool />} />
 
         <Route path={UrlPath.OAUsers} element={<OAUsers />} />

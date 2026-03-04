@@ -7,6 +7,7 @@ import {
   FileSearch,
   FilePlus2,
   Wrench,
+  Box,
   Cloud,
   Lock,
   ChevronLeft,
@@ -59,6 +60,12 @@ const navItems: NavItem[] = [
     collapsedLabel: "JOB¥n作成",
     to: UrlPath.JobCreate,
     icon: FilePlus2,
+  },
+  {
+    label: "Box Elements",
+    collapsedLabel: "Box¥nElements",
+    to: UrlPath.BoxElements,
+    icon: Box,
   },
   { label: "TOOL", collapsedLabel: "TOOL", to: UrlPath.Tool, icon: Wrench },
   {

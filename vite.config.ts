@@ -6,6 +6,9 @@ import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
+  optimizeDeps: {
+    exclude: ["box-ui-elements", "box-ui-elements/i18n/bundles/ja-JP"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
