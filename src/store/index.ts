@@ -5,6 +5,7 @@ import { autoCompleteReducer } from "@/redux/slices/autoCompleteSlice";
 import { centerSliceReducer } from "@/redux/slices/centerSlice";
 import { uiSliceReducer } from "@/redux/slices/uiSlice";
 import { permissionReducer } from "@/redux/slices/permissionSlice";
+import { explorerHistoryReducer } from "@/redux/slices/explorerHistorySlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     center: centerSliceReducer,
     ui: uiSliceReducer,
     permission: permissionReducer,
+    explorerHistory: explorerHistoryReducer,
   },
 });
 

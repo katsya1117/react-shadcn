@@ -9,6 +9,8 @@ import {
   layoutBodyWithMenuCollapsed,
   layoutBodyWithMenuExpanded,
   mainArea,
+  layoutBodyStandalone,
+  mainAreaFluid,
 } from "./LayoutStyle.css";
 import { cn } from "@/lib/utils";
 import { userSelector } from "@/redux/slices/userSlice";
@@ -21,9 +23,20 @@ import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
  * Side navigation layout with a global top header.
  * OA連携 / 管理 配下のページではコンテンツ上部にタブを表示する。
  */
-type LayoutProps = PropsWithChildren<{ isHide?: boolean }>;
+type LayoutProps = PropsWithChildren<{
+  hideSideMenu?: boolean;
+  hideHeader?: boolean;
+  hideTabs?: boolean;
+  fluid?: boolean;
+}>;
 
-export const Layout = ({ children, isHide }: LayoutProps) => {
+export const Layout = ({
+  children,
+  hideSideMenu,
+  hideHeader,
+  hideTabs,
+  fluid,
+}: LayoutProps) => {
   const isLogin = useSelector(userSelector.isLoginSelector());
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
   const dispatch: AppDispatch = useDispatch();
@@ -42,7 +55,7 @@ export const Layout = ({ children, isHide }: LayoutProps) => {
   return (
     <div className={layoutContainer}>
       {/* <SimpleSingleSignOn /> */}
-      {!isHide && (
+      {!hideSideMenu && (
         <div className="fixed inset-y-0 left-0 z-50">
           <SideMenu
             collapsed={isCollapsed}
@@ -54,15 +67,16 @@ export const Layout = ({ children, isHide }: LayoutProps) => {
       <div
         className={cn(
           layoutBody,
-          !isHide &&
-            (isCollapsed
+          hideSideMenu
+            ? layoutBodyStandalone
+            : isCollapsed
               ? layoutBodyWithMenuCollapsed
-              : layoutBodyWithMenuExpanded),
+              : layoutBodyWithMenuExpanded,
         )}
       >
-        {!isHide && <Header />}
-        {!isHide && <TabsBar />}
-        <main className={mainArea}>{children}</main>
+        {!hideHeader && <Header />}
+        {!hideTabs && <TabsBar />}
+        <main className={cn(mainArea, fluid && mainAreaFluid)}>{children}</main>
       </div>
     </div>
   );

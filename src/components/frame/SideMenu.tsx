@@ -62,9 +62,9 @@ const navItems: NavItem[] = [
     icon: FilePlus2,
   },
   {
-    label: "Box Elements",
-    collapsedLabel: "Box¥nElements",
-    to: UrlPath.BoxElements,
+    label: "SS",
+    collapsedLabel: "SS",
+    to: UrlPath.SS,
     icon: Box,
   },
   { label: "TOOL", collapsedLabel: "TOOL", to: UrlPath.Tool, icon: Wrench },

@@ -1,0 +1,8 @@
+#box-content-explorer .be-logo,
+#box-content-explorer .be-logo-container {
+  display: none !important;
+}
+
+#box-content-explorer .be-header {
+  padding-left: 12px !important;
+}

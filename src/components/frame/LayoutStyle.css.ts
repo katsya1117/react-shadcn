@@ -15,6 +15,10 @@ export const layoutBody = style({
   width: "100%",
 });
 
+export const layoutBodyStandalone = style({
+  paddingLeft: 0,
+});
+
 export const mainArea = style({
   minHeight: 0,
   width: "100%",
@@ -23,6 +27,11 @@ export const mainArea = style({
   margin: "0 auto",
   padding: "1rem clamp(1rem, 1vw + 0.5rem, 2rem)",
   boxSizing: "border-box",
+});
+
+export const mainAreaFluid = style({
+  maxWidth: "100%",
+  padding: "1rem",
 });
 
 export const layoutBodyWithMenuExpanded = style({
