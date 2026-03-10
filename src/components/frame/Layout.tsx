@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { useEffect, useState } from "react";
 import { SideMenu } from "./SideMenu";
-import { Header } from "./Header";
+import { Header, type HeaderProps } from "./Header";
 import { TabsBar } from "./TabsBar";
 import {
   layoutContainer,
@@ -28,6 +28,8 @@ type LayoutProps = PropsWithChildren<{
   hideHeader?: boolean;
   hideTabs?: boolean;
   fluid?: boolean;
+  /** Header コンポーネントへの props */
+  headerProps?: HeaderProps;
 }>;
 
 export const Layout = ({
@@ -36,6 +38,7 @@ export const Layout = ({
   hideHeader,
   hideTabs,
   fluid,
+  headerProps,
 }: LayoutProps) => {
   const isLogin = useSelector(userSelector.isLoginSelector());
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
@@ -74,7 +77,7 @@ export const Layout = ({
               : layoutBodyWithMenuExpanded,
         )}
       >
-        {!hideHeader && <Header />}
+        {!hideHeader && <Header {...headerProps} />}
         {!hideTabs && <TabsBar />}
         <main className={cn(mainArea, fluid && mainAreaFluid)}>{children}</main>
       </div>

@@ -14,15 +14,28 @@ import { UrlPath } from "@/constant/UrlPath";
 import { NavLink as RouterNavLink, useLocation } from "react-router";
 import { ChevronUp, ChevronDown, UserRound } from "lucide-react";
 
+export type HeaderProps = {
+  /** ヘッダータイトルを上書き */
+  title?: string;
+  /** サブタイトル（領域名など） */
+  subtitle?: string;
+  /** ユーザードロップダウンの内容をカスタマイズ（指定がない場合はデフォルト） */
+  userDropdownMode?: "default" | "simple";
+};
+
 /**
  * サイドレイアウト用ヘッダー（タイトルなし、操作系のみ）
  */
-export const Header = () => {
+export const Header = ({
+  title: titleProp,
+  subtitle,
+  userDropdownMode = "default",
+}: HeaderProps = {}) => {
   const loginUser = useSelector(userSelector.loginUserSelector());
   const { pathname } = useLocation();
   const [userOpen, setUserOpen] = useState(false);
 
-  const title =
+  const autoTitle =
     [
       { prefix: "/OA/", title: "OA連携" },
       { prefix: "/manage/", title: "管理" },
@@ -33,7 +46,10 @@ export const Header = () => {
       { prefix: UrlPath.BoxElements, title: "Box Elements" },
       { prefix: UrlPath.Tool, title: "TOOL" },
       { prefix: UrlPath.ShareArea, title: "センター専用領域" },
+      { prefix: UrlPath.SS, title: "SS" },
     ].find((item) => pathname.startsWith(item.prefix))?.title ?? "Ops Console";
+
+  const title = titleProp ?? autoTitle;
 
   const userLabel = loginUser
     ? `${loginUser.user?.user_cd ?? ""}(${loginUser.user?.disp_name ?? ""})`
@@ -42,37 +58,54 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-base font-semibold text-foreground">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground min-w-0">
+          <span className="text-lg font-semibold text-foreground tracking-tight font-mono shrink-0">
             {title}
           </span>
+          {subtitle && (
+            <>
+              <span className="text-muted-foreground/50">/</span>
+              <span className="text-sm font-medium text-muted-foreground truncate">
+                {subtitle}
+              </span>
+            </>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Information className="h-8 w-8 p-0" />
           <VersionInfo className="h-8 w-8 p-0" />
           <DropdownMenu open={userOpen} onOpenChange={setUserOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <UserRound className="text-muted-foreground" />
-                <span className="truncate">{userLabel}</span>
-                {userOpen ? (
-                  <ChevronUp className="text-xs text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="text-xs text-muted-foreground" />
-                )}
+                <span className="truncate max-w-[150px]">{userLabel}</span>
+                {userDropdownMode === "default" &&
+                  (userOpen ? (
+                    <ChevronUp className="text-xs text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="text-xs text-muted-foreground" />
+                  ))}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <RouterNavLink to={UrlPath.MyPageEdit}>
-                  MyPage設定変更
-                </RouterNavLink>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <RouterNavLink to={UrlPath.UserProfile}>
-                  ユーザー情報設定変更
-                </RouterNavLink>
-              </DropdownMenuItem>
+              {userDropdownMode === "simple" ? (
+                <DropdownMenuItem disabled className="cursor-default">
+                  {userLabel}
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem asChild>
+                    <RouterNavLink to={UrlPath.MyPageEdit}>
+                      MyPage設定変更
+                    </RouterNavLink>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <RouterNavLink to={UrlPath.UserProfile}>
+                      ユーザー情報設定変更
+                    </RouterNavLink>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

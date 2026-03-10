@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Monitor, Box } from "lucide-react";
+import { Folder, Monitor, Box, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
@@ -18,6 +18,8 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router";
+import { UrlPath } from "@/constant/UrlPath";
 
 type Area = {
   code: string;
@@ -67,6 +69,7 @@ const initialAreas: Area[] = [
 
 const ShareArea = () => {
   const [areas, setAreas] = useState<Area[]>(initialAreas);
+  const navigate = useNavigate();
 
   const toggleMount = (code: string) => {
     setAreas((prev) =>
@@ -138,6 +141,24 @@ const ShareArea = () => {
 
                 <CardContent className="pt-0 pb-4">
                   <div className="flex justify-end gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-10 w-10 rounded-full hover:bg-muted"
+                          onClick={() =>
+                            navigate(
+                              `${UrlPath.SS}?area=${encodeURIComponent(area.code)}&label=${encodeURIComponent(area.label)}&folder=${encodeURIComponent(area.folderName)}`
+                            )
+                          }
+                          aria-label="権限設定"
+                        >
+                          <Settings className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>権限設定 (SS)</TooltipContent>
+                    </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
