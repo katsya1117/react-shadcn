@@ -126,7 +126,7 @@ describe('userSlice', () => {
     ];
 
     const action = getAdUserList.fulfilled(
-      { items, pagination: basePagination },
+      { data: items, items, pagination: basePagination },
       'request-1',
       { page: 1, per_page: 10 } as any,
     );
