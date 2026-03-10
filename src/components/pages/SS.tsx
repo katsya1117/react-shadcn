@@ -37,15 +37,12 @@ import {
   User,
   ChevronDown,
   ChevronUp,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { cn } from "@/lib/utils";
-import "./SS.css";
 
 // Box Content Explorer インスタンス型
 type ContentExplorerInstance = {
@@ -141,8 +138,6 @@ export const SS = () => {
   });
 
   const currentFolder = nav.history[nav.index];
-  const canGoBack = nav.index > 0;
-  const canGoForward = nav.index < nav.history.length - 1;
   const canShowExplorer = Boolean(effectiveToken);
 
   // 権限設定パネルの展開状態
@@ -205,23 +200,6 @@ export const SS = () => {
     toast.info("エクスプローラーで開きます");
   }, [currentPath]);
 
-  // フォルダを開く（ナビゲート）
-  const handleOpenFolder = useCallback((item: BoxFolder) => {
-    if (item.type !== "folder") return;
-
-    setNav((prev) => {
-      const trimmed = prev.history.slice(0, prev.index + 1);
-      const last = trimmed[trimmed.length - 1];
-
-      if (last.id === item.id) return prev;
-
-      return {
-        history: [...trimmed, { id: item.id, name: item.name }],
-        index: trimmed.length,
-      };
-    });
-  }, []);
-
   // マウント処理
   const handleMount = useCallback((item: BoxFolder) => {
     if (item.type !== "folder") return;
@@ -248,7 +226,7 @@ export const SS = () => {
         type: "folder",
       },
     ],
-    [handleMount, handleOpenFolder],
+    [handleMount],
   );
 
   // Box Content Explorer 初期化
@@ -261,6 +239,8 @@ export const SS = () => {
       explorerRef.current = new BoxGlobal.ContentExplorer();
     }
 
+    explorerRef.current?.removeAllListeners?.();
+
     return () => {
       explorerRef.current?.removeAllListeners?.();
       explorerRef.current?.hide?.();
@@ -271,30 +251,14 @@ export const SS = () => {
   useEffect(() => {
     const explorer = explorerRef.current;
 
+    if (!explorer || !effectiveToken) return;
+
     explorer.show(currentFolder.id, effectiveToken, {
       container: "#box-content-explorer",
       canPreview: false,
       itemActions: customActions,
     });
   }, [currentFolder.id, effectiveToken, customActions]);
-
-  // ナビゲーション: 戻る
-  const goBack = () => {
-    if (!canGoBack) return;
-    setNav((prev) => ({
-      ...prev,
-      index: prev.index - 1,
-    }));
-  };
-
-  // ナビゲーション: 進む
-  const goForward = () => {
-    if (!canGoForward) return;
-    setNav((prev) => ({
-      ...prev,
-      index: prev.index + 1,
-    }));
-  };
 
   // コラボレーター追加
   const handleAddCollaborator = useCallback(() => {
@@ -385,38 +349,6 @@ export const SS = () => {
           <Card className="py-0">
             <CardContent className="py-3">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                {/* ナビゲーションボタン */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={goBack}
-                        disabled={!canGoBack}
-                        aria-label="戻る"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>戻る</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={goForward}
-                        disabled={!canGoForward}
-                        aria-label="進む"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>進む</TooltipContent>
-                  </Tooltip>
-                </div>
-
                 {/* パス入力 */}
                 <div className="flex-1 min-w-0">
                   <Input
@@ -479,7 +411,7 @@ export const SS = () => {
             {canShowExplorer ? (
               <div
                 id="box-content-explorer"
-                className="min-h-[400px] max-h-[500px]"
+                className="min-h-[400px] max-h-[500px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
               />
             ) : (
               <div className="min-h-[400px] flex items-center justify-center text-sm text-muted-foreground">
