@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-=======
-import { useCallback, useEffect, useMemo, useRef } from "react";
->>>>>>> main
 import { useSelector } from "react-redux";
 import type { MultiValue, SingleValue } from "react-select";
 
@@ -12,7 +8,6 @@ import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
 import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
 import { boxSelector } from "@/redux/slices/userSlice";
-<<<<<<< HEAD
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +26,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import {
   Copy,
@@ -40,10 +42,7 @@ import {
   UserPlus,
   Building2,
   User,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
+  Settings,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -51,9 +50,6 @@ import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { cn } from "@/lib/utils";
 import "./SS.css";
-=======
-import type { BoxFolder } from "../../@types/BoxUiElements";
->>>>>>> main
 
 // Box Content Explorer インスタンス型
 type ContentExplorerInstance = {
@@ -61,13 +57,6 @@ type ContentExplorerInstance = {
   hide?: () => void;
   removeAllListeners?: () => void;
   addListener?: (event: string, callback: (item: BoxFolder) => void) => void;
-};
-
-<<<<<<< HEAD
-// ナビゲーション状態
-type NavState = {
-  history: { id: string; name: string }[];
-  index: number;
 };
 
 // 権限の役割定義
@@ -109,8 +98,13 @@ const MOCK_COLLABORATORS: Collaborator[] = [
   },
 ];
 
-=======
->>>>>>> main
+// 現在表示中のフォルダ情報
+type CurrentFolderInfo = {
+  id: string;
+  name: string;
+  pathCollection?: { entries: { id: string; name: string }[] };
+};
+
 export const SS = () => {
   const [searchParams] = useSearchParams();
 
@@ -132,12 +126,9 @@ export const SS = () => {
     return storedToken && storedToken.length > 0 ? storedToken : undefined;
   }, []);
 
-<<<<<<< HEAD
   const effectiveToken = devToken ?? token;
 
   // 初期フォルダID
-=======
->>>>>>> main
   const rawId =
     typeof window === "undefined"
       ? null
@@ -147,24 +138,21 @@ export const SS = () => {
 
   // Box Content Explorer ref
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
-<<<<<<< HEAD
 
-  // ナビゲーション状態
-  const [nav, setNav] = useState<NavState>({
-    history: [{ id: effectiveFolderId, name: folderName || "root" }],
-    index: 0,
+  // 現在表示中のフォルダ情報（ContentExplorerのナビゲーションを追跡）
+  const [currentFolder, setCurrentFolder] = useState<CurrentFolderInfo>({
+    id: effectiveFolderId,
+    name: folderName || "root",
+    pathCollection: { entries: [] },
   });
 
-  const currentFolder = nav.history[nav.index];
-  const canGoBack = nav.index > 0;
-  const canGoForward = nav.index < nav.history.length - 1;
-=======
-  const effectiveToken = devToken ?? token;
->>>>>>> main
   const canShowExplorer = Boolean(effectiveToken);
 
-  // 権限設定パネルの展開状態
-  const [isPermissionPanelOpen, setIsPermissionPanelOpen] = useState(true);
+  // 権限設定ダイアログの状態
+  const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
+  const [targetFolder, setTargetFolder] = useState<CurrentFolderInfo | null>(
+    null
+  );
 
   // コラボレーター一覧
   const [collaborators, setCollaborators] =
@@ -188,12 +176,22 @@ export const SS = () => {
   const currentPath = useMemo(() => {
     const basePath = "\\\\tggfile.jp";
     const areaRoot = folderName ? `\\${folderName}` : "";
-    const subPath = nav.history
-      .slice(1, nav.index + 1)
-      .map((f) => `\\${f.name}`)
-      .join("");
-    return `${basePath}${areaRoot}${subPath}`;
-  }, [folderName, nav.history, nav.index]);
+
+    // path_collectionからサブパスを構築
+    const subPath =
+      currentFolder.pathCollection?.entries
+        ?.filter((entry) => entry.id !== "0") // ルートを除外
+        .map((entry) => `\\${entry.name}`)
+        .join("") || "";
+
+    // 現在のフォルダ名を追加（ルートでない場合）
+    const currentFolderPath =
+      currentFolder.id !== effectiveFolderId && currentFolder.name !== "root"
+        ? `\\${currentFolder.name}`
+        : "";
+
+    return `${basePath}${areaRoot}${subPath}${currentFolderPath}`;
+  }, [folderName, currentFolder, effectiveFolderId]);
 
   // Box Web URL
   const boxWebUrl = useMemo(() => {
@@ -223,23 +221,6 @@ export const SS = () => {
     toast.info("エクスプローラーで開きます");
   }, [currentPath]);
 
-  // フォルダを開く（ナビゲート）
-  const handleOpenFolder = useCallback((item: BoxFolder) => {
-    if (item.type !== "folder") return;
-
-    setNav((prev) => {
-      const trimmed = prev.history.slice(0, prev.index + 1);
-      const last = trimmed[trimmed.length - 1];
-
-      if (last.id === item.id) return prev;
-
-      return {
-        history: [...trimmed, { id: item.id, name: item.name }],
-        index: trimmed.length,
-      };
-    });
-  }, []);
-
   // マウント処理
   const handleMount = useCallback((item: BoxFolder) => {
     if (item.type !== "folder") return;
@@ -257,10 +238,21 @@ export const SS = () => {
     window.location.assign(target);
   }, []);
 
-<<<<<<< HEAD
+  // 権限設定ダイアログを開く
+  const handleOpenPermissionDialog = useCallback((item: BoxFolder) => {
+    if (item.type !== "folder") return;
+
+    setTargetFolder({
+      id: item.id,
+      name: item.name,
+      pathCollection: item.path_collection
+        ? { entries: item.path_collection.entries || [] }
+        : undefined,
+    });
+    setIsPermissionDialogOpen(true);
+  }, []);
+
   // カスタムアクション
-=======
->>>>>>> main
   const customActions = useMemo(
     () => [
       {
@@ -268,13 +260,27 @@ export const SS = () => {
         onAction: (item: BoxFolder) => handleMount(item),
         type: "folder",
       },
+      {
+        label: "権限設定",
+        onAction: (item: BoxFolder) => handleOpenPermissionDialog(item),
+        type: "folder",
+      },
     ],
-<<<<<<< HEAD
-    [handleMount, handleOpenFolder]
-=======
-    [handleMount],
->>>>>>> main
+    [handleMount, handleOpenPermissionDialog]
   );
+
+  // フォルダナビゲーション時のコールバック
+  const handleNavigate = useCallback((item: BoxFolder) => {
+    if (item.type === "folder") {
+      setCurrentFolder({
+        id: item.id,
+        name: item.name,
+        pathCollection: item.path_collection
+          ? { entries: item.path_collection.entries || [] }
+          : undefined,
+      });
+    }
+  }, []);
 
   // Box Content Explorer 初期化
   useEffect(() => {
@@ -286,57 +292,23 @@ export const SS = () => {
       explorerRef.current = new BoxGlobal.ContentExplorer();
     }
 
-<<<<<<< HEAD
-    return () => {
-      explorerRef.current?.removeAllListeners?.();
-      explorerRef.current?.hide?.();
-    };
-  }, [effectiveToken]);
-
-  // フォルダ表示更新
-  useEffect(() => {
-=======
->>>>>>> main
     const explorer = explorerRef.current;
 
-<<<<<<< HEAD
-    explorer.show(currentFolder.id, effectiveToken, {
-=======
     explorer?.removeAllListeners?.();
     explorer?.show(effectiveFolderId, effectiveToken, {
->>>>>>> main
       container: "#box-content-explorer",
       canPreview: false,
       itemActions: customActions,
     });
-<<<<<<< HEAD
-  }, [currentFolder.id, effectiveToken, customActions]);
 
-  // ナビゲーション: 戻る
-  const goBack = () => {
-    if (!canGoBack) return;
-    setNav((prev) => ({
-      ...prev,
-      index: prev.index - 1,
-    }));
-  };
-
-  // ナビゲーション: 進む
-  const goForward = () => {
-    if (!canGoForward) return;
-    setNav((prev) => ({
-      ...prev,
-      index: prev.index + 1,
-    }));
-  };
-=======
+    // ナビゲーションイベントをリッスン
+    explorer?.addListener?.("navigate", handleNavigate);
 
     return () => {
       explorer?.removeAllListeners?.();
       explorer?.hide?.();
     };
-  }, [customActions, effectiveFolderId, effectiveToken]);
->>>>>>> main
+  }, [customActions, effectiveFolderId, effectiveToken, handleNavigate]);
 
   // コラボレーター追加
   const handleAddCollaborator = useCallback(() => {
@@ -391,6 +363,7 @@ export const SS = () => {
     setPendingRemoves([]);
     setHasChanges(false);
     toast.success("権限設定を適用しました");
+    setIsPermissionDialogOpen(false);
   }, [pendingAdds, pendingRemoves]);
 
   // 変更をキャンセル
@@ -398,7 +371,7 @@ export const SS = () => {
     setPendingAdds([]);
     setPendingRemoves([]);
     setHasChanges(false);
-    toast.info("変更をキャンセルしました");
+    setIsPermissionDialogOpen(false);
   }, []);
 
   // 表示するコラボレーター一覧
@@ -412,55 +385,21 @@ export const SS = () => {
   return (
     <TooltipProvider delayDuration={100}>
       <Layout
-          hideTabs
-          fluid
-          headerProps={{
-            title: "SS",
-            subtitle: areaLabel || undefined,
-            userDropdownMode: "simple",
-          }}
-        >
+        hideTabs
+        fluid
+        headerProps={{
+          title: "SS",
+          subtitle: areaLabel || undefined,
+          userDropdownMode: "simple",
+        }}
+      >
         <BoxManager />
 
-<<<<<<< HEAD
         <div className="space-y-4 pb-8">
-
           {/* パスバー */}
           <Card className="py-0">
             <CardContent className="py-3">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                {/* ナビゲーションボタン */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={goBack}
-                        disabled={!canGoBack}
-                        aria-label="戻る"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>戻る</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={goForward}
-                        disabled={!canGoForward}
-                        aria-label="進む"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>進む</TooltipContent>
-                  </Tooltip>
-                </div>
-
                 {/* パス入力 */}
                 <div className="flex-1 min-w-0">
                   <Input
@@ -476,7 +415,8 @@ export const SS = () => {
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        size="icon-sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={handleCopyPath}
                         aria-label="パスをコピー"
                       >
@@ -489,7 +429,8 @@ export const SS = () => {
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        size="icon-sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={handleOpenBox}
                         aria-label="Boxで開く"
                       >
@@ -502,7 +443,8 @@ export const SS = () => {
                     <TooltipTrigger asChild>
                       <Button
                         variant="outline"
-                        size="icon-sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={handleOpenExplorer}
                         aria-label="エクスプローラーで開く"
                       >
@@ -529,262 +471,232 @@ export const SS = () => {
               </div>
             )}
           </Card>
+        </div>
 
-          {/* 権限設定パネル */}
-          <Card>
-            <CardHeader
-              className="cursor-pointer select-none py-4"
-              onClick={() => setIsPermissionPanelOpen(!isPermissionPanelOpen)}
-            >
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  コラボレーション設定
-                  {hasChanges && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      未適用の変更あり
-                    </Badge>
-                  )}
-                </CardTitle>
-                {isPermissionPanelOpen ? (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        {/* 権限設定ダイアログ */}
+        <Dialog
+          open={isPermissionDialogOpen}
+          onOpenChange={setIsPermissionDialogOpen}
+        >
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                コラボレーション設定
+                {targetFolder && (
+                  <Badge variant="outline" className="ml-2">
+                    {targetFolder.name}
+                  </Badge>
                 )}
-              </div>
-            </CardHeader>
+              </DialogTitle>
+            </DialogHeader>
 
-            {isPermissionPanelOpen && (
-              <CardContent className="space-y-6 pt-0">
-                {/* 権限追加フォーム */}
-                <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
-                  <div className="text-sm font-medium">新しい権限を追加</div>
+            <div className="space-y-6">
+              {/* 権限追加フォーム */}
+              <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+                <div className="text-sm font-medium">新しい権限を追加</div>
 
-                  <div className="flex flex-col gap-3">
-                    {/* 1行目: タイプ選択 + AutoComplete */}
-                    <div className="flex flex-col md:flex-row gap-3">
-                      {/* タイプ選択 */}
-                      <div className="flex gap-1 p-1 bg-muted rounded-md shrink-0 w-fit">
-                        <Button
-                          variant={
-                            addType === "department" ? "secondary" : "ghost"
-                          }
-                          size="sm"
-                          onClick={() => setAddType("department")}
-                          className="gap-1.5"
-                        >
-                          <Building2 className="h-3.5 w-3.5" />
-                          部署
-                        </Button>
-                        <Button
-                          variant={addType === "user" ? "secondary" : "ghost"}
-                          size="sm"
-                          onClick={() => setAddType("user")}
-                          className="gap-1.5"
-                        >
-                          <User className="h-3.5 w-3.5" />
-                          社員
-                        </Button>
-                      </div>
-
-                      {/* AutoComplete */}
-                      <div className="flex-1 min-w-0">
-                        {addType === "user" ? (
-                          <AutoCompleteSingle
-                            type="user"
-                            value={selectedUser}
-                            placeholder="社員を検索..."
-                            onChange={(val) => setSelectedUser(val)}
-                          />
-                        ) : (
-                          <AutoCompleteMulti
-                            type="center"
-                            value={selectedDepartments}
-                            placeholder="部署を検索..."
-                            onChange={(val) => setSelectedDepartments(val)}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 2行目: Role選択 + 追加ボタン */}
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-muted-foreground shrink-0">
-                          権限:
-                        </span>
-                        <Select
-                          value={selectedRole}
-                          onValueChange={(val) =>
-                            setSelectedRole(val as RoleType)
-                          }
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROLE_OPTIONS.map((role) => (
-                              <SelectItem key={role.value} value={role.value}>
-                                <span className="flex items-center gap-2">
-                                  {role.label}
-                                  <span className="text-xs text-muted-foreground">
-                                    ({role.description})
-                                  </span>
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
+                <div className="flex flex-col gap-3">
+                  {/* 1行目: タイプ選択 + AutoComplete */}
+                  <div className="flex flex-col md:flex-row gap-3">
+                    {/* タイプ選択 */}
+                    <div className="flex gap-1 p-1 bg-muted rounded-md shrink-0 w-fit">
                       <Button
-                        onClick={handleAddCollaborator}
-                        disabled={
-                          (addType === "user" && !selectedUser) ||
-                          (addType === "department" &&
-                            selectedDepartments.length === 0)
+                        variant={
+                          addType === "department" ? "secondary" : "ghost"
                         }
-                        className="shrink-0"
+                        size="sm"
+                        onClick={() => setAddType("department")}
+                        className="gap-1.5"
                       >
-                        <UserPlus className="h-4 w-4 mr-1.5" />
-                        追加
+                        <Building2 className="h-3.5 w-3.5" />
+                        部署
+                      </Button>
+                      <Button
+                        variant={addType === "user" ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setAddType("user")}
+                        className="gap-1.5"
+                      >
+                        <User className="h-3.5 w-3.5" />
+                        社員
                       </Button>
                     </div>
+
+                    {/* AutoComplete */}
+                    <div className="flex-1 min-w-0">
+                      {addType === "user" ? (
+                        <AutoCompleteSingle
+                          type="user"
+                          value={selectedUser}
+                          placeholder="社員を検索..."
+                          onChange={(val) => setSelectedUser(val)}
+                        />
+                      ) : (
+                        <AutoCompleteMulti
+                          type="center"
+                          value={selectedDepartments}
+                          placeholder="部署を検索..."
+                          onChange={(val) => setSelectedDepartments(val)}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2行目: Role選択 + 追加ボタン */}
+                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground shrink-0">
+                        権限:
+                      </span>
+                      <Select
+                        value={selectedRole}
+                        onValueChange={(val) =>
+                          setSelectedRole(val as RoleType)
+                        }
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROLE_OPTIONS.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              <span className="flex items-center gap-2">
+                                {role.label}
+                                <span className="text-xs text-muted-foreground">
+                                  ({role.description})
+                                </span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      onClick={handleAddCollaborator}
+                      disabled={
+                        (addType === "user" && !selectedUser) ||
+                        (addType === "department" &&
+                          selectedDepartments.length === 0)
+                      }
+                      className="shrink-0"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1.5" />
+                      追加
+                    </Button>
                   </div>
                 </div>
+              </div>
 
-                {/* 現在のコラボレーター一覧 */}
-                <div className="space-y-3">
-                  <div className="text-sm font-medium flex items-center gap-2">
-                    現在の権限設定
-                    <Badge variant="outline" className="text-xs">
-                      {displayCollaborators.length}件
-                    </Badge>
-                  </div>
+              {/* 現在のコラボレーター一覧 */}
+              <div className="space-y-3">
+                <div className="text-sm font-medium flex items-center gap-2">
+                  現在の権限設定
+                  <Badge variant="outline" className="text-xs">
+                    {displayCollaborators.length}件
+                  </Badge>
+                </div>
 
-                  <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
-                    {displayCollaborators.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        コラボレーターが設定されていません
-                      </div>
-                    ) : (
-                      displayCollaborators.map((collab) => {
-                        const isPending = collab.id.startsWith("new-");
-                        const isRemoving = pendingRemoves.includes(collab.id);
+                <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
+                  {displayCollaborators.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      コラボレーターが設定されていません
+                    </div>
+                  ) : (
+                    displayCollaborators.map((collab) => {
+                      const isPending = collab.id.startsWith("new-");
+                      const isRemoving = pendingRemoves.includes(collab.id);
 
-                        return (
-                          <div
-                            key={collab.id}
-                            className={cn(
-                              "flex items-center justify-between p-3 group hover:bg-muted/30 transition-colors",
-                              isPending &&
-                                "bg-emerald-50 dark:bg-emerald-950/20",
-                              isRemoving && "opacity-50 line-through"
-                            )}
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
-                                style={{
-                                  backgroundColor: collab.color || "#6b7280",
-                                }}
-                              >
-                                {collab.type === "department" ? (
-                                  <Building2 className="h-4 w-4" />
-                                ) : (
-                                  <User className="h-4 w-4" />
+                      return (
+                        <div
+                          key={collab.id}
+                          className={cn(
+                            "flex items-center justify-between p-3 group hover:bg-muted/30 transition-colors",
+                            isPending && "bg-emerald-50 dark:bg-emerald-950/20",
+                            isRemoving && "opacity-50 line-through"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
+                              style={{
+                                backgroundColor: collab.color || "#6b7280",
+                              }}
+                            >
+                              {collab.type === "department" ? (
+                                <Building2 className="h-4 w-4" />
+                              ) : (
+                                <User className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-sm truncate flex items-center gap-2">
+                                {collab.name}
+                                {isPending && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs shrink-0"
+                                  >
+                                    追加予定
+                                  </Badge>
                                 )}
                               </div>
-                              <div className="min-w-0">
-                                <div className="font-medium text-sm truncate flex items-center gap-2">
-                                  {collab.name}
-                                  {isPending && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-xs shrink-0"
-                                    >
-                                      追加予定
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {collab.type === "department"
-                                    ? "部署"
-                                    : "社員"}
-                                </div>
+                              <div className="text-xs text-muted-foreground">
+                                {collab.type === "department" ? "部署" : "社員"}
                               </div>
                             </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Badge
-                                variant={
-                                  collab.role === "editor"
-                                    ? "default"
-                                    : "outline"
-                                }
-                                className="text-xs"
-                              >
-                                {
-                                  ROLE_OPTIONS.find(
-                                    (r) => r.value === collab.role
-                                  )?.label
-                                }
-                              </Badge>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                                    onClick={() =>
-                                      isPending
-                                        ? handleRemovePendingAdd(collab.id)
-                                        : handleRemoveCollaborator(collab.id)
-                                    }
-                                    aria-label="権限を削除"
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>権限を削除</TooltipContent>
-                              </Tooltip>
-                            </div>
                           </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
 
-                {/* 適用・キャンセルボタン */}
-                <div className="flex items-center justify-end gap-2 pt-2 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={!hasChanges}
-                  >
-                    キャンセル
-                  </Button>
-                  <Button onClick={handleApply} disabled={!hasChanges}>
-                    適用
-                  </Button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge
+                              variant={
+                                collab.role === "editor" ? "default" : "outline"
+                              }
+                              className="text-xs"
+                            >
+                              {
+                                ROLE_OPTIONS.find((r) => r.value === collab.role)
+                                  ?.label
+                              }
+                            </Badge>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                  onClick={() =>
+                                    isPending
+                                      ? handleRemovePendingAdd(collab.id)
+                                      : handleRemoveCollaborator(collab.id)
+                                  }
+                                  aria-label="権限を削除"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>権限を削除</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-              </CardContent>
-            )}
-          </Card>
-=======
-      {canShowExplorer ? (
-        <section className="rounded-md border bg-background relative">
-          <div
-            id="box-content-explorer"
-            className="min-h-[520px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
-          />
-        </section>
-      ) : (
-        <div className="rounded-md border bg-background min-h-[520px] flex items-center justify-center text-sm text-muted-foreground">
-          Box に接続中...
->>>>>>> main
-        </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={handleCancel}>
+                キャンセル
+              </Button>
+              <Button onClick={handleApply} disabled={!hasChanges}>
+                適用
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Layout>
     </TooltipProvider>
   );
