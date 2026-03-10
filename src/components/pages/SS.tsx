@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-=======
-import { useCallback, useEffect, useMemo, useRef } from "react";
->>>>>>> main
 import { useSelector } from "react-redux";
 import type { MultiValue, SingleValue } from "react-select";
 
@@ -12,7 +8,6 @@ import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
 import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
 import { boxSelector } from "@/redux/slices/userSlice";
-<<<<<<< HEAD
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,9 +46,6 @@ import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { cn } from "@/lib/utils";
 import "./SS.css";
-=======
-import type { BoxFolder } from "../../@types/BoxUiElements";
->>>>>>> main
 
 // Box Content Explorer インスタンス型
 type ContentExplorerInstance = {
@@ -63,7 +55,6 @@ type ContentExplorerInstance = {
   addListener?: (event: string, callback: (item: BoxFolder) => void) => void;
 };
 
-<<<<<<< HEAD
 // ナビゲーション状態
 type NavState = {
   history: { id: string; name: string }[];
@@ -109,8 +100,6 @@ const MOCK_COLLABORATORS: Collaborator[] = [
   },
 ];
 
-=======
->>>>>>> main
 export const SS = () => {
   const [searchParams] = useSearchParams();
 
@@ -132,12 +121,9 @@ export const SS = () => {
     return storedToken && storedToken.length > 0 ? storedToken : undefined;
   }, []);
 
-<<<<<<< HEAD
   const effectiveToken = devToken ?? token;
 
   // 初期フォルダID
-=======
->>>>>>> main
   const rawId =
     typeof window === "undefined"
       ? null
@@ -147,7 +133,6 @@ export const SS = () => {
 
   // Box Content Explorer ref
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
-<<<<<<< HEAD
 
   // ナビゲーション状態
   const [nav, setNav] = useState<NavState>({
@@ -158,9 +143,6 @@ export const SS = () => {
   const currentFolder = nav.history[nav.index];
   const canGoBack = nav.index > 0;
   const canGoForward = nav.index < nav.history.length - 1;
-=======
-  const effectiveToken = devToken ?? token;
->>>>>>> main
   const canShowExplorer = Boolean(effectiveToken);
 
   // 権限設定パネルの展開状態
@@ -251,16 +233,13 @@ export const SS = () => {
         .map((entry) => entry.name) ?? [];
 
     const target = encodeURI(
-      [...baseSegments, ...entrySegments, item.name].join("\\")
+      [...baseSegments, ...entrySegments, item.name].join("\\"),
     );
 
     window.location.assign(target);
   }, []);
 
-<<<<<<< HEAD
   // カスタムアクション
-=======
->>>>>>> main
   const customActions = useMemo(
     () => [
       {
@@ -269,11 +248,7 @@ export const SS = () => {
         type: "folder",
       },
     ],
-<<<<<<< HEAD
-    [handleMount, handleOpenFolder]
-=======
-    [handleMount],
->>>>>>> main
+    [handleMount, handleOpenFolder],
   );
 
   // Box Content Explorer 初期化
@@ -286,7 +261,6 @@ export const SS = () => {
       explorerRef.current = new BoxGlobal.ContentExplorer();
     }
 
-<<<<<<< HEAD
     return () => {
       explorerRef.current?.removeAllListeners?.();
       explorerRef.current?.hide?.();
@@ -295,21 +269,13 @@ export const SS = () => {
 
   // フォルダ表示更新
   useEffect(() => {
-=======
->>>>>>> main
     const explorer = explorerRef.current;
 
-<<<<<<< HEAD
     explorer.show(currentFolder.id, effectiveToken, {
-=======
-    explorer?.removeAllListeners?.();
-    explorer?.show(effectiveFolderId, effectiveToken, {
->>>>>>> main
       container: "#box-content-explorer",
       canPreview: false,
       itemActions: customActions,
     });
-<<<<<<< HEAD
   }, [currentFolder.id, effectiveToken, customActions]);
 
   // ナビゲーション: 戻る
@@ -329,14 +295,6 @@ export const SS = () => {
       index: prev.index + 1,
     }));
   };
-=======
-
-    return () => {
-      explorer?.removeAllListeners?.();
-      explorer?.hide?.();
-    };
-  }, [customActions, effectiveFolderId, effectiveToken]);
->>>>>>> main
 
   // コラボレーター追加
   const handleAddCollaborator = useCallback(() => {
@@ -378,7 +336,7 @@ export const SS = () => {
       const remaining = pendingAdds.filter((c) => c.id !== id);
       setHasChanges(remaining.length > 0 || pendingRemoves.length > 0);
     },
-    [pendingAdds, pendingRemoves]
+    [pendingAdds, pendingRemoves],
   );
 
   // 変更を適用
@@ -404,7 +362,7 @@ export const SS = () => {
   // 表示するコラボレーター一覧
   const displayCollaborators = useMemo(() => {
     const existing = collaborators.filter(
-      (c) => !pendingRemoves.includes(c.id)
+      (c) => !pendingRemoves.includes(c.id),
     );
     return [...existing, ...pendingAdds];
   }, [collaborators, pendingRemoves, pendingAdds]);
@@ -412,19 +370,17 @@ export const SS = () => {
   return (
     <TooltipProvider delayDuration={100}>
       <Layout
-          hideTabs
-          fluid
-          headerProps={{
-            title: "SS",
-            subtitle: areaLabel || undefined,
-            userDropdownMode: "simple",
-          }}
-        >
+        hideTabs
+        fluid
+        headerProps={{
+          title: "SS",
+          subtitle: areaLabel || undefined,
+          userDropdownMode: "simple",
+        }}
+      >
         <BoxManager />
 
-<<<<<<< HEAD
         <div className="space-y-4 pb-8">
-
           {/* パスバー */}
           <Card className="py-0">
             <CardContent className="py-3">
@@ -509,7 +465,9 @@ export const SS = () => {
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>エクスプローラー/Finderで開く</TooltipContent>
+                    <TooltipContent>
+                      エクスプローラー/Finderで開く
+                    </TooltipContent>
                   </Tooltip>
                 </div>
               </div>
@@ -679,7 +637,7 @@ export const SS = () => {
                               "flex items-center justify-between p-3 group hover:bg-muted/30 transition-colors",
                               isPending &&
                                 "bg-emerald-50 dark:bg-emerald-950/20",
-                              isRemoving && "opacity-50 line-through"
+                              isRemoving && "opacity-50 line-through",
                             )}
                           >
                             <div className="flex items-center gap-3 min-w-0">
@@ -726,7 +684,7 @@ export const SS = () => {
                               >
                                 {
                                   ROLE_OPTIONS.find(
-                                    (r) => r.value === collab.role
+                                    (r) => r.value === collab.role,
                                   )?.label
                                 }
                               </Badge>
@@ -772,18 +730,6 @@ export const SS = () => {
               </CardContent>
             )}
           </Card>
-=======
-      {canShowExplorer ? (
-        <section className="rounded-md border bg-background relative">
-          <div
-            id="box-content-explorer"
-            className="min-h-[520px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
-          />
-        </section>
-      ) : (
-        <div className="rounded-md border bg-background min-h-[520px] flex items-center justify-center text-sm text-muted-foreground">
-          Box に接続中...
->>>>>>> main
         </div>
       </Layout>
     </TooltipProvider>
