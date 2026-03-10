@@ -232,7 +232,7 @@ export const SS = () => {
         .map((entry) => entry.name) ?? [];
 
     const target = encodeURI(
-      [...baseSegments, ...entrySegments, item.name].join("\\")
+      [...baseSegments, ...entrySegments, item.name].join("\\"),
     );
 
     window.location.assign(target);
@@ -350,7 +350,7 @@ export const SS = () => {
       const remaining = pendingAdds.filter((c) => c.id !== id);
       setHasChanges(remaining.length > 0 || pendingRemoves.length > 0);
     },
-    [pendingAdds, pendingRemoves]
+    [pendingAdds, pendingRemoves],
   );
 
   // 変更を適用
@@ -377,7 +377,7 @@ export const SS = () => {
   // 表示するコラボレーター一覧
   const displayCollaborators = useMemo(() => {
     const existing = collaborators.filter(
-      (c) => !pendingRemoves.includes(c.id)
+      (c) => !pendingRemoves.includes(c.id),
     );
     return [...existing, ...pendingAdds];
   }, [collaborators, pendingRemoves, pendingAdds]);
@@ -451,7 +451,9 @@ export const SS = () => {
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>エクスプローラー/Finderで開く</TooltipContent>
+                    <TooltipContent>
+                      エクスプローラー/Finderで開く
+                    </TooltipContent>
                   </Tooltip>
                 </div>
               </div>
@@ -463,7 +465,7 @@ export const SS = () => {
             {canShowExplorer ? (
               <div
                 id="box-content-explorer"
-                className="min-h-[400px] max-h-[500px]"
+                className="min-h-[400px] max-h-[500px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
               />
             ) : (
               <div className="min-h-[400px] flex items-center justify-center text-sm text-muted-foreground">
