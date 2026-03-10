@@ -147,6 +147,7 @@ export const userSelector = {
   notMySearchsetSelector: () =>
     createSelector(searchsetSelector, (state) => {
       const { entities, mySearchsetIds } = state;
+      const entries = Object.values(entities).filter((item): item is SearchSet => item !== undefined);
       return entries.filter((item) => !mySearchsetIds.includes(item.search_cd));
     }),
 };
