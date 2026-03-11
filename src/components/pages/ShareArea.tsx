@@ -1,17 +1,8 @@
-import { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/sonner";
 import { Layout } from "@/components/frame/Layout";
 import { Folder, Monitor, Box, Settings } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipTrigger,
@@ -26,9 +17,8 @@ type Area = {
   folderName: string;
   label: string;
   isGuest?: boolean;
-  mounted: boolean;
   jclUrl: string;
-  boxUrl: string;
+  boxFolderId: string;
 };
 
 const initialAreas: Area[] = [
@@ -36,52 +26,36 @@ const initialAreas: Area[] = [
     code: "qms",
     folderName: "qms",
     label: "QMS事務局",
-    mounted: true,
     jclUrl: "/launch/qms/jcl",
-    boxUrl: "https://app.box.com/folder/qms",
+    boxFolderId: "370613768434",
   },
   {
     code: "ems",
     folderName: "ems",
     label: "EMS事務局",
-    mounted: false,
     jclUrl: "/launch/ems/jcl",
-    boxUrl: "https://app.box.com/folder/ems",
+    boxFolderId: "370615717715",
   },
   {
     code: "tg-room",
     folderName: "tg-room",
     label: "統合サーバー",
-    mounted: true,
     isGuest: true,
     jclUrl: "/launch/tg-room/jcl",
-    boxUrl: "https://app.box.com/folder/tg-room",
+    boxFolderId: "370616229381",
   },
   {
     code: "jclgd1swdv",
     folderName: "JCLGD1SWDV",
     label: "第1ソフトウェア開発センター",
-    mounted: false,
     jclUrl: "/launch/JCLGD1SWDV/jcl",
-    boxUrl: "https://app.box.com/folder/JCLGD1SWDV",
+    boxFolderId: "370616229381",
   },
 ];
 
 const ShareArea = () => {
-  const [areas, setAreas] = useState<Area[]>(initialAreas);
+  const areas = initialAreas;
   const navigate = useNavigate();
-
-  const toggleMount = (code: string) => {
-    setAreas((prev) =>
-      prev.map((a) => (a.code === code ? { ...a, mounted: !a.mounted } : a)),
-    );
-    const target = areas.find((a) => a.code === code);
-    if (target) {
-      toast(
-        `${target.label} を${target.mounted ? "アンマウント" : "マウント"}しました`,
-      );
-    }
-  };
 
   const openLink = (url: string) => {
     window.open(url, "_blank", "noopener,noreferrer");
@@ -107,9 +81,6 @@ const ShareArea = () => {
                 key={area.code}
                 className="relative overflow-hidden rounded-lg"
               >
-                <div
-                  className={`absolute inset-x-0 top-0 h-1 ${area.mounted ? "bg-emerald-500" : "bg-border"}`}
-                />
                 <CardHeader className="flex flex-col gap-2 pt-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
@@ -126,16 +97,6 @@ const ShareArea = () => {
                         {area.label}
                       </CardTitle>
                     </div>
-                    <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
-                      <Badge variant={area.mounted ? "secondary" : "outline"}>
-                        {area.mounted ? "マウント中" : "マウント"}
-                      </Badge>
-                      <Switch
-                        checked={area.mounted}
-                        onChange={() => toggleMount(area.code)}
-                        aria-label="マウント切替"
-                      />
-                    </div>
                   </div>
                 </CardHeader>
 
@@ -149,7 +110,7 @@ const ShareArea = () => {
                           className="h-10 w-10 rounded-full hover:bg-muted"
                           onClick={() =>
                             navigate(
-                              `${UrlPath.SS}?area=${encodeURIComponent(area.code)}&label=${encodeURIComponent(area.label)}&folder=${encodeURIComponent(area.folderName)}`
+                              `${UrlPath.SS}?folderId=${encodeURIComponent(area.boxFolderId)}`,
                             )
                           }
                           aria-label="権限設定"
@@ -179,7 +140,11 @@ const ShareArea = () => {
                           size="icon"
                           variant="ghost"
                           className="h-10 w-10 rounded-full hover:bg-muted"
-                          onClick={() => openLink(area.boxUrl)}
+                          onClick={() =>
+                            openLink(
+                              `https://app.box.com/folder/${area.boxFolderId}`,
+                            )
+                          }
                           aria-label="BOXで開く"
                         >
                           <Box className="h-4 w-4" aria-hidden />

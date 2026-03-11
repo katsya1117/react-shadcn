@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
 import { useSelector } from "react-redux";
 import type { MultiValue, SingleValue } from "react-select";
 
@@ -49,7 +48,6 @@ import { toast } from "@/components/ui/sonner";
 import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { cn } from "@/lib/utils";
-import "./SS.css";
 
 // Box Content Explorer インスタンス型
 type ContentExplorerInstance = {
@@ -106,13 +104,6 @@ type CurrentFolderInfo = {
 };
 
 export const SS = () => {
-  const [searchParams] = useSearchParams();
-
-  // URL パラメータから領域情報を取得
-  const areaCode = searchParams.get("area") || "";
-  const areaLabel = searchParams.get("label") || "";
-  const folderName = searchParams.get("folder") || "";
-
   // Box トークン
   const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
 
@@ -138,11 +129,15 @@ export const SS = () => {
 
   // Box Content Explorer ref
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
+  const sanitizeName = (id: string, name?: string | null) => {
+    if (id === "0" || name === "すべてのファイル") return "share";
+    return name || "root";
+  };
 
   // 現在表示中のフォルダ情報（ContentExplorerのナビゲーションを追跡）
   const [currentFolder, setCurrentFolder] = useState<CurrentFolderInfo>({
     id: effectiveFolderId,
-    name: folderName || "root",
+    name: "All Files",
     pathCollection: { entries: [] },
   });
 
@@ -151,7 +146,7 @@ export const SS = () => {
   // 権限設定ダイアログの状態
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState<CurrentFolderInfo | null>(
-    null
+    null,
   );
 
   // コラボレーター一覧
@@ -172,26 +167,36 @@ export const SS = () => {
   const [pendingAdds, setPendingAdds] = useState<Collaborator[]>([]);
   const [pendingRemoves, setPendingRemoves] = useState<string[]>([]);
 
+  const breadcrumbLabel = useMemo(() => {
+    if (currentFolder.id === "0") return "All Files";
+    return `All Files > ${currentFolder.name}`;
+  }, [currentFolder]);
+
   // 現在のパス文字列を生成（Windows UNC パス形式）
   const currentPath = useMemo(() => {
+    // All Files 表示時は share のみ
+    if (currentFolder.id === "0") {
+      return "\\\\tggfile.jp\\share";
+    }
+
     const basePath = "\\\\tggfile.jp";
-    const areaRoot = folderName ? `\\${folderName}` : "";
+    const entries = currentFolder.pathCollection?.entries ?? [];
+    const filtered = entries.filter((e) => e.id !== "0");
+    const rootIdx = filtered.findIndex((e) => e.id === effectiveFolderId);
+    const afterRoot = rootIdx >= 0 ? filtered.slice(rootIdx + 1) : filtered;
 
-    // path_collectionからサブパスを構築
-    const subPath =
-      currentFolder.pathCollection?.entries
-        ?.filter((entry) => entry.id !== "0") // ルートを除外
-        .map((entry) => `\\${entry.name}`)
-        .join("") || "";
+    const segments = [
+      "share",
+      ...afterRoot.map((e) => sanitizeName(e.id, e.name ?? undefined)),
+    ];
 
-    // 現在のフォルダ名を追加（ルートでない場合）
-    const currentFolderPath =
-      currentFolder.id !== effectiveFolderId && currentFolder.name !== "root"
-        ? `\\${currentFolder.name}`
-        : "";
+    if (currentFolder.id !== "0") {
+      segments.push(sanitizeName(currentFolder.id, currentFolder.name));
+    }
 
-    return `${basePath}${areaRoot}${subPath}${currentFolderPath}`;
-  }, [folderName, currentFolder, effectiveFolderId]);
+    const pathString = segments.map((s) => `\\${s}`).join("");
+    return `${basePath}${pathString}`;
+  }, [currentFolder, effectiveFolderId]);
 
   // Box Web URL
   const boxWebUrl = useMemo(() => {
@@ -266,21 +271,27 @@ export const SS = () => {
         type: "folder",
       },
     ],
-    [handleMount, handleOpenPermissionDialog]
+    [handleMount, handleOpenPermissionDialog],
   );
 
   // フォルダナビゲーション時のコールバック
-  const handleNavigate = useCallback((item: BoxFolder) => {
-    if (item.type === "folder") {
-      setCurrentFolder({
-        id: item.id,
-        name: item.name,
-        pathCollection: item.path_collection
-          ? { entries: item.path_collection.entries || [] }
-          : undefined,
-      });
-    }
-  }, []);
+  const handleNavigate = useCallback(
+    (item: BoxFolder) => {
+      if (item.type === "folder") {
+        setCurrentFolder((prev) => {
+          if (prev.id === item.id) return prev;
+          return {
+            id: item.id,
+            name: item.name ?? "",
+            pathCollection: item.path_collection
+              ? { entries: item.path_collection.entries || [] }
+              : undefined,
+          };
+        });
+      }
+    },
+    [],
+  );
 
   // Box Content Explorer 初期化
   useEffect(() => {
@@ -295,14 +306,12 @@ export const SS = () => {
     const explorer = explorerRef.current;
 
     explorer?.removeAllListeners?.();
+    explorer?.addListener?.("navigate", handleNavigate);
     explorer?.show(effectiveFolderId, effectiveToken, {
       container: "#box-content-explorer",
       canPreview: false,
       itemActions: customActions,
     });
-
-    // ナビゲーションイベントをリッスン
-    explorer?.addListener?.("navigate", handleNavigate);
 
     return () => {
       explorer?.removeAllListeners?.();
@@ -389,7 +398,6 @@ export const SS = () => {
         fluid
         headerProps={{
           title: "SS",
-          subtitle: areaLabel || undefined,
           userDropdownMode: "simple",
         }}
       >
@@ -397,14 +405,18 @@ export const SS = () => {
 
         <div className="space-y-4 pb-8">
           {/* パスバー */}
-          <Card className="py-0">
-            <CardContent className="py-3">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                {/* パス入力 */}
-                <div className="flex-1 min-w-0">
-                  <Input
-                    readOnly
-                    value={currentPath}
+              <Card className="py-0">
+                <CardContent className="py-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="text-xs text-muted-foreground min-w-[140px]">
+                      {breadcrumbLabel}
+                    </div>
+
+                    {/* パス入力 */}
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        readOnly
+                        value={currentPath}
                     className="font-mono text-sm bg-muted/30 h-8"
                   />
                 </div>
@@ -616,7 +628,7 @@ export const SS = () => {
                           className={cn(
                             "flex items-center justify-between p-3 group hover:bg-muted/30 transition-colors",
                             isPending && "bg-emerald-50 dark:bg-emerald-950/20",
-                            isRemoving && "opacity-50 line-through"
+                            isRemoving && "opacity-50 line-through",
                           )}
                         >
                           <div className="flex items-center gap-3 min-w-0">
@@ -658,8 +670,9 @@ export const SS = () => {
                               className="text-xs"
                             >
                               {
-                                ROLE_OPTIONS.find((r) => r.value === collab.role)
-                                  ?.label
+                                ROLE_OPTIONS.find(
+                                  (r) => r.value === collab.role,
+                                )?.label
                               }
                             </Badge>
                             <Tooltip>
