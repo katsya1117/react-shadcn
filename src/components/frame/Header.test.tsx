@@ -76,10 +76,11 @@ describe("Header", () => {
     return setup(<Header />, { wrapper: Wrapper });
   };
 
-  it("loginUser が無いときは何も表示しない", () => {
+  it("loginUser が無いときは Guest 表示になる", () => {
     renderHeader("/manage/User");
 
-    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByText("Guest")).toBeInTheDocument();
   });
 
   it("パスに応じたタイトルとユーザー情報を表示する", () => {

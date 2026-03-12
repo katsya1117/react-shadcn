@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router";
 import { useSelector } from "react-redux";
-import type { MultiValue, SingleValue } from "react-select";
+import type { SingleValue } from "react-select";
 
 import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
-import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
 import { boxSelector } from "@/redux/slices/userSlice";
 
@@ -28,20 +28,19 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-
 import {
+  Building2,
   Copy,
   ExternalLink,
   FolderOpen,
-  X,
-  UserPlus,
-  Building2,
-  User,
   Settings,
+  User,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
@@ -49,7 +48,6 @@ import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { cn } from "@/lib/utils";
 
-// Box Content Explorer インスタンス型
 type ContentExplorerInstance = {
   show: (folderId: string, token: string, opts: unknown) => void;
   hide?: () => void;
@@ -57,7 +55,6 @@ type ContentExplorerInstance = {
   addListener?: (event: string, callback: (item: BoxFolder) => void) => void;
 };
 
-// 権限の役割定義
 type RoleType = "editor" | "viewer";
 
 const ROLE_OPTIONS: { value: RoleType; label: string; description: string }[] =
@@ -66,7 +63,6 @@ const ROLE_OPTIONS: { value: RoleType; label: string; description: string }[] =
     { value: "viewer", label: "Viewer", description: "閲覧のみ" },
   ];
 
-// コラボレーター情報の型定義
 type CollaboratorType = "user" | "department";
 
 type Collaborator = {
@@ -77,7 +73,6 @@ type Collaborator = {
   color?: string;
 };
 
-// モック: 既存のコラボレーター
 const MOCK_COLLABORATORS: Collaborator[] = [
   {
     id: "1",
@@ -86,7 +81,13 @@ const MOCK_COLLABORATORS: Collaborator[] = [
     role: "editor",
     color: "#6366f1",
   },
-  { id: "2", type: "user", name: "sre-user", role: "viewer", color: "#2563eb" },
+  {
+    id: "2",
+    type: "user",
+    name: "sre-user",
+    role: "viewer",
+    color: "#2563eb",
+  },
   {
     id: "3",
     type: "department",
@@ -96,18 +97,39 @@ const MOCK_COLLABORATORS: Collaborator[] = [
   },
 ];
 
-// 現在表示中のフォルダ情報
 type CurrentFolderInfo = {
   id: string;
   name: string;
   pathCollection?: { entries: { id: string; name: string }[] };
 };
 
+const sanitizePathName = (id: string, name?: string | null) => {
+  if (id === "0" || name === "すべてのファイル") return "share";
+  return name || "root";
+};
+
+const getInitialFolderInfo = (folderId: string): CurrentFolderInfo => ({
+  id: folderId,
+  name: folderId === "0" ? "All Files" : "",
+  pathCollection: { entries: [] },
+});
+
+const buildCollaborator = (
+  type: CollaboratorType,
+  target: AutoCompleteData,
+  role: RoleType,
+): Collaborator => ({
+  id: `${type}:${target.value}`,
+  type,
+  name: target.label,
+  role,
+  color: target.color,
+});
+
 export const SS = () => {
-  // Box トークン
+  const { folderId: routeFolderId } = useParams();
   const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
 
-  // 開発用トークン（URLパラメータまたはlocalStorage）
   const devToken = useMemo(() => {
     if (typeof window === "undefined") return undefined;
     const params = new URLSearchParams(window.location.search);
@@ -118,92 +140,99 @@ export const SS = () => {
   }, []);
 
   const effectiveToken = devToken ?? token;
+  const isNumeric = /^\d+$/.test(routeFolderId || "");
+  const effectiveFolderId = isNumeric ? routeFolderId! : "0";
 
-  // 初期フォルダID
-  const rawId =
-    typeof window === "undefined"
-      ? null
-      : new URLSearchParams(window.location.search).get("folderId");
-  const isNumeric = /^\d+$/.test(rawId || "");
-  const effectiveFolderId = isNumeric ? rawId! : "0";
-
-  // Box Content Explorer ref
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
-  const sanitizeName = (id: string, name?: string | null) => {
-    if (id === "0" || name === "すべてのファイル") return "share";
-    return name || "root";
-  };
 
-  // 現在表示中のフォルダ情報（ContentExplorerのナビゲーションを追跡）
-  const [currentFolder, setCurrentFolder] = useState<CurrentFolderInfo>({
-    id: effectiveFolderId,
-    name: "All Files",
-    pathCollection: { entries: [] },
-  });
-
-  const canShowExplorer = Boolean(effectiveToken);
-
-  // 権限設定ダイアログの状態
+  const [currentFolder, setCurrentFolder] = useState<CurrentFolderInfo>(
+    getInitialFolderInfo(effectiveFolderId),
+  );
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [targetFolder, setTargetFolder] = useState<CurrentFolderInfo | null>(
     null,
   );
-
-  // コラボレーター一覧
-  const [collaborators, setCollaborators] =
-    useState<Collaborator[]>(MOCK_COLLABORATORS);
-
-  // 新規追加用の状態
-  const [addType, setAddType] = useState<"user" | "department">("department");
+  const [collaboratorsByFolder, setCollaboratorsByFolder] = useState<
+    Record<string, Collaborator[]>
+  >({});
+  const [addType, setAddType] = useState<CollaboratorType>("department");
   const [selectedUser, setSelectedUser] =
     useState<SingleValue<AutoCompleteData>>(null);
-  const [selectedDepartments, setSelectedDepartments] = useState<
-    MultiValue<AutoCompleteData>
-  >([]);
+  const [selectedDepartment, setSelectedDepartment] =
+    useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>("viewer");
+  const [isMutatingCollaboration, setIsMutatingCollaboration] =
+    useState(false);
 
-  // 未適用の変更
-  const [hasChanges, setHasChanges] = useState(false);
-  const [pendingAdds, setPendingAdds] = useState<Collaborator[]>([]);
-  const [pendingRemoves, setPendingRemoves] = useState<string[]>([]);
+  const canShowExplorer = Boolean(effectiveToken);
+
+  useEffect(() => {
+    setCurrentFolder(getInitialFolderInfo(effectiveFolderId));
+    setTargetFolder(null);
+    setIsPermissionDialogOpen(false);
+  }, [effectiveFolderId]);
 
   const breadcrumbLabel = useMemo(() => {
-    if (currentFolder.id === "0") return "All Files";
+    if (!currentFolder.name || currentFolder.id === "0") return "All Files";
     return `All Files > ${currentFolder.name}`;
   }, [currentFolder]);
 
-  // 現在のパス文字列を生成（Windows UNC パス形式）
   const currentPath = useMemo(() => {
-    // All Files 表示時は share のみ
     if (currentFolder.id === "0") {
       return "\\\\tggfile.jp\\share";
     }
 
     const basePath = "\\\\tggfile.jp";
     const entries = currentFolder.pathCollection?.entries ?? [];
-    const filtered = entries.filter((e) => e.id !== "0");
-    const rootIdx = filtered.findIndex((e) => e.id === effectiveFolderId);
-    const afterRoot = rootIdx >= 0 ? filtered.slice(rootIdx + 1) : filtered;
+    const filtered = entries.filter((entry) => entry.id !== "0");
+    const rootIndex = filtered.findIndex((entry) => entry.id === effectiveFolderId);
+    const afterRoot =
+      rootIndex >= 0 ? filtered.slice(rootIndex + 1) : filtered;
 
-    const segments = [
-      "share",
-      ...afterRoot.map((e) => sanitizeName(e.id, e.name ?? undefined)),
-    ];
+    const segments = ["share"];
 
-    if (currentFolder.id !== "0") {
-      segments.push(sanitizeName(currentFolder.id, currentFolder.name));
+    if (currentFolder.name) {
+      const rootName =
+        rootIndex >= 0
+          ? filtered[rootIndex]?.name ?? currentFolder.name
+          : currentFolder.id === effectiveFolderId
+            ? currentFolder.name
+            : undefined;
+
+      if (rootName) {
+        segments.push(sanitizePathName(effectiveFolderId, rootName));
+      }
     }
 
-    const pathString = segments.map((s) => `\\${s}`).join("");
+    segments.push(
+      ...afterRoot.map((entry) => sanitizePathName(entry.id, entry.name)),
+    );
+
+    if (currentFolder.id !== effectiveFolderId && currentFolder.name) {
+      segments.push(sanitizePathName(currentFolder.id, currentFolder.name));
+    }
+
+    const pathString = segments.map((segment) => `\\${segment}`).join("");
     return `${basePath}${pathString}`;
   }, [currentFolder, effectiveFolderId]);
 
-  // Box Web URL
-  const boxWebUrl = useMemo(() => {
-    return `https://app.box.com/folder/${currentFolder.id}`;
-  }, [currentFolder.id]);
+  const boxWebUrl = useMemo(
+    () => `https://app.box.com/folder/${currentFolder.id}`,
+    [currentFolder.id],
+  );
 
-  // クリップボードにコピー
+  const dialogCollaborators = useMemo(() => {
+    if (!targetFolder) return [];
+    return collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
+  }, [collaboratorsByFolder, targetFolder]);
+
+  const resetCollaborationForm = useCallback(() => {
+    setSelectedUser(null);
+    setSelectedDepartment(null);
+    setSelectedRole("viewer");
+    setAddType("department");
+  }, []);
+
   const handleCopyPath = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(currentPath);
@@ -213,20 +242,16 @@ export const SS = () => {
     }
   }, [currentPath]);
 
-  // Box を開く
   const handleOpenBox = useCallback(() => {
     window.open(boxWebUrl, "_blank", "noopener,noreferrer");
   }, [boxWebUrl]);
 
-  // エクスプローラー/Finder を開く
   const handleOpenExplorer = useCallback(() => {
-    // Windows のネットワークパスを file:// プロトコルで開く
     const fileUrl = `file://${currentPath.replace(/\\/g, "/")}`;
     window.open(fileUrl, "_blank");
     toast.info("エクスプローラーで開きます");
   }, [currentPath]);
 
-  // マウント処理
   const handleMount = useCallback((item: BoxFolder) => {
     if (item.type !== "folder") return;
 
@@ -243,21 +268,29 @@ export const SS = () => {
     window.location.assign(target);
   }, []);
 
-  // 権限設定ダイアログを開く
-  const handleOpenPermissionDialog = useCallback((item: BoxFolder) => {
-    if (item.type !== "folder") return;
+  const handleOpenPermissionDialog = useCallback(
+    (item: BoxFolder) => {
+      if (item.type !== "folder") return;
 
-    setTargetFolder({
-      id: item.id,
-      name: item.name,
-      pathCollection: item.path_collection
-        ? { entries: item.path_collection.entries || [] }
-        : undefined,
-    });
-    setIsPermissionDialogOpen(true);
-  }, []);
+      setTargetFolder({
+        id: item.id,
+        name: item.name ?? "",
+        pathCollection: item.path_collection
+          ? { entries: item.path_collection.entries || [] }
+          : undefined,
+      });
+      resetCollaborationForm();
+      setIsPermissionDialogOpen(true);
+    },
+    [resetCollaborationForm],
+  );
 
-  // カスタムアクション
+  const handleClosePermissionDialog = useCallback(() => {
+    setIsPermissionDialogOpen(false);
+    setTargetFolder(null);
+    resetCollaborationForm();
+  }, [resetCollaborationForm]);
+
   const customActions = useMemo(
     () => [
       {
@@ -274,26 +307,18 @@ export const SS = () => {
     [handleMount, handleOpenPermissionDialog],
   );
 
-  // フォルダナビゲーション時のコールバック
-  const handleNavigate = useCallback(
-    (item: BoxFolder) => {
-      if (item.type === "folder") {
-        setCurrentFolder((prev) => {
-          if (prev.id === item.id) return prev;
-          return {
-            id: item.id,
-            name: item.name ?? "",
-            pathCollection: item.path_collection
-              ? { entries: item.path_collection.entries || [] }
-              : undefined,
-          };
-        });
-      }
-    },
-    [],
-  );
+  const handleNavigate = useCallback((item: BoxFolder) => {
+    if (item.type !== "folder") return;
 
-  // Box Content Explorer 初期化
+    setCurrentFolder({
+      id: item.id,
+      name: item.name ?? "",
+      pathCollection: item.path_collection
+        ? { entries: item.path_collection.entries || [] }
+        : undefined,
+    });
+  }, []);
+
   useEffect(() => {
     if (!effectiveToken) return;
     const BoxGlobal = window.Box;
@@ -304,7 +329,6 @@ export const SS = () => {
     }
 
     const explorer = explorerRef.current;
-
     explorer?.removeAllListeners?.();
     explorer?.addListener?.("navigate", handleNavigate);
     explorer?.show(effectiveFolderId, effectiveToken, {
@@ -319,77 +343,81 @@ export const SS = () => {
     };
   }, [customActions, effectiveFolderId, effectiveToken, handleNavigate]);
 
-  // コラボレーター追加
-  const handleAddCollaborator = useCallback(() => {
-    if (addType === "user" && selectedUser) {
-      const newCollab: Collaborator = {
-        id: `new-${Date.now()}`,
-        type: "user",
-        name: selectedUser.label,
-        role: selectedRole,
-        color: selectedUser.color,
-      };
-      setPendingAdds((prev) => [...prev, newCollab]);
-      setSelectedUser(null);
-      setHasChanges(true);
-    } else if (addType === "department" && selectedDepartments.length > 0) {
-      const newCollabs: Collaborator[] = selectedDepartments.map((dept) => ({
-        id: `new-${Date.now()}-${dept.value}`,
-        type: "department" as const,
-        name: dept.label,
-        role: selectedRole,
-        color: dept.color,
-      }));
-      setPendingAdds((prev) => [...prev, ...newCollabs]);
-      setSelectedDepartments([]);
-      setHasChanges(true);
-    }
-  }, [addType, selectedUser, selectedDepartments, selectedRole]);
+  const handleAddCollaborator = useCallback(async () => {
+    if (!targetFolder) return;
 
-  // コラボレーター削除（既存）
-  const handleRemoveCollaborator = useCallback((id: string) => {
-    setPendingRemoves((prev) => [...prev, id]);
-    setHasChanges(true);
-  }, []);
+    const selectedTarget =
+      addType === "user" ? selectedUser : selectedDepartment;
+    if (!selectedTarget) return;
 
-  // 未確定の追加を取り消し
-  const handleRemovePendingAdd = useCallback(
-    (id: string) => {
-      setPendingAdds((prev) => prev.filter((c) => c.id !== id));
-      const remaining = pendingAdds.filter((c) => c.id !== id);
-      setHasChanges(remaining.length > 0 || pendingRemoves.length > 0);
-    },
-    [pendingAdds, pendingRemoves],
-  );
-
-  // 変更を適用
-  const handleApply = useCallback(() => {
-    setCollaborators((prev) => {
-      const filtered = prev.filter((c) => !pendingRemoves.includes(c.id));
-      return [...filtered, ...pendingAdds];
-    });
-    setPendingAdds([]);
-    setPendingRemoves([]);
-    setHasChanges(false);
-    toast.success("権限設定を適用しました");
-    setIsPermissionDialogOpen(false);
-  }, [pendingAdds, pendingRemoves]);
-
-  // 変更をキャンセル
-  const handleCancel = useCallback(() => {
-    setPendingAdds([]);
-    setPendingRemoves([]);
-    setHasChanges(false);
-    setIsPermissionDialogOpen(false);
-  }, []);
-
-  // 表示するコラボレーター一覧
-  const displayCollaborators = useMemo(() => {
-    const existing = collaborators.filter(
-      (c) => !pendingRemoves.includes(c.id),
+    const nextCollaborator = buildCollaborator(
+      addType,
+      selectedTarget,
+      selectedRole,
     );
-    return [...existing, ...pendingAdds];
-  }, [collaborators, pendingRemoves, pendingAdds]);
+    const currentCollaborators =
+      collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
+    const alreadyExists = currentCollaborators.some(
+      (collab) =>
+        collab.type === nextCollaborator.type &&
+        collab.name === nextCollaborator.name,
+    );
+
+    if (alreadyExists) {
+      toast.error("同じコラボレーターは既に設定されています");
+      return;
+    }
+
+    setIsMutatingCollaboration(true);
+    try {
+      setCollaboratorsByFolder((prev) => ({
+        ...prev,
+        [targetFolder.id]: [...currentCollaborators, nextCollaborator],
+      }));
+      toast.success(`${nextCollaborator.name} を追加しました`);
+      if (addType === "user") {
+        setSelectedUser(null);
+      } else {
+        setSelectedDepartment(null);
+      }
+    } catch {
+      toast.error("コラボレーターの追加に失敗しました");
+    } finally {
+      setIsMutatingCollaboration(false);
+    }
+  }, [
+    addType,
+    collaboratorsByFolder,
+    selectedDepartment,
+    selectedRole,
+    selectedUser,
+    targetFolder,
+  ]);
+
+  const handleRemoveCollaborator = useCallback(
+    async (collaborator: Collaborator) => {
+      if (!targetFolder) return;
+
+      const currentCollaborators =
+        collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
+
+      setIsMutatingCollaboration(true);
+      try {
+        setCollaboratorsByFolder((prev) => ({
+          ...prev,
+          [targetFolder.id]: currentCollaborators.filter(
+            (item) => item.id !== collaborator.id,
+          ),
+        }));
+        toast.success(`${collaborator.name} を削除しました`);
+      } catch {
+        toast.error("コラボレーターの削除に失敗しました");
+      } finally {
+        setIsMutatingCollaboration(false);
+      }
+    },
+    [collaboratorsByFolder, targetFolder],
+  );
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -397,32 +425,29 @@ export const SS = () => {
         hideTabs
         fluid
         headerProps={{
-          title: "SS",
+          subtitle: "共有領域管理",
           userDropdownMode: "simple",
         }}
       >
         <BoxManager />
 
         <div className="space-y-4 pb-8">
-          {/* パスバー */}
-              <Card className="py-0">
-                <CardContent className="py-3">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <div className="text-xs text-muted-foreground min-w-[140px]">
-                      {breadcrumbLabel}
-                    </div>
+          <Card className="py-0">
+            <CardContent className="py-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="min-w-[140px] text-xs text-muted-foreground">
+                  {breadcrumbLabel}
+                </div>
 
-                    {/* パス入力 */}
-                    <div className="flex-1 min-w-0">
-                      <Input
-                        readOnly
-                        value={currentPath}
-                    className="font-mono text-sm bg-muted/30 h-8"
+                <div className="min-w-0 flex-1">
+                  <Input
+                    readOnly
+                    value={currentPath}
+                    className="h-8 bg-muted/30 font-mono text-sm"
                   />
                 </div>
 
-                {/* アクションボタン */}
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex shrink-0 items-center gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -472,7 +497,6 @@ export const SS = () => {
             </CardContent>
           </Card>
 
-          {/* Contents Explorer */}
           <Card className="overflow-hidden">
             {canShowExplorer ? (
               <div
@@ -480,23 +504,19 @@ export const SS = () => {
                 className="min-h-[400px] max-h-[500px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
               />
             ) : (
-              <div className="min-h-[400px] flex items-center justify-center text-sm text-muted-foreground">
+              <div className="flex min-h-[400px] items-center justify-center text-sm text-muted-foreground">
                 Box に接続中...
               </div>
             )}
           </Card>
         </div>
 
-        {/* 権限設定ダイアログ */}
-        <Dialog
-          open={isPermissionDialogOpen}
-          onOpenChange={setIsPermissionDialogOpen}
-        >
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <Dialog open={isPermissionDialogOpen} onOpenChange={handleClosePermissionDialog}>
+          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                コラボレーション設定
+                共有領域管理
                 {targetFolder && (
                   <Badge variant="outline" className="ml-2">
                     {targetFolder.name}
@@ -506,22 +526,23 @@ export const SS = () => {
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* 権限追加フォーム */}
-              <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
-                <div className="text-sm font-medium">新しい権限を追加</div>
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="text-sm font-medium">コラボレーターを追加</div>
+                  <div className="text-xs text-muted-foreground">
+                    追加・削除は即時反映されます
+                  </div>
+                </div>
 
-                <div className="flex flex-col gap-3">
-                  {/* 1行目: タイプ選択 + AutoComplete */}
-                  <div className="flex flex-col md:flex-row gap-3">
-                    {/* タイプ選択 */}
-                    <div className="flex gap-1 p-1 bg-muted rounded-md shrink-0 w-fit">
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-3 md:flex-row">
+                    <div className="flex w-fit shrink-0 gap-1 rounded-md bg-muted p-1">
                       <Button
-                        variant={
-                          addType === "department" ? "secondary" : "ghost"
-                        }
+                        variant={addType === "department" ? "secondary" : "ghost"}
                         size="sm"
                         onClick={() => setAddType("department")}
                         className="gap-1.5"
+                        disabled={isMutatingCollaboration}
                       >
                         <Building2 className="h-3.5 w-3.5" />
                         部署
@@ -531,43 +552,40 @@ export const SS = () => {
                         size="sm"
                         onClick={() => setAddType("user")}
                         className="gap-1.5"
+                        disabled={isMutatingCollaboration}
                       >
                         <User className="h-3.5 w-3.5" />
                         社員
                       </Button>
                     </div>
 
-                    {/* AutoComplete */}
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       {addType === "user" ? (
                         <AutoCompleteSingle
                           type="user"
                           value={selectedUser}
                           placeholder="社員を検索..."
-                          onChange={(val) => setSelectedUser(val)}
+                          onChange={(value) => setSelectedUser(value)}
                         />
                       ) : (
-                        <AutoCompleteMulti
+                        <AutoCompleteSingle
                           type="center"
-                          value={selectedDepartments}
+                          value={selectedDepartment}
                           placeholder="部署を検索..."
-                          onChange={(val) => setSelectedDepartments(val)}
+                          onChange={(value) => setSelectedDepartment(value)}
                         />
                       )}
                     </div>
                   </div>
 
-                  {/* 2行目: Role選択 + 追加ボタン */}
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground shrink-0">
+                      <span className="shrink-0 text-sm text-muted-foreground">
                         権限:
                       </span>
                       <Select
                         value={selectedRole}
-                        onValueChange={(val) =>
-                          setSelectedRole(val as RoleType)
-                        }
+                        onValueChange={(value) => setSelectedRole(value as RoleType)}
                       >
                         <SelectTrigger className="w-[140px]">
                           <SelectValue />
@@ -590,124 +608,107 @@ export const SS = () => {
                     <Button
                       onClick={handleAddCollaborator}
                       disabled={
+                        isMutatingCollaboration ||
                         (addType === "user" && !selectedUser) ||
-                        (addType === "department" &&
-                          selectedDepartments.length === 0)
+                        (addType === "department" && !selectedDepartment)
                       }
                       className="shrink-0"
                     >
-                      <UserPlus className="h-4 w-4 mr-1.5" />
+                      <UserPlus className="mr-1.5 h-4 w-4" />
                       追加
                     </Button>
                   </div>
                 </div>
               </div>
 
-              {/* 現在のコラボレーター一覧 */}
               <div className="space-y-3">
-                <div className="text-sm font-medium flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
                   現在の権限設定
                   <Badge variant="outline" className="text-xs">
-                    {displayCollaborators.length}件
+                    {dialogCollaborators.length}件
                   </Badge>
                 </div>
 
-                <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
-                  {displayCollaborators.length === 0 ? (
+                <div className="max-h-[300px] divide-y overflow-y-auto rounded-lg border">
+                  {dialogCollaborators.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
                       コラボレーターが設定されていません
                     </div>
                   ) : (
-                    displayCollaborators.map((collab) => {
-                      const isPending = collab.id.startsWith("new-");
-                      const isRemoving = pendingRemoves.includes(collab.id);
-
-                      return (
-                        <div
-                          key={collab.id}
-                          className={cn(
-                            "flex items-center justify-between p-3 group hover:bg-muted/30 transition-colors",
-                            isPending && "bg-emerald-50 dark:bg-emerald-950/20",
-                            isRemoving && "opacity-50 line-through",
-                          )}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium shrink-0"
-                              style={{
-                                backgroundColor: collab.color || "#6b7280",
-                              }}
-                            >
-                              {collab.type === "department" ? (
-                                <Building2 className="h-4 w-4" />
-                              ) : (
-                                <User className="h-4 w-4" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-sm truncate flex items-center gap-2">
-                                {collab.name}
-                                {isPending && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs shrink-0"
-                                  >
-                                    追加予定
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {collab.type === "department" ? "部署" : "社員"}
-                              </div>
-                            </div>
+                    dialogCollaborators.map((collaborator) => (
+                      <div
+                        key={collaborator.id}
+                        className="group flex items-center justify-between p-3 transition-colors hover:bg-muted/30"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
+                            style={{
+                              backgroundColor: collaborator.color || "#6b7280",
+                            }}
+                          >
+                            {collaborator.type === "department" ? (
+                              <Building2 className="h-4 w-4" />
+                            ) : (
+                              <User className="h-4 w-4" />
+                            )}
                           </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Badge
-                              variant={
-                                collab.role === "editor" ? "default" : "outline"
-                              }
-                              className="text-xs"
-                            >
-                              {
-                                ROLE_OPTIONS.find(
-                                  (r) => r.value === collab.role,
-                                )?.label
-                              }
-                            </Badge>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                                  onClick={() =>
-                                    isPending
-                                      ? handleRemovePendingAdd(collab.id)
-                                      : handleRemoveCollaborator(collab.id)
-                                  }
-                                  aria-label="権限を削除"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>権限を削除</TooltipContent>
-                            </Tooltip>
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium">
+                              {collaborator.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {collaborator.type === "department" ? "部署" : "社員"}
+                            </div>
                           </div>
                         </div>
-                      );
-                    })
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Badge
+                            variant={
+                              collaborator.role === "editor" ? "default" : "outline"
+                            }
+                            className="text-xs"
+                          >
+                            {
+                              ROLE_OPTIONS.find(
+                                (role) => role.value === collaborator.role,
+                              )?.label
+                            }
+                          </Badge>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  "h-7 w-7 text-muted-foreground transition-opacity hover:text-destructive",
+                                  isMutatingCollaboration
+                                    ? "opacity-40"
+                                    : "opacity-0 group-hover:opacity-100",
+                                )}
+                                onClick={() =>
+                                  handleRemoveCollaborator(collaborator)
+                                }
+                                aria-label="権限を削除"
+                                disabled={isMutatingCollaboration}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>権限を削除</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={handleCancel}>
-                キャンセル
-              </Button>
-              <Button onClick={handleApply} disabled={!hasChanges}>
-                適用
+            <DialogFooter>
+              <Button variant="outline" onClick={handleClosePermissionDialog}>
+                閉じる
               </Button>
             </DialogFooter>
           </DialogContent>

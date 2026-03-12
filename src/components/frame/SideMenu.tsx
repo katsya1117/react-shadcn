@@ -7,7 +7,6 @@ import {
   FileSearch,
   FilePlus2,
   Wrench,
-  Box,
   Cloud,
   Lock,
   ChevronLeft,
@@ -48,6 +47,7 @@ const navItems: NavItem[] = [
     collapsedLabel: "センター¥n専用¥n領域",
     to: UrlPath.ShareArea,
     icon: Database,
+    hasSubPages: true,
   },
   {
     label: "LOG SEARCH",
@@ -60,12 +60,6 @@ const navItems: NavItem[] = [
     collapsedLabel: "JOB¥n作成",
     to: UrlPath.JobCreate,
     icon: FilePlus2,
-  },
-  {
-    label: "SS",
-    collapsedLabel: "SS",
-    to: UrlPath.SS,
-    icon: Box,
   },
   { label: "TOOL", collapsedLabel: "TOOL", to: UrlPath.Tool, icon: Wrench },
   {

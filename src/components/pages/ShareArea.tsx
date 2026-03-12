@@ -9,7 +9,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { useNavigate } from "react-router";
+import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 
 type Area = {
@@ -105,20 +105,22 @@ const ShareArea = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-10 w-10 rounded-full hover:bg-muted"
+                          variant="outline"
+                          className="h-10 gap-2 rounded-full px-4"
                           onClick={() =>
                             navigate(
-                              `${UrlPath.SS}?folderId=${encodeURIComponent(area.boxFolderId)}`,
+                              generatePath(UrlPath.SS, {
+                                folderId: area.boxFolderId,
+                              }),
                             )
                           }
-                          aria-label="権限設定"
+                          aria-label="共有領域管理"
                         >
                           <Settings className="h-4 w-4" aria-hidden />
+                          <span>共有領域管理</span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>権限設定 (SS)</TooltipContent>
+                      <TooltipContent>共有領域管理</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>

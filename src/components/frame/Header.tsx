@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Information } from "../parts/Information/Information";
-import { VersionInfo } from "../parts/version/VersionInfo";
+import { VersionInfo } from "../parts/Version/VersionInfo";
 import { userSelector } from "@/redux/slices/userSlice";
 import { useSelector } from "react-redux";
 import {
@@ -46,7 +46,6 @@ export const Header = ({
       { prefix: UrlPath.BoxElements, title: "Box Elements" },
       { prefix: UrlPath.Tool, title: "TOOL" },
       { prefix: UrlPath.ShareArea, title: "センター専用領域" },
-      { prefix: UrlPath.SS, title: "SS" },
     ].find((item) => pathname.startsWith(item.prefix))?.title ?? "Ops Console";
 
   const title = titleProp ?? autoTitle;

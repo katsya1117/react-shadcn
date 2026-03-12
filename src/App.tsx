@@ -60,6 +60,7 @@ const App = () => (
       <Route path={UrlPath.MyPageEdit} element={<MyPageEdit />} />
       <Route path={UrlPath.UserProfile} element={<UserProfile />} />
       <Route path={UrlPath.SS} element={<SS />} />
+      <Route path={UrlPath.SSLegacy} element={<Navigate replace to={UrlPath.ShareArea} />} />
       <Route path={UrlPath.Development} element={<Development />} />
 
       <Route path="*" element={<Navigate replace to={UrlPath.Root} />} />
