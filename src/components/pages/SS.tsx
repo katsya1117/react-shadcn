@@ -3,15 +3,15 @@ import { useParams } from "react-router";
 import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 
+import type { AutoCompleteData } from "@/api";
+import type { BoxFolder } from "@/@types/BoxUiElements";
 import { Layout } from "@/components/frame/Layout";
-import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
-import { boxSelector } from "@/redux/slices/userSlice";
-
+import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -19,50 +19,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
+import { boxSelector } from "@/redux/slices/userSlice";
+import { cn } from "@/lib/utils";
 import {
   Building2,
   Copy,
   ExternalLink,
   FolderOpen,
-  Settings,
   User,
   UserPlus,
   X,
 } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
-
-import type { AutoCompleteData } from "@/api";
-import type { BoxFolder } from "@/@types/BoxUiElements";
-import { cn } from "@/lib/utils";
 
 type ContentExplorerInstance = {
   show: (folderId: string, token: string, opts: unknown) => void;
   hide?: () => void;
   removeAllListeners?: () => void;
-  addListener?: (event: string, callback: (item: BoxFolder) => void) => void;
+  addListener?: (event: string, callback: (item: unknown) => void) => void;
 };
 
 type RoleType = "editor" | "viewer";
-
-const ROLE_OPTIONS: { value: RoleType; label: string; description: string }[] =
-  [
-    { value: "editor", label: "Editor", description: "編集可能" },
-    { value: "viewer", label: "Viewer", description: "閲覧のみ" },
-  ];
-
 type CollaboratorType = "user" | "department";
 
 type Collaborator = {
@@ -70,257 +54,534 @@ type Collaborator = {
   type: CollaboratorType;
   name: string;
   role: RoleType;
-  color?: string;
+  canViewPath: boolean;
 };
 
-const MOCK_COLLABORATORS: Collaborator[] = [
-  {
-    id: "1",
-    type: "department",
-    name: "東京センター",
-    role: "editor",
-    color: "#6366f1",
-  },
-  {
-    id: "2",
-    type: "user",
-    name: "sre-user",
-    role: "viewer",
-    color: "#2563eb",
-  },
-  {
-    id: "3",
-    type: "department",
-    name: "大阪DR",
-    role: "viewer",
-    color: "#ef4444",
-  },
-];
+type CollaborationState = {
+  direct: Collaborator[];
+};
 
-type CurrentFolderInfo = {
+type FolderInfo = {
   id: string;
   name: string;
   pathCollection?: { entries: { id: string; name: string }[] };
 };
+
+type CollaborationPanelProps = {
+  folderName: string;
+  relativePath: string;
+  collaborators: Collaborator[];
+  isBusy: boolean;
+  selectedCollaborator: SingleValue<AutoCompleteData>;
+  selectedRole: RoleType;
+  onSelectedCollaboratorChange: (
+    value: SingleValue<AutoCompleteData>,
+  ) => void;
+  onSelectedRoleChange: (role: RoleType) => void;
+  onAddCollaborator: () => void;
+  onRemoveCollaborator: (collaborator: Collaborator) => void;
+  onCopyPath: () => void;
+  onOpenBox: () => void;
+  onOpenExplorer: () => void;
+};
+
+const ROOT_SHARE_PATH = "\\\\tggfile.jp\\share";
+const BOX_DRIVE_BASE_SEGMENTS = ["isexplorer:C:", "Users", "xxxx.xxxx", "Box"];
+const DEFAULT_ROLE: RoleType = "viewer";
+const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
+  { value: "editor", label: "Editor" },
+  { value: "viewer", label: "Viewer" },
+];
+
+const readDevToken = () => {
+  if (typeof window === "undefined") return undefined;
+
+  const params = new URLSearchParams(window.location.search);
+  const queryToken = params.get("devToken")?.trim();
+  if (queryToken) return queryToken;
+
+  const storedToken = window.localStorage.getItem("box_dev_token")?.trim();
+  return storedToken && storedToken.length > 0 ? storedToken : undefined;
+};
+
+const normalizeFolderId = (folderId?: string) =>
+  /^\d+$/.test(folderId || "") ? folderId! : "0";
 
 const sanitizePathName = (id: string, name?: string | null) => {
   if (id === "0" || name === "すべてのファイル") return "share";
   return name || "root";
 };
 
-const getInitialFolderInfo = (folderId: string): CurrentFolderInfo => ({
+const createFolderInfo = (folderId: string): FolderInfo => ({
   id: folderId,
   name: folderId === "0" ? "All Files" : "",
   pathCollection: { entries: [] },
 });
 
-const buildCollaborator = (
-  type: CollaboratorType,
-  target: AutoCompleteData,
-  role: RoleType,
-): Collaborator => ({
-  id: `${type}:${target.value}`,
-  type,
-  name: target.label,
-  role,
-  color: target.color,
+const toFolderInfo = (
+  item: Pick<BoxFolder, "id" | "name" | "path_collection">,
+): FolderInfo => ({
+  id: item.id,
+  name: item.name ?? "",
+  pathCollection: item.path_collection
+    ? { entries: item.path_collection.entries || [] }
+    : undefined,
 });
+
+const extractFolderFromEvent = (payload: unknown): BoxFolder | null => {
+  if (!payload) return null;
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const folder = extractFolderFromEvent(item);
+      if (folder) return folder;
+    }
+    return null;
+  }
+
+  if (typeof payload !== "object") return null;
+
+  const record = payload as Record<string, unknown>;
+  if (record.type === "folder" && typeof record.id === "string") {
+    return payload as BoxFolder;
+  }
+
+  return (
+    extractFolderFromEvent(record.item) ||
+    extractFolderFromEvent(record.items) ||
+    extractFolderFromEvent(record.selected) ||
+    extractFolderFromEvent(record.selection)
+  );
+};
+
+const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
+  if (folder.id === "0") {
+    return ROOT_SHARE_PATH;
+  }
+
+  const entries = folder.pathCollection?.entries ?? [];
+  const filteredEntries = entries.filter((entry) => entry.id !== "0");
+  const rootIndex = filteredEntries.findIndex(
+    (entry) => entry.id === rootFolderId,
+  );
+  const descendantEntries =
+    rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : filteredEntries;
+  const segments = ["share"];
+
+  if (rootFolderId !== "0") {
+    const rootName =
+      rootIndex >= 0
+        ? filteredEntries[rootIndex]?.name
+        : folder.id === rootFolderId
+          ? folder.name
+          : undefined;
+
+    if (rootName) {
+      segments.push(sanitizePathName(rootFolderId, rootName));
+    }
+  }
+
+  segments.push(
+    ...descendantEntries.map((entry) => sanitizePathName(entry.id, entry.name)),
+  );
+
+  if (folder.id !== rootFolderId && folder.name) {
+    segments.push(sanitizePathName(folder.id, folder.name));
+  }
+
+  return `\\\\tggfile.jp${segments.map((segment) => `\\${segment}`).join("")}`;
+};
+
+const getRelativeSharePath = (path: string) => {
+  if (path === ROOT_SHARE_PATH) return "";
+  return path.startsWith(`${ROOT_SHARE_PATH}\\`)
+    ? path.slice(`${ROOT_SHARE_PATH}\\`.length)
+    : path;
+};
+
+const buildBoxDriveUri = (folder: BoxFolder) => {
+  const entrySegments =
+    folder.path_collection?.entries
+      ?.filter((entry) => entry.id !== "0")
+      .map((entry) => entry.name) ?? [];
+
+  return encodeURI(
+    [...BOX_DRIVE_BASE_SEGMENTS, ...entrySegments, folder.name].join("\\"),
+  );
+};
+
+const buildCollaborator = ({
+  folderId,
+  option,
+  role,
+  type,
+}: {
+  folderId: string;
+  option: AutoCompleteData;
+  role: RoleType;
+  type: CollaboratorType;
+}): Collaborator => ({
+  id: `${folderId}:${type}:${option.value}`,
+  type,
+  name: option.label,
+  role,
+  canViewPath: true,
+});
+
+const createMockCollaborationState = (folderId: string): CollaborationState => ({
+  direct: [
+    {
+      id: `${folderId}:department:tokyo`,
+      type: "department",
+      name: "東京センター",
+      role: "editor",
+      canViewPath: true,
+    },
+    {
+      id: `${folderId}:user:sre`,
+      type: "user",
+      name: "sre-user",
+      role: "viewer",
+      canViewPath: true,
+    },
+    {
+      id: `${folderId}:user:legacy`,
+      type: "user",
+      name: "legacy-user",
+      role: "viewer",
+      canViewPath: false,
+    },
+  ],
+});
+
+const getCollaborationState = (
+  collaborationsByFolderId: Record<string, CollaborationState>,
+  folderId: string,
+) => collaborationsByFolderId[folderId] ?? createMockCollaborationState(folderId);
+
+const getCollaboratorType = ({
+  option,
+  users,
+  groups,
+}: {
+  option: AutoCompleteData;
+  users: AutoCompleteData[];
+  groups: AutoCompleteData[];
+}): CollaboratorType => {
+  if (groups.some((group) => group.value === option.value)) {
+    return "department";
+  }
+
+  if (users.some((user) => user.value === option.value)) {
+    return "user";
+  }
+
+  return "user";
+};
+
+const FolderActionButtons = ({
+  onCopyPath,
+  onOpenBox,
+  onOpenExplorer,
+}: {
+  onCopyPath: () => void;
+  onOpenBox: () => void;
+  onOpenExplorer: () => void;
+}) => (
+  <div className="flex shrink-0 items-center gap-1">
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onCopyPath}
+          aria-label="パスをコピー"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>パスをコピー</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onOpenBox}
+          aria-label="Boxで開く"
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Web Boxで開く</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onOpenExplorer}
+          aria-label="Box Driveで開く"
+        >
+          <FolderOpen className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Box Driveで開く</TooltipContent>
+    </Tooltip>
+  </div>
+);
+
+const CollaboratorRow = ({
+  collaborator,
+  isBusy,
+  onRemove,
+}: {
+  collaborator: Collaborator;
+  isBusy: boolean;
+  onRemove: (collaborator: Collaborator) => void;
+}) => (
+  <div
+    className={cn(
+      "group flex items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-muted/30",
+      !collaborator.canViewPath && "opacity-45",
+    )}
+  >
+    <div className="min-w-0 flex items-center gap-2 overflow-hidden">
+      {collaborator.type === "department" ? (
+        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+      ) : (
+        <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+      )}
+      <span className="truncate text-sm font-medium">{collaborator.name}</span>
+      <Badge
+        variant={collaborator.role === "editor" ? "default" : "outline"}
+        className="h-5 px-1.5 text-[10px]"
+      >
+        {ROLE_OPTIONS.find((role) => role.value === collaborator.role)?.label}
+      </Badge>
+    </div>
+
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-7 w-7 shrink-0 text-muted-foreground transition-opacity hover:text-destructive",
+            isBusy ? "opacity-40" : "opacity-0 group-hover:opacity-100",
+          )}
+          onClick={() => onRemove(collaborator)}
+          aria-label="権限を削除"
+          disabled={isBusy}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>権限を削除</TooltipContent>
+    </Tooltip>
+  </div>
+);
+
+const CollaborationPanel = ({
+  folderName,
+  relativePath,
+  collaborators,
+  isBusy,
+  selectedCollaborator,
+  selectedRole,
+  onSelectedCollaboratorChange,
+  onSelectedRoleChange,
+  onAddCollaborator,
+  onRemoveCollaborator,
+  onCopyPath,
+  onOpenBox,
+  onOpenExplorer,
+}: CollaborationPanelProps) => (
+  <Card className="h-fit xl:sticky xl:top-4">
+    <CardHeader className="space-y-2">
+      <CardTitle className="text-lg">{folderName}</CardTitle>
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1 break-all text-xs text-muted-foreground">
+          {relativePath || "/"}
+        </div>
+        <FolderActionButtons
+          onCopyPath={onCopyPath}
+          onOpenBox={onOpenBox}
+          onOpenExplorer={onOpenExplorer}
+        />
+      </div>
+    </CardHeader>
+
+    <CardContent className="space-y-4">
+      <div className="space-y-3">
+        <div className="text-sm font-medium">コラボレーターを追加</div>
+
+        <AutoCompleteSingle
+          type="userGroup"
+          value={selectedCollaborator}
+          placeholder="部署・社員を検索..."
+          onChange={(value) => onSelectedCollaboratorChange(value)}
+        />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Select
+            value={selectedRole}
+            onValueChange={(value) => onSelectedRoleChange(value as RoleType)}
+          >
+            <SelectTrigger className="w-full justify-start gap-1 rounded-full border-transparent bg-transparent px-3 text-left shadow-none hover:bg-muted focus-visible:border-transparent focus-visible:ring-0 data-[state=open]:bg-muted sm:w-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ROLE_OPTIONS.map((role) => (
+                <SelectItem key={role.value} value={role.value}>
+                  {role.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            onClick={onAddCollaborator}
+            disabled={isBusy || !selectedCollaborator}
+            className="shrink-0"
+          >
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            追加
+          </Button>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <div className="text-sm font-medium">コラボレータ一覧</div>
+
+        <div className="overflow-hidden rounded-lg border">
+          {collaborators.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              コラボレーターは設定されていません
+            </div>
+          ) : (
+            <div className="divide-y">
+              {collaborators.map((collaborator) => (
+                <CollaboratorRow
+                  key={collaborator.id}
+                  collaborator={collaborator}
+                  isBusy={isBusy}
+                  onRemove={onRemoveCollaborator}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export const SS = () => {
   const { folderId: routeFolderId } = useParams();
-  const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
-
-  const devToken = useMemo(() => {
-    if (typeof window === "undefined") return undefined;
-    const params = new URLSearchParams(window.location.search);
-    const paramToken = params.get("devToken")?.trim();
-    if (paramToken) return paramToken;
-    const storedToken = window.localStorage.getItem("box_dev_token")?.trim();
-    return storedToken && storedToken.length > 0 ? storedToken : undefined;
-  }, []);
-
-  const effectiveToken = devToken ?? token;
-  const isNumeric = /^\d+$/.test(routeFolderId || "");
-  const effectiveFolderId = isNumeric ? routeFolderId! : "0";
-
+  const rootFolderId = normalizeFolderId(routeFolderId);
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
 
-  const [currentFolder, setCurrentFolder] = useState<CurrentFolderInfo>(
-    getInitialFolderInfo(effectiveFolderId),
-  );
-  const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
-  const [targetFolder, setTargetFolder] = useState<CurrentFolderInfo | null>(
-    null,
-  );
-  const [collaboratorsByFolder, setCollaboratorsByFolder] = useState<
-    Record<string, Collaborator[]>
-  >({});
-  const [addType, setAddType] = useState<CollaboratorType>("department");
-  const [selectedUser, setSelectedUser] =
-    useState<SingleValue<AutoCompleteData>>(null);
-  const [selectedDepartment, setSelectedDepartment] =
-    useState<SingleValue<AutoCompleteData>>(null);
-  const [selectedRole, setSelectedRole] = useState<RoleType>("viewer");
-  const [isMutatingCollaboration, setIsMutatingCollaboration] =
-    useState(false);
+  const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
+  const users = useSelector(autoCompleteSelector.usersSelector());
+  const groups = useSelector(autoCompleteSelector.groupsSelector());
+  const devToken = useMemo(readDevToken, []);
+  const accessToken = devToken ?? token;
 
-  const canShowExplorer = Boolean(effectiveToken);
+  const [selectedFolder, setSelectedFolder] = useState<FolderInfo>(() =>
+    createFolderInfo(rootFolderId),
+  );
+  const [selectedCollaborator, setSelectedCollaborator] =
+    useState<SingleValue<AutoCompleteData>>(null);
+  const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
+  const [isSavingCollaborator, setIsSavingCollaborator] = useState(false);
+  const [collaborationsByFolderId, setCollaborationsByFolderId] = useState<
+    Record<string, CollaborationState>
+  >({});
+
+  const selectedFolderPath = useMemo(
+    () => buildSharePath(selectedFolder, rootFolderId),
+    [selectedFolder, rootFolderId],
+  );
+  const selectedFolderRelativePath = useMemo(
+    () => getRelativeSharePath(selectedFolderPath),
+    [selectedFolderPath],
+  );
+  const selectedFolderName = selectedFolder.name || "対象フォルダ";
+  const collaborators = useMemo(
+    () =>
+      getCollaborationState(collaborationsByFolderId, selectedFolder.id).direct,
+    [collaborationsByFolderId, selectedFolder.id],
+  );
+
+  const resetForm = useCallback(() => {
+    setSelectedCollaborator(null);
+    setSelectedRole(DEFAULT_ROLE);
+  }, []);
 
   useEffect(() => {
-    setCurrentFolder(getInitialFolderInfo(effectiveFolderId));
-    setTargetFolder(null);
-    setIsPermissionDialogOpen(false);
-  }, [effectiveFolderId]);
+    setSelectedFolder(createFolderInfo(rootFolderId));
+    resetForm();
+  }, [rootFolderId, resetForm]);
 
-  const breadcrumbLabel = useMemo(() => {
-    if (!currentFolder.name || currentFolder.id === "0") return "All Files";
-    return `All Files > ${currentFolder.name}`;
-  }, [currentFolder]);
+  const syncSelectedFolder = useCallback(
+    (payload: unknown) => {
+      const folder = extractFolderFromEvent(payload);
+      if (!folder || folder.type !== "folder") return;
 
-  const currentPath = useMemo(() => {
-    if (currentFolder.id === "0") {
-      return "\\\\tggfile.jp\\share";
-    }
-
-    const basePath = "\\\\tggfile.jp";
-    const entries = currentFolder.pathCollection?.entries ?? [];
-    const filtered = entries.filter((entry) => entry.id !== "0");
-    const rootIndex = filtered.findIndex((entry) => entry.id === effectiveFolderId);
-    const afterRoot =
-      rootIndex >= 0 ? filtered.slice(rootIndex + 1) : filtered;
-
-    const segments = ["share"];
-
-    if (currentFolder.name) {
-      const rootName =
-        rootIndex >= 0
-          ? filtered[rootIndex]?.name ?? currentFolder.name
-          : currentFolder.id === effectiveFolderId
-            ? currentFolder.name
-            : undefined;
-
-      if (rootName) {
-        segments.push(sanitizePathName(effectiveFolderId, rootName));
-      }
-    }
-
-    segments.push(
-      ...afterRoot.map((entry) => sanitizePathName(entry.id, entry.name)),
-    );
-
-    if (currentFolder.id !== effectiveFolderId && currentFolder.name) {
-      segments.push(sanitizePathName(currentFolder.id, currentFolder.name));
-    }
-
-    const pathString = segments.map((segment) => `\\${segment}`).join("");
-    return `${basePath}${pathString}`;
-  }, [currentFolder, effectiveFolderId]);
-
-  const boxWebUrl = useMemo(
-    () => `https://app.box.com/folder/${currentFolder.id}`,
-    [currentFolder.id],
+      setSelectedFolder(toFolderInfo(folder));
+      resetForm();
+    },
+    [resetForm],
   );
 
-  const dialogCollaborators = useMemo(() => {
-    if (!targetFolder) return [];
-    return collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
-  }, [collaboratorsByFolder, targetFolder]);
+  const handleOpenBox = useCallback(() => {
+    window.open(
+      `https://app.box.com/folder/${selectedFolder.id}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }, [selectedFolder.id]);
 
-  const resetCollaborationForm = useCallback(() => {
-    setSelectedUser(null);
-    setSelectedDepartment(null);
-    setSelectedRole("viewer");
-    setAddType("department");
-  }, []);
+  const handleOpenExplorer = useCallback(() => {
+    const fileUrl = `file://${selectedFolderPath.replace(/\\/g, "/")}`;
+    window.open(fileUrl, "_blank");
+    toast.info("エクスプローラーで開きます");
+  }, [selectedFolderPath]);
 
   const handleCopyPath = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(currentPath);
+      await navigator.clipboard.writeText(selectedFolderPath);
       toast.success("パスをコピーしました");
     } catch {
       toast.error("コピーに失敗しました");
     }
-  }, [currentPath]);
-
-  const handleOpenBox = useCallback(() => {
-    window.open(boxWebUrl, "_blank", "noopener,noreferrer");
-  }, [boxWebUrl]);
-
-  const handleOpenExplorer = useCallback(() => {
-    const fileUrl = `file://${currentPath.replace(/\\/g, "/")}`;
-    window.open(fileUrl, "_blank");
-    toast.info("エクスプローラーで開きます");
-  }, [currentPath]);
+  }, [selectedFolderPath]);
 
   const handleMount = useCallback((item: BoxFolder) => {
     if (item.type !== "folder") return;
-
-    const baseSegments = ["isexplorer:C:", "Users", "xxxx.xxxx", "Box"];
-    const entrySegments =
-      item.path_collection?.entries
-        ?.filter((entry) => entry.id !== "0")
-        .map((entry) => entry.name) ?? [];
-
-    const target = encodeURI(
-      [...baseSegments, ...entrySegments, item.name].join("\\"),
-    );
-
-    window.location.assign(target);
+    window.location.assign(buildBoxDriveUri(item));
   }, []);
 
-  const handleOpenPermissionDialog = useCallback(
-    (item: BoxFolder) => {
-      if (item.type !== "folder") return;
-
-      setTargetFolder({
-        id: item.id,
-        name: item.name ?? "",
-        pathCollection: item.path_collection
-          ? { entries: item.path_collection.entries || [] }
-          : undefined,
-      });
-      resetCollaborationForm();
-      setIsPermissionDialogOpen(true);
-    },
-    [resetCollaborationForm],
-  );
-
-  const handleClosePermissionDialog = useCallback(() => {
-    setIsPermissionDialogOpen(false);
-    setTargetFolder(null);
-    resetCollaborationForm();
-  }, [resetCollaborationForm]);
-
-  const customActions = useMemo(
+  const explorerActions = useMemo(
     () => [
       {
         label: "マウント",
         onAction: (item: BoxFolder) => handleMount(item),
         type: "folder",
       },
-      {
-        label: "権限設定",
-        onAction: (item: BoxFolder) => handleOpenPermissionDialog(item),
-        type: "folder",
-      },
     ],
-    [handleMount, handleOpenPermissionDialog],
+    [handleMount],
   );
 
-  const handleNavigate = useCallback((item: BoxFolder) => {
-    if (item.type !== "folder") return;
-
-    setCurrentFolder({
-      id: item.id,
-      name: item.name ?? "",
-      pathCollection: item.path_collection
-        ? { entries: item.path_collection.entries || [] }
-        : undefined,
-    });
-  }, []);
-
   useEffect(() => {
-    if (!effectiveToken) return;
+    if (!accessToken) return;
+
     const BoxGlobal = window.Box;
     if (!BoxGlobal?.ContentExplorer) return;
 
@@ -329,38 +590,44 @@ export const SS = () => {
     }
 
     const explorer = explorerRef.current;
-    explorer?.removeAllListeners?.();
-    explorer?.addListener?.("navigate", handleNavigate);
-    explorer?.show(effectiveFolderId, effectiveToken, {
+    explorer.removeAllListeners?.();
+    explorer.addListener?.("navigate", syncSelectedFolder);
+    explorer.addListener?.("select", syncSelectedFolder);
+    explorer.show(rootFolderId, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
-      itemActions: customActions,
+      itemActions: explorerActions,
     });
 
     return () => {
-      explorer?.removeAllListeners?.();
-      explorer?.hide?.();
+      explorer.removeAllListeners?.();
+      explorer.hide?.();
     };
-  }, [customActions, effectiveFolderId, effectiveToken, handleNavigate]);
+  }, [accessToken, explorerActions, rootFolderId, syncSelectedFolder]);
 
   const handleAddCollaborator = useCallback(async () => {
-    if (!targetFolder) return;
+    if (!selectedCollaborator) return;
 
-    const selectedTarget =
-      addType === "user" ? selectedUser : selectedDepartment;
-    if (!selectedTarget) return;
+    const collaboratorType = getCollaboratorType({
+      option: selectedCollaborator,
+      users,
+      groups,
+    });
+    const nextCollaborator = buildCollaborator({
+      folderId: selectedFolder.id,
+      option: selectedCollaborator,
+      role: selectedRole,
+      type: collaboratorType,
+    });
 
-    const nextCollaborator = buildCollaborator(
-      addType,
-      selectedTarget,
-      selectedRole,
+    const currentState = getCollaborationState(
+      collaborationsByFolderId,
+      selectedFolder.id,
     );
-    const currentCollaborators =
-      collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
-    const alreadyExists = currentCollaborators.some(
-      (collab) =>
-        collab.type === nextCollaborator.type &&
-        collab.name === nextCollaborator.name,
+    const alreadyExists = currentState.direct.some(
+      (collaborator) =>
+        collaborator.type === nextCollaborator.type &&
+        collaborator.name === nextCollaborator.name,
     );
 
     if (alreadyExists) {
@@ -368,55 +635,56 @@ export const SS = () => {
       return;
     }
 
-    setIsMutatingCollaboration(true);
+    setIsSavingCollaborator(true);
+
     try {
-      setCollaboratorsByFolder((prev) => ({
-        ...prev,
-        [targetFolder.id]: [...currentCollaborators, nextCollaborator],
-      }));
+      setCollaborationsByFolderId((prev) => {
+        const state = getCollaborationState(prev, selectedFolder.id);
+        return {
+          ...prev,
+          [selectedFolder.id]: {
+            direct: [...state.direct, nextCollaborator],
+          },
+        };
+      });
       toast.success(`${nextCollaborator.name} を追加しました`);
-      if (addType === "user") {
-        setSelectedUser(null);
-      } else {
-        setSelectedDepartment(null);
-      }
+      setSelectedCollaborator(null);
     } catch {
       toast.error("コラボレーターの追加に失敗しました");
     } finally {
-      setIsMutatingCollaboration(false);
+      setIsSavingCollaborator(false);
     }
   }, [
-    addType,
-    collaboratorsByFolder,
-    selectedDepartment,
+    collaborationsByFolderId,
+    groups,
+    selectedCollaborator,
+    selectedFolder.id,
     selectedRole,
-    selectedUser,
-    targetFolder,
+    users,
   ]);
 
   const handleRemoveCollaborator = useCallback(
     async (collaborator: Collaborator) => {
-      if (!targetFolder) return;
+      setIsSavingCollaborator(true);
 
-      const currentCollaborators =
-        collaboratorsByFolder[targetFolder.id] ?? MOCK_COLLABORATORS;
-
-      setIsMutatingCollaboration(true);
       try {
-        setCollaboratorsByFolder((prev) => ({
-          ...prev,
-          [targetFolder.id]: currentCollaborators.filter(
-            (item) => item.id !== collaborator.id,
-          ),
-        }));
+        setCollaborationsByFolderId((prev) => {
+          const state = getCollaborationState(prev, selectedFolder.id);
+          return {
+            ...prev,
+            [selectedFolder.id]: {
+              direct: state.direct.filter((item) => item.id !== collaborator.id),
+            },
+          };
+        });
         toast.success(`${collaborator.name} を削除しました`);
       } catch {
         toast.error("コラボレーターの削除に失敗しました");
       } finally {
-        setIsMutatingCollaboration(false);
+        setIsSavingCollaborator(false);
       }
     },
-    [collaboratorsByFolder, targetFolder],
+    [selectedFolder.id],
   );
 
   return (
@@ -431,288 +699,38 @@ export const SS = () => {
       >
         <BoxManager />
 
-        <div className="space-y-4 pb-8">
-          <Card className="py-0">
-            <CardContent className="py-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="min-w-[140px] text-xs text-muted-foreground">
-                  {breadcrumbLabel}
+        <div className="pb-8">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <Card className="overflow-hidden">
+              {accessToken ? (
+                <div
+                  id="box-content-explorer"
+                  className="min-h-[520px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
+                />
+              ) : (
+                <div className="flex min-h-[520px] items-center justify-center text-sm text-muted-foreground">
+                  Box に接続中...
                 </div>
+              )}
+            </Card>
 
-                <div className="min-w-0 flex-1">
-                  <Input
-                    readOnly
-                    value={currentPath}
-                    className="h-8 bg-muted/30 font-mono text-sm"
-                  />
-                </div>
-
-                <div className="flex shrink-0 items-center gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleCopyPath}
-                        aria-label="パスをコピー"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>パスをコピー</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleOpenBox}
-                        aria-label="Boxで開く"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Boxで開く</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleOpenExplorer}
-                        aria-label="エクスプローラーで開く"
-                      >
-                        <FolderOpen className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      エクスプローラー/Finderで開く
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden">
-            {canShowExplorer ? (
-              <div
-                id="box-content-explorer"
-                className="min-h-[400px] max-h-[500px] [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
-              />
-            ) : (
-              <div className="flex min-h-[400px] items-center justify-center text-sm text-muted-foreground">
-                Box に接続中...
-              </div>
-            )}
-          </Card>
+            <CollaborationPanel
+              folderName={selectedFolderName}
+              relativePath={selectedFolderRelativePath}
+              collaborators={collaborators}
+              isBusy={isSavingCollaborator}
+              selectedCollaborator={selectedCollaborator}
+              selectedRole={selectedRole}
+              onSelectedCollaboratorChange={setSelectedCollaborator}
+              onSelectedRoleChange={setSelectedRole}
+              onAddCollaborator={handleAddCollaborator}
+              onRemoveCollaborator={handleRemoveCollaborator}
+              onCopyPath={handleCopyPath}
+              onOpenBox={handleOpenBox}
+              onOpenExplorer={handleOpenExplorer}
+            />
+          </div>
         </div>
-
-        <Dialog open={isPermissionDialogOpen} onOpenChange={handleClosePermissionDialog}>
-          <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                共有領域管理
-                {targetFolder && (
-                  <Badge variant="outline" className="ml-2">
-                    {targetFolder.name}
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              <div className="rounded-lg border bg-muted/20 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="text-sm font-medium">コラボレーターを追加</div>
-                  <div className="text-xs text-muted-foreground">
-                    追加・削除は即時反映されます
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-3 md:flex-row">
-                    <div className="flex w-fit shrink-0 gap-1 rounded-md bg-muted p-1">
-                      <Button
-                        variant={addType === "department" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setAddType("department")}
-                        className="gap-1.5"
-                        disabled={isMutatingCollaboration}
-                      >
-                        <Building2 className="h-3.5 w-3.5" />
-                        部署
-                      </Button>
-                      <Button
-                        variant={addType === "user" ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => setAddType("user")}
-                        className="gap-1.5"
-                        disabled={isMutatingCollaboration}
-                      >
-                        <User className="h-3.5 w-3.5" />
-                        社員
-                      </Button>
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      {addType === "user" ? (
-                        <AutoCompleteSingle
-                          type="user"
-                          value={selectedUser}
-                          placeholder="社員を検索..."
-                          onChange={(value) => setSelectedUser(value)}
-                        />
-                      ) : (
-                        <AutoCompleteSingle
-                          type="center"
-                          value={selectedDepartment}
-                          placeholder="部署を検索..."
-                          onChange={(value) => setSelectedDepartment(value)}
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                    <div className="flex items-center gap-3">
-                      <span className="shrink-0 text-sm text-muted-foreground">
-                        権限:
-                      </span>
-                      <Select
-                        value={selectedRole}
-                        onValueChange={(value) => setSelectedRole(value as RoleType)}
-                      >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLE_OPTIONS.map((role) => (
-                            <SelectItem key={role.value} value={role.value}>
-                              <span className="flex items-center gap-2">
-                                {role.label}
-                                <span className="text-xs text-muted-foreground">
-                                  ({role.description})
-                                </span>
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      onClick={handleAddCollaborator}
-                      disabled={
-                        isMutatingCollaboration ||
-                        (addType === "user" && !selectedUser) ||
-                        (addType === "department" && !selectedDepartment)
-                      }
-                      className="shrink-0"
-                    >
-                      <UserPlus className="mr-1.5 h-4 w-4" />
-                      追加
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  現在の権限設定
-                  <Badge variant="outline" className="text-xs">
-                    {dialogCollaborators.length}件
-                  </Badge>
-                </div>
-
-                <div className="max-h-[300px] divide-y overflow-y-auto rounded-lg border">
-                  {dialogCollaborators.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      コラボレーターが設定されていません
-                    </div>
-                  ) : (
-                    dialogCollaborators.map((collaborator) => (
-                      <div
-                        key={collaborator.id}
-                        className="group flex items-center justify-between p-3 transition-colors hover:bg-muted/30"
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
-                            style={{
-                              backgroundColor: collaborator.color || "#6b7280",
-                            }}
-                          >
-                            {collaborator.type === "department" ? (
-                              <Building2 className="h-4 w-4" />
-                            ) : (
-                              <User className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-medium">
-                              {collaborator.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {collaborator.type === "department" ? "部署" : "社員"}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Badge
-                            variant={
-                              collaborator.role === "editor" ? "default" : "outline"
-                            }
-                            className="text-xs"
-                          >
-                            {
-                              ROLE_OPTIONS.find(
-                                (role) => role.value === collaborator.role,
-                              )?.label
-                            }
-                          </Badge>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "h-7 w-7 text-muted-foreground transition-opacity hover:text-destructive",
-                                  isMutatingCollaboration
-                                    ? "opacity-40"
-                                    : "opacity-0 group-hover:opacity-100",
-                                )}
-                                onClick={() =>
-                                  handleRemoveCollaborator(collaborator)
-                                }
-                                aria-label="権限を削除"
-                                disabled={isMutatingCollaboration}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>権限を削除</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClosePermissionDialog}>
-                閉じる
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </Layout>
     </TooltipProvider>
   );
