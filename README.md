@@ -76,6 +76,96 @@ Pages
 - `src/api/index.ts`: API 型定義・エンドポイント
 - `test/jest.setup.ts`: Jest 全体の共通モック/初期化
 
+## Layout props の使い分け
+
+`Layout` は `src/components/frame/Layout.tsx` の共通フレームです。  
+受け取る props は次の 5 つです。
+
+| prop | 型 | 省略時 | 効果 |
+| --- | --- | --- | --- |
+| `hideSideMenu` | `boolean` | `false` | 左サイドメニューを描画しません。あわせて本文の左余白も消えます。 |
+| `hideHeader` | `boolean` | `false` | 上部ヘッダーを描画しません。 |
+| `hideTabs` | `boolean` | `false` | `TabsBar` 自体を描画しません。 |
+| `fluid` | `boolean` | `false` | 本文の最大幅 `912px` 制限を外し、画面幅いっぱいを使います。 |
+| `subtitle` | `string` | `undefined` | ヘッダータイトルの右に補足テキストを表示します。 |
+
+`Header` のタイトルは現在の URL から自動判定します。主な判定は次の通りです。
+
+- `/OA/` 配下: `OA連携`
+- `/manage/` 配下: `管理`
+- `/job/ShareArea` 配下: `センター専用領域`
+- それ以外の個別ルート: `MyPage`, `JOB SEARCH`, `LOG SEARCH` など
+
+ヘッダー右上のユーザーメニューは全画面で共通です。  
+必要に応じて `subtitle` だけを足します。
+
+### 通常ページの使い方
+
+多くのページは単に `<Layout>` だけを使っています。
+
+```tsx
+<Layout>
+  {...page content}
+</Layout>
+```
+
+この場合の挙動は次の通りです。
+
+- サイドメニューを表示する
+- ヘッダーを表示する
+- `TabsBar` は描画する
+- 本文幅は最大 `912px`
+
+補足:
+- `TabsBar` は `hideTabs` が `false` でも、URL が `/OA/` または `/manage/` 配下でなければ中身を返しません
+- そのため、`<Layout>` だけ書いているページでも、実際にタブが見えるのは OA 連携系と管理系のページだけです
+
+### SS の使い方
+
+`SS` は次のように `Layout` を使っています。
+
+```tsx
+<Layout
+  hideTabs
+  fluid
+  subtitle={areaName}
+>
+  {...page content}
+</Layout>
+```
+
+この指定にしている理由は次の通りです。
+
+- `hideTabs`
+  - SS は OA/管理タブ文脈のページではないため、上部タブを明示的に消しています
+  - `TabsBar` 側が空描画になるのを待つのではなく、レイアウト上も不要な要素として外しています
+- `fluid`
+  - SS は Box Content Explorer と右パネルを横並びで使うため、通常の `912px` 幅では狭すぎます
+  - 幅制限を外して、ページ全幅を使えるようにしています
+- `subtitle={areaName}`
+  - ヘッダー本体は URL から自動で `センター専用領域` になります
+  - その右に、ShareArea から渡されたルートフォルダ名を表示します
+- ページ左上の見出し
+  - 本文側では SS 固有の `共有領域管理` を表示します
+
+### props ごとの判断基準
+
+- `hideSideMenu`
+  - ログイン後の通常画面では基本使わない
+  - 埋め込み画面や、メニュー文脈を消したい全画面 UI の時だけ使う
+- `hideHeader`
+  - 同じく特殊画面向け
+  - 通常の業務画面では使わない
+- `hideTabs`
+  - タブ文脈に属さないが、`TabsBar` の描画自体も切りたい時に使う
+  - SS はこのケース
+- `fluid`
+  - テーブル、Explorer、左右 2 カラムなど、横幅を必要とする画面で使う
+  - 文章中心やフォーム中心の画面では使わない
+- `subtitle`
+  - 自動タイトルはそのまま使い、対象名だけ補足したい時に使う
+  - SS のように「親カテゴリ / 対象領域」を見せたい画面に向いています
+
 ## 状態管理メモ
 
 - Redux store は `src/store/index.ts` が実体です。
@@ -192,10 +282,10 @@ Pages
 - 依存: Layout
 - 状態: なし
 
-### /ss → `SS`
-- 入力: なし（モック）
-- 依存: Layout
-- 状態: なし
+### /job/ShareArea/:folderId/manage → `SS`
+- 入力: `folderId`（route param）
+- 依存: Layout, Box Content Explorer, BoxManage, AutoComplete, toast
+- 状態: ローカル（選択中フォルダ, コラボレータ編集状態, モックコラボ設定）
 
 ### /Development → `Development`
 - 入力: なし（モック）

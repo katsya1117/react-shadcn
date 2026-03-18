@@ -1,7 +1,6 @@
 import type { PropsWithChildren } from "react";
-import { useEffect, useState } from "react";
 import { SideMenu } from "./SideMenu";
-import { Header, type HeaderProps } from "./Header";
+import { Header } from "./Header";
 import { TabsBar } from "./TabsBar";
 import {
   layoutContainer,
@@ -13,10 +12,8 @@ import {
   mainAreaFluid,
 } from "./LayoutStyle.css";
 import { cn } from "@/lib/utils";
-import { userSelector } from "@/redux/slices/userSlice";
 import type { AppDispatch } from "../../redux/store";
 import { useDispatch, useSelector } from "react-redux";
-import SimpleSingleSignOn from "../parts/SimpleSingleSignOn/SimpleSingleSignOn";
 import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 
 /**
@@ -28,8 +25,7 @@ type LayoutProps = PropsWithChildren<{
   hideHeader?: boolean;
   hideTabs?: boolean;
   fluid?: boolean;
-  /** Header コンポーネントへの props */
-  headerProps?: HeaderProps;
+  subtitle?: string;
 }>;
 
 export const Layout = ({
@@ -38,9 +34,8 @@ export const Layout = ({
   hideHeader,
   hideTabs,
   fluid,
-  headerProps,
+  subtitle,
 }: LayoutProps) => {
-  const isLogin = useSelector(userSelector.isLoginSelector());
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
   const dispatch: AppDispatch = useDispatch();
   // NOTE: リリース時はログイン状態に応じて表示制御する
@@ -77,7 +72,7 @@ export const Layout = ({
               : layoutBodyWithMenuExpanded,
         )}
       >
-        {!hideHeader && <Header {...headerProps} />}
+        {!hideHeader && <Header subtitle={subtitle} />}
         {!hideTabs && <TabsBar />}
         <main className={cn(mainArea, fluid && mainAreaFluid)}>{children}</main>
       </div>

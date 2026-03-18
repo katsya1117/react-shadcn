@@ -13,6 +13,8 @@ export const layoutBody = style({
   flex: 1,
   minHeight: 0,
   width: "100%",
+  display: "flex",
+  flexDirection: "column",
 });
 
 export const layoutBodyStandalone = style({
@@ -20,6 +22,7 @@ export const layoutBodyStandalone = style({
 });
 
 export const mainArea = style({
+  flex: 1,
   minHeight: 0,
   width: "100%",
   // 共通の最大幅（約912px）
@@ -27,6 +30,8 @@ export const mainArea = style({
   margin: "0 auto",
   padding: "1rem clamp(1rem, 1vw + 0.5rem, 2rem)",
   boxSizing: "border-box",
+  display: "flex",
+  flexDirection: "column",
 });
 
 export const mainAreaFluid = style({

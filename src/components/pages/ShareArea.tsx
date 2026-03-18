@@ -49,7 +49,7 @@ const initialAreas: Area[] = [
     folderName: "JCLGD1SWDV",
     label: "第1ソフトウェア開発センター",
     jclUrl: "/launch/JCLGD1SWDV/jcl",
-    boxFolderId: "370616229381",
+    boxFolderId: "370615941389",
   },
 ];
 
