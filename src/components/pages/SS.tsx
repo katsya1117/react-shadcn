@@ -1,29 +1,41 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { generatePath, useLocation, useNavigate, useParams } from "react-router";
 import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
+import { ArrowLeft } from "lucide-react";
 
 import type { AutoCompleteData } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
+import { uiActions } from "@/redux/slices/uiSlice";
 import { boxSelector } from "@/redux/slices/userSlice";
+import {
+  addSSCollaborator,
+  buildRootDefaultCollaborators,
+  getSSCollaborations,
+  removeSSCollaborator,
+  ssActions,
+  ssSelector,
+} from "@/redux/slices/ssSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { DEFAULT_ROLE } from "@/components/ss/constants";
 import { PathBar } from "@/components/ss/PathBar";
 import type {
   CollaborationListItem,
-  CollaborationState,
   Collaborator,
   CollaboratorType,
   ContentExplorerInstance,
   FolderInfo,
   RoleType,
 } from "@/components/ss/types";
+import { UrlPath } from "@/constant/UrlPath";
+import { useAppDispatch } from "@/store/hooks";
 
 const ROOT_SHARE_PATH = "\\\\tggfile.jp\\share";
 
@@ -98,13 +110,23 @@ const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
 
 export const SS = () => {
   const { folderId: routeFolderId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const rootFolderId =
     routeFolderId && /^\d+$/.test(routeFolderId) ? routeFolderId : "0";
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
+  const explorerStartFolderIdRef = useRef<string>(rootFolderId);
+  const previousRootFolderIdRef = useRef<string>("");
+  const dispatch = useAppDispatch();
 
   const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
   const users = useSelector(autoCompleteSelector.usersSelector());
   const groups = useSelector(autoCompleteSelector.groupsSelector());
+  const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
+  const rememberedCurrentFolder = useSelector(
+    ssSelector.currentFolderSelector(rootFolderId),
+  );
+  const isSavingCollaborator = useSelector(ssSelector.isMutatingSelector());
   const devToken = useMemo(() => {
     if (typeof window === "undefined") return undefined;
 
@@ -116,52 +138,45 @@ export const SS = () => {
     return storedToken && storedToken.length > 0 ? storedToken : undefined;
   }, []);
   const accessToken = devToken ?? token;
+  const searchParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search],
+  );
+  const queryCurrentFolderId = searchParams.get("currentFolderId")?.trim();
+  const restoredCurrentFolderId =
+    queryCurrentFolderId && /^\d+$/.test(queryCurrentFolderId)
+      ? queryCurrentFolderId
+      : rootFolderId;
+
+  if (previousRootFolderIdRef.current !== rootFolderId) {
+    previousRootFolderIdRef.current = rootFolderId;
+    explorerStartFolderIdRef.current =
+      rememberedCurrentFolder?.id ?? restoredCurrentFolderId;
+  }
+
   const emptyFolder = useMemo<FolderInfo>(
     () => ({
-      id: rootFolderId,
-      name: rootFolderId === "0" ? "All Files" : "",
-      pathCollection: { entries: [] },
+      id: explorerStartFolderIdRef.current,
+      name:
+        explorerStartFolderIdRef.current === rootFolderId && rootFolderId === "0"
+          ? "All Files"
+          : rememberedCurrentFolder?.name ?? "",
+      pathCollection: rememberedCurrentFolder?.pathCollection ?? { entries: [] },
     }),
-    [rootFolderId],
+    [rememberedCurrentFolder, rootFolderId],
   );
+  const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
   const rootDefaultCollaborators = useMemo<Collaborator[]>(
-    () => [
-      {
-        id: `${rootFolderId}:department:tokyo`,
-        type: "department",
-        name: "東京センター",
-        role: "editor",
-        canViewPath: true,
-        sourceFolderId: rootFolderId,
-      },
-      {
-        id: `${rootFolderId}:user:sre`,
-        type: "user",
-        name: "sre-user",
-        role: "viewer",
-        canViewPath: true,
-        sourceFolderId: rootFolderId,
-      },
-      {
-        id: `${rootFolderId}:user:legacy`,
-        type: "user",
-        name: "legacy-user",
-        role: "viewer",
-        canViewPath: false,
-        sourceFolderId: rootFolderId,
-      },
-    ],
+    () => buildRootDefaultCollaborators(rootFolderId),
     [rootFolderId],
   );
 
-  const [selectedFolder, setSelectedFolder] = useState<FolderInfo>(emptyFolder);
+  const [selectedFolder, setSelectedFolder] = useState<FolderInfo>(
+    rememberedCurrentFolder ?? emptyFolder,
+  );
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
-  const [isSavingCollaborator, setIsSavingCollaborator] = useState(false);
-  const [collaborationsByFolderId, setCollaborationsByFolderId] = useState<
-    Record<string, CollaborationState>
-  >({});
 
   const { selectedFolderPath, selectedFolderRelativePath } = useMemo(() => {
     const fullPath = buildSharePath(selectedFolder, rootFolderId);
@@ -252,26 +267,47 @@ export const SS = () => {
   }, []);
 
   useEffect(() => {
-    setSelectedFolder(emptyFolder);
+    setSelectedFolder(rememberedCurrentFolder ?? emptyFolder);
     resetForm();
-  }, [emptyFolder, resetForm]);
+  }, [emptyFolder, rememberedCurrentFolder, resetForm]);
 
   const handleNavigate = useCallback(
     (payload: unknown) => {
       const folder = extractFolderFromEvent(payload);
       if (!folder || folder.type !== "folder") return;
 
-      setSelectedFolder({
+      const nextFolder = {
         id: folder.id,
         name: folder.name ?? "",
         pathCollection: folder.path_collection
           ? { entries: folder.path_collection.entries || [] }
           : undefined,
-      });
+      };
+
+      setSelectedFolder(nextFolder);
+      dispatch(ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }));
+      dispatch(
+        uiActions.setLastVisited({
+          key: UrlPath.ShareArea,
+          path:
+            nextFolder.id === rootFolderId
+              ? rootFolderPath
+              : `${rootFolderPath}?currentFolderId=${nextFolder.id}`,
+        }),
+      );
       resetForm();
     },
-    [resetForm],
+    [dispatch, resetForm, rootFolderId, rootFolderPath],
   );
+
+  useEffect(() => {
+    void dispatch(
+      getSSCollaborations({
+        folderId: selectedFolder.id,
+        rootFolderId,
+      }),
+    );
+  }, [dispatch, rootFolderId, selectedFolder.id]);
 
   const handleOpenBox = useCallback(() => {
     window.open(
@@ -309,7 +345,7 @@ export const SS = () => {
     const explorer = explorerRef.current;
     explorer.removeAllListeners?.();
     explorer.addListener?.("navigate", handleNavigate);
-    explorer.show(rootFolderId, accessToken, {
+    explorer.show(explorerStartFolderIdRef.current, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
       size: "large",
@@ -340,46 +376,27 @@ export const SS = () => {
       sourceFolderId: selectedFolder.id,
     };
 
-    const currentDirectCollaborators =
-      collaborationsByFolderId[selectedFolder.id]?.direct ??
-      (selectedFolder.id === rootFolderId ? rootDefaultCollaborators : []);
-    const alreadyExists = currentDirectCollaborators.some(
-      (collaborator) =>
-        collaborator.type === nextCollaborator.type &&
-        collaborator.name === nextCollaborator.name,
-    );
-
-    if (alreadyExists) {
-      toast.error("同じコラボレーターは既に設定されています");
-      return;
-    }
-
-    setIsSavingCollaborator(true);
-
     try {
-      setCollaborationsByFolderId((prev) => {
-        const currentDirect =
-          prev[selectedFolder.id]?.direct ??
-          (selectedFolder.id === rootFolderId ? rootDefaultCollaborators : []);
-        return {
-          ...prev,
-          [selectedFolder.id]: {
-            direct: [...currentDirect, nextCollaborator],
-          },
-        };
-      });
+      await dispatch(
+        addSSCollaborator({
+          folderId: selectedFolder.id,
+          rootFolderId,
+          collaborator: nextCollaborator,
+        }),
+      ).unwrap();
       toast.success(`${nextCollaborator.name} を追加しました`);
       setSelectedCollaborator(null);
-    } catch {
-      toast.error("コラボレーターの追加に失敗しました");
-    } finally {
-      setIsSavingCollaborator(false);
+    } catch (error) {
+      toast.error(
+        typeof error === "string"
+          ? error
+          : "コラボレーターの追加に失敗しました",
+      );
     }
   }, [
-    collaborationsByFolderId,
+    dispatch,
     groups,
     rootFolderId,
-    rootDefaultCollaborators,
     selectedCollaborator,
     selectedFolder.id,
     selectedRole,
@@ -388,29 +405,32 @@ export const SS = () => {
 
   const handleRemoveCollaborator = useCallback(
     async (collaborator: Collaborator) => {
-      setIsSavingCollaborator(true);
-
       try {
-        setCollaborationsByFolderId((prev) => {
-          const currentDirect =
-            prev[selectedFolder.id]?.direct ??
-            (selectedFolder.id === rootFolderId ? rootDefaultCollaborators : []);
-          return {
-            ...prev,
-            [selectedFolder.id]: {
-              direct: currentDirect.filter((item) => item.id !== collaborator.id),
-            },
-          };
-        });
+        await dispatch(
+          removeSSCollaborator({
+            folderId: selectedFolder.id,
+            rootFolderId,
+            collaboratorId: collaborator.id,
+          }),
+        ).unwrap();
         toast.success(`${collaborator.name} を削除しました`);
       } catch {
         toast.error("コラボレーターの削除に失敗しました");
-      } finally {
-        setIsSavingCollaborator(false);
       }
     },
-    [rootDefaultCollaborators, rootFolderId, selectedFolder.id],
+    [dispatch, rootFolderId, selectedFolder.id],
   );
+
+  const handleBackToShareArea = useCallback(() => {
+    dispatch(ssActions.clearCurrentFolder(rootFolderId));
+    dispatch(
+      uiActions.setLastVisited({
+        key: UrlPath.ShareArea,
+        path: UrlPath.ShareArea,
+      }),
+    );
+    navigate(UrlPath.ShareArea);
+  }, [dispatch, navigate, rootFolderId]);
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -419,6 +439,14 @@ export const SS = () => {
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4">
           <div className="space-y-1">
+            <Button
+              variant="ghost"
+              className="mb-1 h-8 px-2 text-muted-foreground"
+              onClick={handleBackToShareArea}
+            >
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              センター専用領域に戻る
+            </Button>
             <p className="text-sm text-muted-foreground">センター専用領域</p>
             <h1 className="text-2xl font-semibold tracking-tight">
               共有領域管理

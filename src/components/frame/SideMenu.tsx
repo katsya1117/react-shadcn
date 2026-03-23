@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import {
   Home,
@@ -48,6 +48,8 @@ const navItems: NavItem[] = [
     to: UrlPath.ShareArea,
     icon: Database,
     hasSubPages: true,
+    shouldRemember: true,
+    prefix: UrlPath.ShareArea,
   },
   {
     label: "LOG SEARCH",
@@ -82,32 +84,28 @@ const navItems: NavItem[] = [
   },
 ] as const;
 
-const getRootPrefix = (path: string) => {
-  const first = path.split("/").filter(Boolean)[0];
-  return first ? `/${first}` : "/";
-};
-
 export const SideMenu = ({ collapsed, onHandle }: Props) => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const dispatch: AppDispatch = useDispatch();
   const lastVisited = useSelector(uiSelector.lastVisited);
 
   // ページ遷移後に現在パスを記録（直接URL遷移でも更新される）
   useEffect(() => {
-    const currentPrefix = getRootPrefix(pathname);
-    const isRememberTarget = navItems.some(
-      (item) => item.shouldRemember && item.prefix === currentPrefix,
+    const rememberTarget = navItems.find(
+      (item) => item.shouldRemember && item.prefix && pathname.startsWith(item.prefix),
     );
-    if (isRememberTarget) {
-      if (lastVisited[currentPrefix] === pathname) return;
+
+    if (rememberTarget?.prefix) {
+      const currentPath = `${pathname}${search}`;
+      if (lastVisited[rememberTarget.prefix] === currentPath) return;
       dispatch(
         uiActions.setLastVisited({
-          key: currentPrefix,
-          path: pathname,
+          key: rememberTarget.prefix,
+          path: currentPath,
         }),
       );
     }
-  }, [pathname, dispatch, lastVisited]);
+  }, [pathname, search, dispatch, lastVisited]);
 
   return (
     <aside
