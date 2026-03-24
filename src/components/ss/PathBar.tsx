@@ -26,7 +26,7 @@ const FolderActionButtons = ({
   onOpenBox: () => void;
   onOpenExplorer: () => void;
 }) => (
-  <div className="flex shrink-0 items-center gap-0.5">
+  <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-0.5 lg:w-auto">
     <Tooltip>
       <TooltipTrigger asChild>
         <Button

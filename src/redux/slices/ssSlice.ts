@@ -29,6 +29,11 @@ type RemoveCollaborationArgs = FolderArgs & {
   collaboratorId: string;
 };
 
+type UpdateCollaborationRoleArgs = FolderArgs & {
+  collaboratorId: string;
+  role: Collaborator["role"];
+};
+
 type SSSliceState = {
   byFolderId: Record<string, CollaborationState>;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
@@ -143,6 +148,35 @@ export const removeSSCollaborator = createAsyncThunk<
   };
 });
 
+export const updateSSCollaboratorRole = createAsyncThunk<
+  { folderId: string; direct: Collaborator[] },
+  UpdateCollaborationRoleArgs,
+  { state: AppRootState; rejectValue: string }
+>(`${sliceName}/updateCollaboratorRole`, async (args, api) => {
+  const state = api.getState().ss;
+  const currentDirect = getDirectCollaborators(
+    state,
+    args.folderId,
+    args.rootFolderId,
+  );
+  const target = currentDirect.find(
+    (collaborator) => collaborator.id === args.collaboratorId,
+  );
+
+  if (!target) {
+    return api.rejectWithValue("対象のコラボレーターが見つかりません");
+  }
+
+  return {
+    folderId: args.folderId,
+    direct: currentDirect.map((collaborator) =>
+      collaborator.id === args.collaboratorId
+        ? { ...collaborator, role: args.role }
+        : collaborator,
+    ),
+  };
+});
+
 const ssSlice = createSlice({
   name: sliceName,
   initialState,
@@ -201,6 +235,20 @@ const ssSlice = createSlice({
       .addCase(removeSSCollaborator.rejected, (state, action) => {
         state.mutateStatus = "failed";
         state.error = action.error.message;
+      })
+      .addCase(updateSSCollaboratorRole.pending, (state) => {
+        state.mutateStatus = "pending";
+        state.error = undefined;
+      })
+      .addCase(updateSSCollaboratorRole.fulfilled, (state, action) => {
+        state.mutateStatus = "succeeded";
+        state.byFolderId[action.payload.folderId] = {
+          direct: action.payload.direct,
+        };
+      })
+      .addCase(updateSSCollaboratorRole.rejected, (state, action) => {
+        state.mutateStatus = "failed";
+        state.error = action.payload ?? action.error.message;
       });
   },
 });

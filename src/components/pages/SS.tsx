@@ -22,6 +22,7 @@ import {
   removeSSCollaborator,
   ssActions,
   ssSelector,
+  updateSSCollaboratorRole,
 } from "@/redux/slices/ssSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { DEFAULT_ROLE } from "@/components/ss/constants";
@@ -421,6 +422,29 @@ export const SS = () => {
     [dispatch, rootFolderId, selectedFolder.id],
   );
 
+  const handleUpdateCollaboratorRole = useCallback(
+    async (collaborator: Collaborator, role: RoleType) => {
+      try {
+        await dispatch(
+          updateSSCollaboratorRole({
+            folderId: selectedFolder.id,
+            rootFolderId,
+            collaboratorId: collaborator.id,
+            role,
+          }),
+        ).unwrap();
+        toast.success(`${collaborator.name} のロールを更新しました`);
+      } catch (error) {
+        toast.error(
+          typeof error === "string"
+            ? error
+            : "コラボレーターのロール更新に失敗しました",
+        );
+      }
+    },
+    [dispatch, rootFolderId, selectedFolder.id],
+  );
+
   const handleBackToShareArea = useCallback(() => {
     dispatch(ssActions.clearCurrentFolder(rootFolderId));
     dispatch(
@@ -461,8 +485,8 @@ export const SS = () => {
             onOpenExplorer={handleOpenExplorer}
           />
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row xl:items-stretch">
-            <div className="flex min-h-0 min-w-0 flex-col xl:flex-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+            <div className="flex min-h-0 min-w-0 flex-col lg:flex-1">
               <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
                 {accessToken ? (
                   <div
@@ -477,7 +501,7 @@ export const SS = () => {
               </Card>
             </div>
 
-            <div className="flex min-h-0 flex-col xl:w-80 xl:shrink-0">
+            <div className="flex min-h-0 flex-col lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
                 folderName={selectedFolderName}
                 collaborators={collaborators}
@@ -487,6 +511,7 @@ export const SS = () => {
                 onSelectedCollaboratorChange={setSelectedCollaborator}
                 onSelectedRoleChange={setSelectedRole}
                 onAddCollaborator={handleAddCollaborator}
+                onUpdateCollaboratorRole={handleUpdateCollaboratorRole}
                 onRemoveCollaborator={handleRemoveCollaborator}
               />
             </div>

@@ -17,11 +17,33 @@ type ConfirmButtonProps = {
   dialogTitle: ReactNode;
   dialogBody?: ReactNode;
   onHandle?: () => void | Promise<unknown>;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 } & React.ComponentPropsWithoutRef<typeof Button>;
 
 export const ConfirmButton = forwardRef<HTMLButtonElement, ConfirmButtonProps>(
-  ({ buttonLabel, dialogTitle, dialogBody, onHandle, ...buttonProps }, ref) => {
-    const [open, setOpen] = useState(false);
+  (
+    {
+      buttonLabel,
+      dialogTitle,
+      dialogBody,
+      onHandle,
+      open: openProp,
+      onOpenChange,
+      hideTrigger,
+      ...buttonProps
+    },
+    ref,
+  ) => {
+    const [internalOpen, setInternalOpen] = useState(false);
+    const open = openProp ?? internalOpen;
+    const setOpen = (next: boolean) => {
+      if (openProp === undefined) {
+        setInternalOpen(next);
+      }
+      onOpenChange?.(next);
+    };
 
     const handleOk = async () => {
       await onHandle?.();
@@ -30,11 +52,13 @@ export const ConfirmButton = forwardRef<HTMLButtonElement, ConfirmButtonProps>(
 
     return (
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button ref={ref} {...buttonProps}>
-            {buttonLabel}
-          </Button>
-        </DialogTrigger>
+        {!hideTrigger ? (
+          <DialogTrigger asChild>
+            <Button ref={ref} {...buttonProps}>
+              {buttonLabel}
+            </Button>
+          </DialogTrigger>
+        ) : null}
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
