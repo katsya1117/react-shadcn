@@ -315,12 +315,12 @@ export const CollaborationPanel = ({
 
         <Separator />
 
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <div className="flex min-h-0 flex-col gap-2">
           <div className="text-sm font-medium">コラボレータ一覧</div>
 
           <div
             ref={listContainerRef}
-            className="min-h-0 flex-1 overflow-y-auto rounded-md border bg-background"
+            className="min-h-0 overflow-y-auto rounded-md border bg-background"
             style={listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined}
           >
             {collaborators.length === 0 ? (

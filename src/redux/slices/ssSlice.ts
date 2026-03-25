@@ -11,171 +11,89 @@ import type {
   Collaborator,
   FolderInfo,
 } from "@/components/ss/types";
+import { BoxApi } from "@/api";
+import Config from "@/config/apiConfig";
+import type {
+  GetFolderCollaborationsResponse,
+  CreateCollaborationsParams,
+  UpdateCollaborationParams,
+} from "../../api/";
+import type { SliceError } from "../common/error";
+import {
+  initialSliceError,
+  setSliceError,
+  rejectedMessage,
+} from "../common/error";
 
 const sliceName = "ss";
 
-type AsyncStatus = "idle" | "pending" | "succeeded" | "failed";
+const api = new BoxApi(Config.apiConfig);
 
-type FolderArgs = {
-  folderId: string;
-  rootFolderId: string;
-};
+export const getFolderCollaborations = createAsyncThunk(
+  sliceName + "/getFolderCollaborations",
+  async (folderId: string) => {
+    const response = api.getFolderCollaborations(folderId, Config.apiOption);
+    return {
+      folderId,
+      data: (await response).data as GetFolderCollaborationsResponse[],
+    };
+  },
+);
 
-type AddCollaborationArgs = FolderArgs & {
-  collaborator: Collaborator;
-};
+export const createCollaborations = createAsyncThunk(
+  sliceName + "/createCollaborations",
+  async (param: CreateCollaborationParams, { dispatch }) => {
+    await api.createCollaborations(param, Config.apiOption);
+    await dispatch(getFolderCollaborations(param.folderId));
+    return param.folderId;
+  },
+);
 
-type RemoveCollaborationArgs = FolderArgs & {
-  collaboratorId: string;
-};
+export const deleteCollaborations = createAsyncThunk(
+  sliceName + "/deleteCollaborations",
+  async (
+    param: { folderId: string; collaborationId: string },
+    { dispatch },
+  ) => {
+    await api.deleteCollaborations(param.collaborationId, Config.apiOption);
+    await dispatch(getFolderCollaborations(param.folderId));
+    return param.folderId;
+  },
+);
 
-type UpdateCollaborationRoleArgs = FolderArgs & {
-  collaboratorId: string;
-  role: Collaborator["role"];
-};
+export const updateCollaborations = createAsyncThunk(
+  sliceName + "/updateCollaborations",
+  async (
+    param: {
+      folderId: string;
+      collaborationId: string;
+      params: UpdateCollaborationParams;
+    },
+    { dispatch },
+  ) => {
+    await api.updateCollaboration(
+      param.collaborationId,
+      param.params,
+      Config.apiOption,
+    );
+    await dispatch(getFolderCollaborations(param.folderId));
+    return param.folderId;
+  },
+);
 
-type SSSliceState = {
-  byFolderId: Record<string, CollaborationState>;
+interface SSState {
+  byFolderId: Record<string, Collaborator[]>;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
-  fetchStatus: AsyncStatus;
-  mutateStatus: AsyncStatus;
-  error?: string;
-};
+  isLoading: boolean;
+  error: SliceError;
+}
 
-const initialState: SSSliceState = {
+const initialState: SSState = {
   byFolderId: {},
   currentFolderByRootId: {},
-  fetchStatus: "idle",
-  mutateStatus: "idle",
-  error: undefined,
+  isLoading: false,
+  error: initialSliceError,
 };
-
-export const buildRootDefaultCollaborators = (
-  rootFolderId: string,
-): Collaborator[] => [
-  {
-    id: `${rootFolderId}:department:tokyo`,
-    type: "department",
-    name: "東京センター",
-    role: "editor",
-    canViewPath: true,
-    sourceFolderId: rootFolderId,
-  },
-  {
-    id: `${rootFolderId}:user:sre`,
-    type: "user",
-    name: "sre-user",
-    role: "viewer",
-    canViewPath: true,
-    sourceFolderId: rootFolderId,
-  },
-  {
-    id: `${rootFolderId}:user:legacy`,
-    type: "user",
-    name: "legacy-user",
-    role: "viewer",
-    canViewPath: false,
-    sourceFolderId: rootFolderId,
-  },
-];
-
-const getDirectCollaborators = (
-  state: SSSliceState,
-  folderId: string,
-  rootFolderId: string,
-) =>
-  state.byFolderId[folderId]?.direct ??
-  (folderId === rootFolderId ? buildRootDefaultCollaborators(rootFolderId) : []);
-
-export const getSSCollaborations = createAsyncThunk<
-  { folderId: string; direct: Collaborator[] },
-  FolderArgs,
-  { state: AppRootState }
->(`${sliceName}/getCollaborations`, async ({ folderId, rootFolderId }, api) => {
-  const state = api.getState().ss;
-
-  return {
-    folderId,
-    direct: getDirectCollaborators(state, folderId, rootFolderId),
-  };
-});
-
-export const addSSCollaborator = createAsyncThunk<
-  { folderId: string; direct: Collaborator[] },
-  AddCollaborationArgs,
-  { state: AppRootState; rejectValue: string }
->(`${sliceName}/addCollaborator`, async (args, api) => {
-  const state = api.getState().ss;
-  const currentDirect = getDirectCollaborators(
-    state,
-    args.folderId,
-    args.rootFolderId,
-  );
-
-  const alreadyExists = currentDirect.some(
-    (collaborator) =>
-      collaborator.type === args.collaborator.type &&
-      collaborator.name === args.collaborator.name,
-  );
-
-  if (alreadyExists) {
-    return api.rejectWithValue("同じコラボレーターは既に設定されています");
-  }
-
-  return {
-    folderId: args.folderId,
-    direct: [...currentDirect, args.collaborator],
-  };
-});
-
-export const removeSSCollaborator = createAsyncThunk<
-  { folderId: string; direct: Collaborator[] },
-  RemoveCollaborationArgs,
-  { state: AppRootState }
->(`${sliceName}/removeCollaborator`, async (args, api) => {
-  const state = api.getState().ss;
-  const currentDirect = getDirectCollaborators(
-    state,
-    args.folderId,
-    args.rootFolderId,
-  );
-
-  return {
-    folderId: args.folderId,
-    direct: currentDirect.filter(
-      (collaborator) => collaborator.id !== args.collaboratorId,
-    ),
-  };
-});
-
-export const updateSSCollaboratorRole = createAsyncThunk<
-  { folderId: string; direct: Collaborator[] },
-  UpdateCollaborationRoleArgs,
-  { state: AppRootState; rejectValue: string }
->(`${sliceName}/updateCollaboratorRole`, async (args, api) => {
-  const state = api.getState().ss;
-  const currentDirect = getDirectCollaborators(
-    state,
-    args.folderId,
-    args.rootFolderId,
-  );
-  const target = currentDirect.find(
-    (collaborator) => collaborator.id === args.collaboratorId,
-  );
-
-  if (!target) {
-    return api.rejectWithValue("対象のコラボレーターが見つかりません");
-  }
-
-  return {
-    folderId: args.folderId,
-    direct: currentDirect.map((collaborator) =>
-      collaborator.id === args.collaboratorId
-        ? { ...collaborator, role: args.role }
-        : collaborator,
-    ),
-  };
-});
 
 const ssSlice = createSlice({
   name: sliceName,
@@ -185,8 +103,8 @@ const ssSlice = createSlice({
       state,
       action: PayloadAction<{ rootFolderId: string; folder: FolderInfo }>,
     ) => {
-      state.currentFolderByRootId[action.payload.rootFolderId] =
-        action.payload.folder;
+      const { rootFolderId, folder } = action.payload;
+      state.currentFolderByRootId[rootFolderId] = folder;
     },
     clearCurrentFolder: (state, action: PayloadAction<string>) => {
       delete state.currentFolderByRootId[action.payload];
@@ -194,68 +112,93 @@ const ssSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getSSCollaborations.pending, (state) => {
-        state.fetchStatus = "pending";
-        state.error = undefined;
+      .addCase(getFolderCollaborations.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
       })
-      .addCase(getSSCollaborations.fulfilled, (state, action) => {
-        state.fetchStatus = "succeeded";
-        state.byFolderId[action.payload.folderId] = {
-          direct: action.payload.direct,
-        };
+      .addCase(getFolderCollaborations.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          const { folderId, data } = action.payload;
+          state.byFolderId[folderId] = data;
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました。",
+            "not found payload",
+          );
+        }
+        state.isLoading = false;
       })
-      .addCase(getSSCollaborations.rejected, (state, action) => {
-        state.fetchStatus = "failed";
-        state.error = action.error.message;
+      .addCase(getFolderCollaborations.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+    builder
+      .addCase(createCollaborations.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
       })
-      .addCase(addSSCollaborator.pending, (state) => {
-        state.mutateStatus = "pending";
-        state.error = undefined;
+      .addCase(createCollaborations.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました。",
+            "not found payload",
+          );
+        }
+        state.isLoading = false;
       })
-      .addCase(addSSCollaborator.fulfilled, (state, action) => {
-        state.mutateStatus = "succeeded";
-        state.byFolderId[action.payload.folderId] = {
-          direct: action.payload.direct,
-        };
+      .addCase(createCollaborations.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+    builder
+      .addCase(deleteCollaborations.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
       })
-      .addCase(addSSCollaborator.rejected, (state, action) => {
-        state.mutateStatus = "failed";
-        state.error = action.payload ?? action.error.message;
+      .addCase(deleteCollaborations.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました。",
+            "not found payload",
+          );
+        }
+        state.isLoading = false;
       })
-      .addCase(removeSSCollaborator.pending, (state) => {
-        state.mutateStatus = "pending";
-        state.error = undefined;
+      .addCase(deleteCollaborations.rejected, (state) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
+      });
+    builder
+      .addCase(updateCollaborations.pending, (state) => {
+        state.isLoading = true;
+        state.error = initialSliceError;
       })
-      .addCase(removeSSCollaborator.fulfilled, (state, action) => {
-        state.mutateStatus = "succeeded";
-        state.byFolderId[action.payload.folderId] = {
-          direct: action.payload.direct,
-        };
+      .addCase(updateCollaborations.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+        } else {
+          state.error = setSliceError(
+            "データの取得に失敗しました。",
+            "not found payload",
+          );
+        }
+        state.isLoading = false;
       })
-      .addCase(removeSSCollaborator.rejected, (state, action) => {
-        state.mutateStatus = "failed";
-        state.error = action.error.message;
-      })
-      .addCase(updateSSCollaboratorRole.pending, (state) => {
-        state.mutateStatus = "pending";
-        state.error = undefined;
-      })
-      .addCase(updateSSCollaboratorRole.fulfilled, (state, action) => {
-        state.mutateStatus = "succeeded";
-        state.byFolderId[action.payload.folderId] = {
-          direct: action.payload.direct,
-        };
-      })
-      .addCase(updateSSCollaboratorRole.rejected, (state, action) => {
-        state.mutateStatus = "failed";
-        state.error = action.payload ?? action.error.message;
+      .addCase(updateCollaborations.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = setSliceError(rejectedMessage);
       });
   },
 });
 
+export const ssActions = ssSlice.actions;
+
 const ssRootSelector = (state: AppRootState) => state.ss;
 
 export const ssSelector = {
+  isLoadingSelector: () =>
+    createSelector(ssRootSelector, (state) => state.isLoading),
   byFolderIdSelector: () =>
     createSelector(ssRootSelector, (state) => state.byFolderId),
   currentFolderSelector: (rootFolderId: string) =>
@@ -263,14 +206,6 @@ export const ssSelector = {
       ssRootSelector,
       (state) => state.currentFolderByRootId[rootFolderId],
     ),
-  fetchStatusSelector: () =>
-    createSelector(ssRootSelector, (state) => state.fetchStatus),
-  mutateStatusSelector: () =>
-    createSelector(ssRootSelector, (state) => state.mutateStatus),
-  isMutatingSelector: () =>
-    createSelector(ssRootSelector, (state) => state.mutateStatus === "pending"),
-  errorSelector: () => createSelector(ssRootSelector, (state) => state.error),
 };
 
-export const ssActions = ssSlice.actions;
 export const ssSliceReducer = ssSlice.reducer;

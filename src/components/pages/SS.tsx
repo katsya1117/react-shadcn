@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generatePath, useLocation, useNavigate, useParams } from "react-router";
+import {
+  generatePath,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router";
 import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
@@ -16,13 +21,12 @@ import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
 import { uiActions } from "@/redux/slices/uiSlice";
 import { boxSelector } from "@/redux/slices/userSlice";
 import {
-  addSSCollaborator,
-  buildRootDefaultCollaborators,
-  getSSCollaborations,
-  removeSSCollaborator,
+  createCollaborations,
+  deleteCollaborations,
+  getFolderCollaborations,
   ssActions,
   ssSelector,
-  updateSSCollaboratorRole,
+  updateCollaborations,
 } from "@/redux/slices/ssSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { DEFAULT_ROLE } from "@/components/ss/constants";
@@ -71,6 +75,22 @@ const extractFolderFromEvent = (payload: unknown): BoxFolder | null => {
   );
 };
 
+const toFolderInfo = (folder: BoxFolder): FolderInfo => {
+  const folderWithPath = folder as {
+    id: string;
+    name?: string | null;
+    path_collection?: { entries?: { id: string; name: string }[] };
+  };
+
+  return {
+    id: folderWithPath.id,
+    name: folderWithPath.name ?? "",
+    pathCollection: folderWithPath.path_collection
+      ? { entries: folderWithPath.path_collection.entries ?? [] }
+      : undefined,
+  };
+};
+
 const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
   if (folder.id === "0") {
     return ROOT_SHARE_PATH;
@@ -116,8 +136,6 @@ export const SS = () => {
   const rootFolderId =
     routeFolderId && /^\d+$/.test(routeFolderId) ? routeFolderId : "0";
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
-  const explorerStartFolderIdRef = useRef<string>(rootFolderId);
-  const previousRootFolderIdRef = useRef<string>("");
   const dispatch = useAppDispatch();
 
   const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
@@ -127,7 +145,7 @@ export const SS = () => {
   const rememberedCurrentFolder = useSelector(
     ssSelector.currentFolderSelector(rootFolderId),
   );
-  const isSavingCollaborator = useSelector(ssSelector.isMutatingSelector());
+  const isSavingCollaborator = useSelector(ssSelector.isLoadingSelector());
   const devToken = useMemo(() => {
     if (typeof window === "undefined") return undefined;
 
@@ -148,29 +166,23 @@ export const SS = () => {
     queryCurrentFolderId && /^\d+$/.test(queryCurrentFolderId)
       ? queryCurrentFolderId
       : rootFolderId;
-
-  if (previousRootFolderIdRef.current !== rootFolderId) {
-    previousRootFolderIdRef.current = rootFolderId;
-    explorerStartFolderIdRef.current =
-      rememberedCurrentFolder?.id ?? restoredCurrentFolderId;
-  }
+  const explorerStartFolderId = restoredCurrentFolderId;
 
   const emptyFolder = useMemo<FolderInfo>(
     () => ({
-      id: explorerStartFolderIdRef.current,
+      id: rememberedCurrentFolder?.id ?? explorerStartFolderId,
       name:
-        explorerStartFolderIdRef.current === rootFolderId && rootFolderId === "0"
+        (rememberedCurrentFolder?.id ?? explorerStartFolderId) ===
+          rootFolderId && rootFolderId === "0"
           ? "All Files"
-          : rememberedCurrentFolder?.name ?? "",
-      pathCollection: rememberedCurrentFolder?.pathCollection ?? { entries: [] },
+          : (rememberedCurrentFolder?.name ?? ""),
+      pathCollection: rememberedCurrentFolder?.pathCollection ?? {
+        entries: [],
+      },
     }),
-    [rememberedCurrentFolder, rootFolderId],
+    [explorerStartFolderId, rememberedCurrentFolder, rootFolderId],
   );
   const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
-  const rootDefaultCollaborators = useMemo<Collaborator[]>(
-    () => buildRootDefaultCollaborators(rootFolderId),
-    [rootFolderId],
-  );
 
   const [selectedFolder, setSelectedFolder] = useState<FolderInfo>(
     rememberedCurrentFolder ?? emptyFolder,
@@ -194,6 +206,13 @@ export const SS = () => {
     };
   }, [selectedFolder, rootFolderId]);
   const selectedFolderName = selectedFolder.name || "対象フォルダ";
+  const selectedFolderPathIds = useMemo(
+    () =>
+      selectedFolder.pathCollection?.entries
+        ?.map((entry) => entry.id)
+        .join(",") ?? "",
+    [selectedFolder.pathCollection],
+  );
   const layoutSubtitle = useMemo(() => {
     if (rootFolderId === "0") return undefined;
     if (selectedFolder.id === rootFolderId && selectedFolder.name) {
@@ -203,64 +222,66 @@ export const SS = () => {
     return selectedFolder.pathCollection?.entries?.find(
       (entry) => entry.id === rootFolderId,
     )?.name;
-  }, [rootFolderId, selectedFolder.id, selectedFolder.name, selectedFolder.pathCollection]);
-  const collaborators = useMemo<CollaborationListItem[]>(
-    () => {
-      const getDirectForFolder = (folderId: string) =>
-        collaborationsByFolderId[folderId]?.direct ??
-        (folderId === rootFolderId ? rootDefaultCollaborators : []);
+  }, [
+    rootFolderId,
+    selectedFolder.id,
+    selectedFolder.name,
+    selectedFolder.pathCollection,
+  ]);
+  const collaborators = useMemo<CollaborationListItem[]>(() => {
+    const getDirectForFolder = (folderId: string) =>
+      collaborationsByFolderId[folderId] ?? [];
 
-      // sourceFolderId が現在フォルダと同じものを direct として扱う
-      const directItems = getDirectForFolder(selectedFolder.id).map(
-        (collaborator) => ({
+    // sourceFolderId が現在フォルダと同じものを direct として扱う
+    const directItems = getDirectForFolder(selectedFolder.id).map(
+      (collaborator) => ({
+        collaborator,
+        isInherited: false,
+        canRemove:
+          collaborator.canViewPath &&
+          collaborator.sourceFolderId === selectedFolder.id,
+      }),
+    );
+
+    const pathEntries =
+      selectedFolder.pathCollection?.entries?.filter(
+        (entry) => entry.id !== "0",
+      ) ?? [];
+    const visibleEntries =
+      rootFolderId === "0"
+        ? pathEntries
+        : (() => {
+            const rootIndex = pathEntries.findIndex(
+              (entry) => entry.id === rootFolderId,
+            );
+            return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
+          })();
+
+    const inheritedItems: CollaborationListItem[] = [];
+    const pathMap: Record<string, string> = {};
+    const segments = ["share"];
+
+    for (const entry of visibleEntries) {
+      segments.push(sanitizePathName(entry.id, entry.name));
+      pathMap[entry.id] = segments.join("\\");
+    }
+
+    for (const entry of visibleEntries) {
+      if (entry.id === selectedFolder.id) continue;
+
+      // 祖先フォルダの direct を、表示上は inherited として混ぜる
+      for (const collaborator of getDirectForFolder(entry.id)) {
+        inheritedItems.push({
           collaborator,
-          isInherited: false,
-          canRemove:
-            collaborator.canViewPath &&
-            collaborator.sourceFolderId === selectedFolder.id,
-        }),
-      );
-
-      const pathEntries =
-        selectedFolder.pathCollection?.entries?.filter((entry) => entry.id !== "0") ??
-        [];
-      const visibleEntries =
-        rootFolderId === "0"
-          ? pathEntries
-          : (() => {
-              const rootIndex = pathEntries.findIndex(
-                (entry) => entry.id === rootFolderId,
-              );
-              return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
-            })();
-
-      const inheritedItems: CollaborationListItem[] = [];
-      const pathMap: Record<string, string> = {};
-      const segments = ["share"];
-
-      for (const entry of visibleEntries) {
-        segments.push(sanitizePathName(entry.id, entry.name));
-        pathMap[entry.id] = segments.join("\\");
+          isInherited: true,
+          canRemove: false,
+          sourcePath: pathMap[entry.id],
+        });
       }
+    }
 
-      for (const entry of visibleEntries) {
-        if (entry.id === selectedFolder.id) continue;
-
-        // 祖先フォルダの direct を、表示上は inherited として混ぜる
-        for (const collaborator of getDirectForFolder(entry.id)) {
-          inheritedItems.push({
-            collaborator,
-            isInherited: true,
-            canRemove: false,
-            sourcePath: pathMap[entry.id],
-          });
-        }
-      }
-
-      return [...directItems, ...inheritedItems];
-    },
-    [collaborationsByFolderId, rootDefaultCollaborators, rootFolderId, selectedFolder],
-  );
+    return [...directItems, ...inheritedItems];
+  }, [collaborationsByFolderId, rootFolderId, selectedFolder]);
 
   const resetForm = useCallback(() => {
     setSelectedCollaborator(null);
@@ -277,16 +298,12 @@ export const SS = () => {
       const folder = extractFolderFromEvent(payload);
       if (!folder || folder.type !== "folder") return;
 
-      const nextFolder = {
-        id: folder.id,
-        name: folder.name ?? "",
-        pathCollection: folder.path_collection
-          ? { entries: folder.path_collection.entries || [] }
-          : undefined,
-      };
+      const nextFolder = toFolderInfo(folder);
 
       setSelectedFolder(nextFolder);
-      dispatch(ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }));
+      dispatch(
+        ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
+      );
       dispatch(
         uiActions.setLastVisited({
           key: UrlPath.ShareArea,
@@ -302,13 +319,18 @@ export const SS = () => {
   );
 
   useEffect(() => {
-    void dispatch(
-      getSSCollaborations({
-        folderId: selectedFolder.id,
-        rootFolderId,
-      }),
+    const ancestorFolderIds =
+      selectedFolder.pathCollection?.entries
+        ?.filter((entry) => entry.id !== "0" && entry.id !== selectedFolder.id)
+        .map((entry) => entry.id) ?? [];
+    const folderIds = Array.from(
+      new Set([selectedFolder.id, ...ancestorFolderIds]),
     );
-  }, [dispatch, rootFolderId, selectedFolder.id]);
+
+    folderIds.forEach((folderId) => {
+      void dispatch(getFolderCollaborations(folderId));
+    });
+  }, [dispatch, selectedFolder.id, selectedFolderPathIds]);
 
   const handleOpenBox = useCallback(() => {
     window.open(
@@ -344,9 +366,10 @@ export const SS = () => {
     }
 
     const explorer = explorerRef.current;
+    if (!explorer) return;
     explorer.removeAllListeners?.();
     explorer.addListener?.("navigate", handleNavigate);
-    explorer.show(explorerStartFolderIdRef.current, accessToken, {
+    explorer.show(explorerStartFolderId, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
       size: "large",
@@ -356,7 +379,7 @@ export const SS = () => {
       explorer.removeAllListeners?.();
       explorer.hide?.();
     };
-  }, [accessToken, handleNavigate, rootFolderId]);
+  }, [accessToken, explorerStartFolderId, handleNavigate]);
 
   const handleAddCollaborator = useCallback(async () => {
     if (!selectedCollaborator) return;
@@ -379,10 +402,13 @@ export const SS = () => {
 
     try {
       await dispatch(
-        addSSCollaborator({
+        createCollaborations({
           folderId: selectedFolder.id,
-          rootFolderId,
-          collaborator: nextCollaborator,
+          collaboratorId: selectedCollaborator.value,
+          collaboratorType,
+          collaboratorName: nextCollaborator.name,
+          role: selectedRole,
+          canViewPath: true,
         }),
       ).unwrap();
       toast.success(`${nextCollaborator.name} を追加しました`);
@@ -397,7 +423,6 @@ export const SS = () => {
   }, [
     dispatch,
     groups,
-    rootFolderId,
     selectedCollaborator,
     selectedFolder.id,
     selectedRole,
@@ -408,10 +433,9 @@ export const SS = () => {
     async (collaborator: Collaborator) => {
       try {
         await dispatch(
-          removeSSCollaborator({
+          deleteCollaborations({
             folderId: selectedFolder.id,
-            rootFolderId,
-            collaboratorId: collaborator.id,
+            collaborationId: collaborator.id,
           }),
         ).unwrap();
         toast.success(`${collaborator.name} を削除しました`);
@@ -419,18 +443,17 @@ export const SS = () => {
         toast.error("コラボレーターの削除に失敗しました");
       }
     },
-    [dispatch, rootFolderId, selectedFolder.id],
+    [dispatch, selectedFolder.id],
   );
 
   const handleUpdateCollaboratorRole = useCallback(
     async (collaborator: Collaborator, role: RoleType) => {
       try {
         await dispatch(
-          updateSSCollaboratorRole({
+          updateCollaborations({
             folderId: selectedFolder.id,
-            rootFolderId,
-            collaboratorId: collaborator.id,
-            role,
+            collaborationId: collaborator.id,
+            params: { role },
           }),
         ).unwrap();
         toast.success(`${collaborator.name} のロールを更新しました`);
@@ -442,7 +465,7 @@ export const SS = () => {
         );
       }
     },
-    [dispatch, rootFolderId, selectedFolder.id],
+    [dispatch, selectedFolder.id],
   );
 
   const handleBackToShareArea = useCallback(() => {

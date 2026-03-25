@@ -173,6 +173,37 @@ export type PaginationResultMUser = {
 
 export type AccessToken = string;
 
+export type MockCollaborationRole = "editor" | "viewer";
+export type MockCollaborationType = "user" | "department";
+
+export type GetFolderCollaborationsResponse = {
+  id: string;
+  type: MockCollaborationType;
+  name: string;
+  role: MockCollaborationRole;
+  canViewPath: boolean;
+  sourceFolderId: string;
+};
+
+export type CreateCollaborationsParams = {
+  folderId: string;
+  collaboratorId?: string;
+  collaboratorType?: MockCollaborationType;
+  collaboratorName?: string;
+  role: MockCollaborationRole;
+  canViewPath?: boolean;
+  can_view_path?: boolean;
+  id?: string;
+  type?: MockCollaborationType;
+  name?: string;
+};
+
+export type UpdateCollaborationParams = {
+  role?: MockCollaborationRole;
+  canViewPath?: boolean;
+  can_view_path?: boolean;
+};
+
 export class UsersApi {
   // config is ignored in mock
   constructor(public config?: unknown) {}
@@ -523,5 +554,32 @@ export class BoxApi {
   async getContentsPickerToken(accountId: string, _opts?: unknown) {
     const token: AccessToken = `token-${accountId}`;
     return { data: token };
+  }
+
+  async getFolderCollaborations(folderId: string, _opts?: unknown) {
+    const { mockSsCollaborationsDb } = await import("./mock/ssCollaborationsDb");
+    return { data: mockSsCollaborationsDb.list(folderId) };
+  }
+
+  async createCollaborations(
+    params: CreateCollaborationsParams,
+    _opts?: unknown,
+  ) {
+    const { mockSsCollaborationsDb } = await import("./mock/ssCollaborationsDb");
+    return { data: mockSsCollaborationsDb.create(params) };
+  }
+
+  async deleteCollaborations(collaborationId: string, _opts?: unknown) {
+    const { mockSsCollaborationsDb } = await import("./mock/ssCollaborationsDb");
+    return { data: mockSsCollaborationsDb.remove(collaborationId) };
+  }
+
+  async updateCollaboration(
+    collaborationId: string,
+    params: UpdateCollaborationParams,
+    _opts?: unknown,
+  ) {
+    const { mockSsCollaborationsDb } = await import("./mock/ssCollaborationsDb");
+    return { data: mockSsCollaborationsDb.update(collaborationId, params) };
   }
 }
