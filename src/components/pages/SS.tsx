@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Navigate,
   generatePath,
   useLocation,
   useNavigate,
@@ -41,6 +42,10 @@ import type {
 } from "@/components/ss/types";
 import { UrlPath } from "@/constant/UrlPath";
 import { useAppDispatch } from "@/store/hooks";
+import {
+  isShareAreaRouteFolderId,
+  stripCurrentFolderIdFromSearch,
+} from "./shareAreaConfig";
 
 const ROOT_SHARE_PATH = "\\\\tggfile.jp\\share";
 
@@ -129,12 +134,13 @@ const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
   return `\\\\tggfile.jp${segments.map((segment) => `\\${segment}`).join("")}`;
 };
 
-export const SS = () => {
-  const { folderId: routeFolderId } = useParams();
+type SSContentProps = {
+  rootFolderId: string;
+};
+
+const SSContent = ({ rootFolderId }: SSContentProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const rootFolderId =
-    routeFolderId && /^\d+$/.test(routeFolderId) ? routeFolderId : "0";
   const explorerRef = useRef<ContentExplorerInstance | null>(null);
   const dispatch = useAppDispatch();
 
@@ -157,39 +163,30 @@ export const SS = () => {
     return storedToken && storedToken.length > 0 ? storedToken : undefined;
   }, []);
   const accessToken = devToken ?? token;
-  const searchParams = useMemo(
-    () => new URLSearchParams(location.search),
-    [location.search],
-  );
-  const queryCurrentFolderId = searchParams.get("currentFolderId")?.trim();
-  const restoredCurrentFolderId =
-    queryCurrentFolderId && /^\d+$/.test(queryCurrentFolderId)
-      ? queryCurrentFolderId
-      : rootFolderId;
-  const explorerStartFolderId = restoredCurrentFolderId;
+  const rememberedRootFolder =
+    rememberedCurrentFolder?.id === rootFolderId
+      ? rememberedCurrentFolder
+      : undefined;
 
   const emptyFolder = useMemo<FolderInfo>(
     () => ({
-      id: rememberedCurrentFolder?.id ?? explorerStartFolderId,
-      name:
-        (rememberedCurrentFolder?.id ?? explorerStartFolderId) ===
-          rootFolderId && rootFolderId === "0"
-          ? "All Files"
-          : (rememberedCurrentFolder?.name ?? ""),
-      pathCollection: rememberedCurrentFolder?.pathCollection ?? {
+      id: rootFolderId,
+      name: rootFolderId === "0" ? "All Files" : (rememberedRootFolder?.name ?? ""),
+      pathCollection: rememberedRootFolder?.pathCollection ?? {
         entries: [],
       },
     }),
-    [explorerStartFolderId, rememberedCurrentFolder, rootFolderId],
+    [rememberedRootFolder, rootFolderId],
   );
   const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
 
-  const [selectedFolder, setSelectedFolder] = useState<FolderInfo>(
-    rememberedCurrentFolder ?? emptyFolder,
+  const [selectedFolderState, setSelectedFolderState] = useState<FolderInfo | null>(
+    null,
   );
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
+  const selectedFolder = selectedFolderState ?? emptyFolder;
 
   const { selectedFolderPath, selectedFolderRelativePath } = useMemo(() => {
     const fullPath = buildSharePath(selectedFolder, rootFolderId);
@@ -206,13 +203,6 @@ export const SS = () => {
     };
   }, [selectedFolder, rootFolderId]);
   const selectedFolderName = selectedFolder.name || "対象フォルダ";
-  const selectedFolderPathIds = useMemo(
-    () =>
-      selectedFolder.pathCollection?.entries
-        ?.map((entry) => entry.id)
-        .join(",") ?? "",
-    [selectedFolder.pathCollection],
-  );
   const layoutSubtitle = useMemo(() => {
     if (rootFolderId === "0") return undefined;
     if (selectedFolder.id === rootFolderId && selectedFolder.name) {
@@ -282,6 +272,20 @@ export const SS = () => {
 
     return [...directItems, ...inheritedItems];
   }, [collaborationsByFolderId, rootFolderId, selectedFolder]);
+  const collaborationFetchFolderIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          selectedFolder.id,
+          ...(
+            selectedFolder.pathCollection?.entries?.filter(
+              (entry) => entry.id !== "0" && entry.id !== selectedFolder.id,
+            ) ?? []
+          ).map((entry) => entry.id),
+        ]),
+      ),
+    [selectedFolder.id, selectedFolder.pathCollection],
+  );
 
   const resetForm = useCallback(() => {
     setSelectedCollaborator(null);
@@ -289,9 +293,11 @@ export const SS = () => {
   }, []);
 
   useEffect(() => {
-    setSelectedFolder(rememberedCurrentFolder ?? emptyFolder);
-    resetForm();
-  }, [emptyFolder, rememberedCurrentFolder, resetForm]);
+    if (!location.search.includes("currentFolderId")) return;
+
+    const nextSearch = stripCurrentFolderIdFromSearch(location.search);
+    navigate(`${rootFolderPath}${nextSearch}`, { replace: true });
+  }, [location.search, navigate, rootFolderPath]);
 
   const handleNavigate = useCallback(
     (payload: unknown) => {
@@ -300,17 +306,14 @@ export const SS = () => {
 
       const nextFolder = toFolderInfo(folder);
 
-      setSelectedFolder(nextFolder);
+      setSelectedFolderState(nextFolder);
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
       );
       dispatch(
         uiActions.setLastVisited({
           key: UrlPath.ShareArea,
-          path:
-            nextFolder.id === rootFolderId
-              ? rootFolderPath
-              : `${rootFolderPath}?currentFolderId=${nextFolder.id}`,
+          path: rootFolderPath,
         }),
       );
       resetForm();
@@ -319,18 +322,10 @@ export const SS = () => {
   );
 
   useEffect(() => {
-    const ancestorFolderIds =
-      selectedFolder.pathCollection?.entries
-        ?.filter((entry) => entry.id !== "0" && entry.id !== selectedFolder.id)
-        .map((entry) => entry.id) ?? [];
-    const folderIds = Array.from(
-      new Set([selectedFolder.id, ...ancestorFolderIds]),
-    );
-
-    folderIds.forEach((folderId) => {
+    collaborationFetchFolderIds.forEach((folderId) => {
       void dispatch(getFolderCollaborations(folderId));
     });
-  }, [dispatch, selectedFolder.id, selectedFolderPathIds]);
+  }, [collaborationFetchFolderIds, dispatch]);
 
   const handleOpenBox = useCallback(() => {
     window.open(
@@ -369,7 +364,7 @@ export const SS = () => {
     if (!explorer) return;
     explorer.removeAllListeners?.();
     explorer.addListener?.("navigate", handleNavigate);
-    explorer.show(explorerStartFolderId, accessToken, {
+    explorer.show(rootFolderId, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
       size: "large",
@@ -379,7 +374,7 @@ export const SS = () => {
       explorer.removeAllListeners?.();
       explorer.hide?.();
     };
-  }, [accessToken, explorerStartFolderId, handleNavigate]);
+  }, [accessToken, handleNavigate, rootFolderId]);
 
   const handleAddCollaborator = useCallback(async () => {
     if (!selectedCollaborator) return;
@@ -543,6 +538,16 @@ export const SS = () => {
       </Layout>
     </TooltipProvider>
   );
+};
+
+export const SS = () => {
+  const { folderId: routeFolderId } = useParams();
+
+  if (!isShareAreaRouteFolderId(routeFolderId)) {
+    return <Navigate replace to={UrlPath.ShareArea} />;
+  }
+
+  return <SSContent key={routeFolderId} rootFolderId={routeFolderId} />;
 };
 
 export default SS;

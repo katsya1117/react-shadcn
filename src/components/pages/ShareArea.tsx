@@ -11,50 +11,10 @@ import {
 } from "@/components/ui/tooltip";
 import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
-
-type Area = {
-  code: string;
-  folderName: string;
-  label: string;
-  isGuest?: boolean;
-  jclUrl: string;
-  boxFolderId: string;
-};
-
-const initialAreas: Area[] = [
-  {
-    code: "qms",
-    folderName: "qms",
-    label: "QMS事務局",
-    jclUrl: "/launch/qms/jcl",
-    boxFolderId: "370613768434",
-  },
-  {
-    code: "ems",
-    folderName: "ems",
-    label: "EMS事務局",
-    jclUrl: "/launch/ems/jcl",
-    boxFolderId: "370615717715",
-  },
-  {
-    code: "tg-room",
-    folderName: "tg-room",
-    label: "統合サーバー",
-    isGuest: true,
-    jclUrl: "/launch/tg-room/jcl",
-    boxFolderId: "370616229381",
-  },
-  {
-    code: "jclgd1swdv",
-    folderName: "JCLGD1SWDV",
-    label: "第1ソフトウェア開発センター",
-    jclUrl: "/launch/JCLGD1SWDV/jcl",
-    boxFolderId: "370615941389",
-  },
-];
+import { SHARE_AREAS } from "./shareAreaConfig";
 
 const ShareArea = () => {
-  const areas = initialAreas;
+  const areas = SHARE_AREAS;
   const navigate = useNavigate();
 
   const openLink = (url: string) => {

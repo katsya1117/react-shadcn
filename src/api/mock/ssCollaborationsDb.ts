@@ -31,6 +31,48 @@ const db = new Map<string, GetFolderCollaborationsResponse[]>([
 const cloneRows = (rows: GetFolderCollaborationsResponse[]) =>
   rows.map((row) => ({ ...row }));
 
+const buildDummyRows = (
+  folderId: string,
+): GetFolderCollaborationsResponse[] => {
+  const suffix = folderId.slice(-4).padStart(4, "0");
+
+  return [
+    {
+      id: `${folderId}:dummy-owner`,
+      type: "user",
+      name: `検証ユーザー-${suffix}`,
+      role: "editor",
+      canViewPath: true,
+      sourceFolderId: folderId,
+    },
+    {
+      id: `${folderId}:dummy-team`,
+      type: "department",
+      name: `検証部署-${suffix}`,
+      role: "viewer",
+      canViewPath: true,
+      sourceFolderId: folderId,
+    },
+    {
+      id: `${folderId}:dummy-hidden`,
+      type: "user",
+      name: `パス非表示ユーザー-${suffix}`,
+      role: "viewer",
+      canViewPath: false,
+      sourceFolderId: folderId,
+    },
+  ];
+};
+
+const ensureFolderRows = (folderId: string) => {
+  const existingRows = db.get(folderId);
+  if (existingRows) return existingRows;
+
+  const dummyRows = buildDummyRows(folderId);
+  db.set(folderId, dummyRows);
+  return dummyRows;
+};
+
 const normalizeType = (params: CreateCollaborationsParams) =>
   params.collaboratorType ?? params.type ?? "user";
 
@@ -57,7 +99,7 @@ const findCollaboration = (collaborationId: string) => {
 
 export const mockSsCollaborationsDb = {
   list(folderId: string) {
-    return cloneRows(db.get(folderId) ?? []);
+    return cloneRows(ensureFolderRows(folderId));
   },
 
   create(params: CreateCollaborationsParams) {
@@ -72,7 +114,7 @@ export const mockSsCollaborationsDb = {
       sourceFolderId: folderId,
     };
 
-    const rows = db.get(folderId) ?? [];
+    const rows = ensureFolderRows(folderId);
     const nextRows = rows.filter((row) => row.id !== nextRow.id);
     nextRows.push(nextRow);
     db.set(folderId, nextRows);
