@@ -6,11 +6,7 @@ import {
 } from "@reduxjs/toolkit";
 
 import type { AppRootState } from "../store";
-import type {
-  CollaborationState,
-  Collaborator,
-  FolderInfo,
-} from "@/components/ss/types";
+import type { FolderInfo } from "@/components/ss/types";
 import { BoxApi } from "@/api";
 import Config from "@/config/apiConfig";
 import type {
@@ -42,22 +38,15 @@ export const getFolderCollaborations = createAsyncThunk(
 
 export const createCollaborations = createAsyncThunk(
   sliceName + "/createCollaborations",
-  async (param: CreateCollaborationParams, { dispatch }) => {
+  async (param: CreateCollaborationsParams) => {
     await api.createCollaborations(param, Config.apiOption);
-    await dispatch(getFolderCollaborations(param.folderId));
-    return param.folderId;
   },
 );
 
 export const deleteCollaborations = createAsyncThunk(
   sliceName + "/deleteCollaborations",
-  async (
-    param: { folderId: string; collaborationId: string },
-    { dispatch },
-  ) => {
+  async (param: { collaborationId: string }) => {
     await api.deleteCollaborations(param.collaborationId, Config.apiOption);
-    await dispatch(getFolderCollaborations(param.folderId));
-    return param.folderId;
   },
 );
 
@@ -65,24 +54,20 @@ export const updateCollaborations = createAsyncThunk(
   sliceName + "/updateCollaborations",
   async (
     param: {
-      folderId: string;
       collaborationId: string;
       params: UpdateCollaborationParams;
     },
-    { dispatch },
   ) => {
     await api.updateCollaboration(
       param.collaborationId,
       param.params,
       Config.apiOption,
     );
-    await dispatch(getFolderCollaborations(param.folderId));
-    return param.folderId;
   },
 );
 
 interface SSState {
-  byFolderId: Record<string, Collaborator[]>;
+  byFolderId: Record<string, GetFolderCollaborationsResponse[]>;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
   isLoading: boolean;
   error: SliceError;
@@ -137,14 +122,7 @@ const ssSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(createCollaborations.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-        } else {
-          state.error = setSliceError(
-            "データの取得に失敗しました。",
-            "not found payload",
-          );
-        }
+      .addCase(createCollaborations.fulfilled, (state) => {
         state.isLoading = false;
       })
       .addCase(createCollaborations.rejected, (state) => {
@@ -156,14 +134,7 @@ const ssSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(deleteCollaborations.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-        } else {
-          state.error = setSliceError(
-            "データの取得に失敗しました。",
-            "not found payload",
-          );
-        }
+      .addCase(deleteCollaborations.fulfilled, (state) => {
         state.isLoading = false;
       })
       .addCase(deleteCollaborations.rejected, (state) => {
@@ -175,17 +146,10 @@ const ssSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(updateCollaborations.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-        } else {
-          state.error = setSliceError(
-            "データの取得に失敗しました。",
-            "not found payload",
-          );
-        }
+      .addCase(updateCollaborations.fulfilled, (state) => {
         state.isLoading = false;
       })
-      .addCase(updateCollaborations.rejected, (state, action) => {
+      .addCase(updateCollaborations.rejected, (state) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
       });

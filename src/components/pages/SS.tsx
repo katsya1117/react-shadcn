@@ -10,7 +10,10 @@ import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
 
-import type { AutoCompleteData } from "@/api";
+import type {
+  AutoCompleteData,
+  GetFolderCollaborationsResponse,
+} from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
@@ -42,96 +45,95 @@ import type {
 } from "@/components/ss/types";
 import { UrlPath } from "@/constant/UrlPath";
 import { useAppDispatch } from "@/store/hooks";
-import {
-  isShareAreaRouteFolderId,
-  stripCurrentFolderIdFromSearch,
-} from "./shareAreaConfig";
+import { SHARE_AREAS } from "./shareAreaConfig";
 
-const ROOT_SHARE_PATH = "\\\\tggfile.jp\\share";
+const ROOT_SHARE_PATH = "\\share";
+const SHARE_AREA_ROUTE_FOLDER_ID_SET = new Set(
+  SHARE_AREAS.map((area) => area.boxFolderId),
+);
 
-const sanitizePathName = (id: string, name?: string | null) => {
-  if (id === "0" || name === "すべてのファイル") return "share";
-  return name || "root";
-};
+const isShareAreaRouteFolderId = (
+  folderId: string | null | undefined,
+): folderId is string =>
+  typeof folderId === "string" && SHARE_AREA_ROUTE_FOLDER_ID_SET.has(folderId);
 
-const extractFolderFromEvent = (payload: unknown): BoxFolder | null => {
-  if (!payload) return null;
+const stripCurrentFolderIdFromSearch = (search: string): string => {
+  const params = new URLSearchParams(search);
+  params.delete("currentFolderId");
 
-  if (Array.isArray(payload)) {
-    for (const item of payload) {
-      const folder = extractFolderFromEvent(item);
-      if (folder) return folder;
-    }
-    return null;
-  }
-
-  if (typeof payload !== "object") return null;
-
-  const record = payload as Record<string, unknown>;
-  if (record.type === "folder" && typeof record.id === "string") {
-    return payload as BoxFolder;
-  }
-
-  return (
-    extractFolderFromEvent(record.item) ||
-    extractFolderFromEvent(record.items) ||
-    extractFolderFromEvent(record.selected) ||
-    extractFolderFromEvent(record.selection)
-  );
+  const nextSearch = params.toString();
+  return nextSearch ? `?${nextSearch}` : "";
 };
 
 const toFolderInfo = (folder: BoxFolder): FolderInfo => {
-  const folderWithPath = folder as {
-    id: string;
-    name?: string | null;
-    path_collection?: { entries?: { id: string; name: string }[] };
-  };
-
   return {
-    id: folderWithPath.id,
-    name: folderWithPath.name ?? "",
-    pathCollection: folderWithPath.path_collection
-      ? { entries: folderWithPath.path_collection.entries ?? [] }
+    id: folder.id,
+    name: folder.name ?? "",
+    pathCollection: folder.pathCollection
+      ? {
+          entries: folder.pathCollection.map((entry) => ({
+            id: entry.id,
+            name: entry.name ?? "",
+          })),
+        }
       : undefined,
   };
 };
 
 const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
-  if (folder.id === "0") {
-    return ROOT_SHARE_PATH;
-  }
-
   const entries = folder.pathCollection?.entries ?? [];
   const filteredEntries = entries.filter((entry) => entry.id !== "0");
   const rootIndex = filteredEntries.findIndex(
     (entry) => entry.id === rootFolderId,
   );
-  const descendantEntries =
-    rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : filteredEntries;
-  const segments = ["share"];
+  const descendantEntries = rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : [];
+  const segments = [ROOT_SHARE_PATH];
+  const rootName =
+    rootIndex >= 0
+      ? filteredEntries[rootIndex]?.name
+      : folder.id === rootFolderId
+        ? folder.name
+        : undefined;
 
-  if (rootFolderId !== "0") {
-    const rootName =
-      rootIndex >= 0
-        ? filteredEntries[rootIndex]?.name
-        : folder.id === rootFolderId
-          ? folder.name
-          : undefined;
-
-    if (rootName) {
-      segments.push(sanitizePathName(rootFolderId, rootName));
-    }
+  if (rootName) {
+    segments.push(rootName);
   }
 
   segments.push(
-    ...descendantEntries.map((entry) => sanitizePathName(entry.id, entry.name)),
+    ...descendantEntries
+      .map((entry) => entry.name)
+      .filter((name): name is string => Boolean(name)),
   );
 
   if (folder.id !== rootFolderId && folder.name) {
-    segments.push(sanitizePathName(folder.id, folder.name));
+    segments.push(folder.name);
   }
 
-  return `\\\\tggfile.jp${segments.map((segment) => `\\${segment}`).join("")}`;
+  return segments.join("\\");
+};
+
+const toCollaborationListItem = (
+  item: GetFolderCollaborationsResponse,
+  currentFolderId: string,
+  sourcePathByFolderId: Record<string, string>,
+): CollaborationListItem => {
+  const sourceFolderId = item.item?.id ?? currentFolderId;
+  const isInherited = sourceFolderId !== currentFolderId;
+  const canEdit = item.can_view_path ?? item.canViewPath ?? true;
+
+  return {
+    collaborator: {
+      id: item.id,
+      type: item.accessible_by?.type === "group" ? "department" : "user",
+      name: item.accessible_by?.name ?? "名称未設定",
+      role: item.role,
+      canEdit,
+      sourceFolderId,
+    },
+    isInherited,
+    canRemove: !isInherited && canEdit,
+    sourcePath: isInherited ? sourcePathByFolderId[sourceFolderId] : undefined,
+  };
 };
 
 type SSContentProps = {
@@ -168,10 +170,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       ? rememberedCurrentFolder
       : undefined;
 
-  const emptyFolder = useMemo<FolderInfo>(
+  const initialFolder = useMemo<FolderInfo>(
     () => ({
       id: rootFolderId,
-      name: rootFolderId === "0" ? "All Files" : (rememberedRootFolder?.name ?? ""),
+      name: rememberedRootFolder?.name ?? "",
       pathCollection: rememberedRootFolder?.pathCollection ?? {
         entries: [],
       },
@@ -180,16 +182,14 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   );
   const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
 
-  const [selectedFolderState, setSelectedFolderState] = useState<FolderInfo | null>(
-    null,
-  );
+  const [currentFolder, setCurrentFolder] =
+    useState<FolderInfo>(initialFolder);
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
-  const selectedFolder = selectedFolderState ?? emptyFolder;
 
-  const { selectedFolderPath, selectedFolderRelativePath } = useMemo(() => {
-    const fullPath = buildSharePath(selectedFolder, rootFolderId);
+  const { currentFolderPath, currentFolderRelativePath } = useMemo(() => {
+    const fullPath = buildSharePath(currentFolder, rootFolderId);
     const relativePath =
       fullPath === ROOT_SHARE_PATH
         ? ""
@@ -198,99 +198,65 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
           : fullPath;
 
     return {
-      selectedFolderPath: fullPath,
-      selectedFolderRelativePath: relativePath,
+      currentFolderPath: fullPath,
+      currentFolderRelativePath: relativePath,
     };
-  }, [selectedFolder, rootFolderId]);
-  const selectedFolderName = selectedFolder.name || "対象フォルダ";
+  }, [currentFolder, rootFolderId]);
+  const currentFolderName = currentFolder.name || "対象フォルダ";
   const layoutSubtitle = useMemo(() => {
-    if (rootFolderId === "0") return undefined;
-    if (selectedFolder.id === rootFolderId && selectedFolder.name) {
-      return selectedFolder.name;
+    if (currentFolder.id === rootFolderId && currentFolder.name) {
+      return currentFolder.name;
     }
 
-    return selectedFolder.pathCollection?.entries?.find(
+    return currentFolder.pathCollection?.entries?.find(
       (entry) => entry.id === rootFolderId,
     )?.name;
   }, [
     rootFolderId,
-    selectedFolder.id,
-    selectedFolder.name,
-    selectedFolder.pathCollection,
+    currentFolder.id,
+    currentFolder.name,
+    currentFolder.pathCollection,
   ]);
-  const collaborators = useMemo<CollaborationListItem[]>(() => {
-    const getDirectForFolder = (folderId: string) =>
-      collaborationsByFolderId[folderId] ?? [];
-
-    // sourceFolderId が現在フォルダと同じものを direct として扱う
-    const directItems = getDirectForFolder(selectedFolder.id).map(
-      (collaborator) => ({
-        collaborator,
-        isInherited: false,
-        canRemove:
-          collaborator.canViewPath &&
-          collaborator.sourceFolderId === selectedFolder.id,
-      }),
-    );
-
+  const sourcePathByFolderId = useMemo(() => {
     const pathEntries =
-      selectedFolder.pathCollection?.entries?.filter(
+      currentFolder.pathCollection?.entries?.filter(
         (entry) => entry.id !== "0",
       ) ?? [];
     const visibleEntries =
-      rootFolderId === "0"
-        ? pathEntries
-        : (() => {
-            const rootIndex = pathEntries.findIndex(
-              (entry) => entry.id === rootFolderId,
-            );
-            return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
-          })();
-
-    const inheritedItems: CollaborationListItem[] = [];
+      (() => {
+        const rootIndex = pathEntries.findIndex(
+          (entry) => entry.id === rootFolderId,
+        );
+        return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
+      })();
     const pathMap: Record<string, string> = {};
-    const segments = ["share"];
+    const segments = [ROOT_SHARE_PATH];
+    pathMap["0"] = ROOT_SHARE_PATH;
 
     for (const entry of visibleEntries) {
-      segments.push(sanitizePathName(entry.id, entry.name));
+      if (!entry.name) continue;
+      segments.push(entry.name);
       pathMap[entry.id] = segments.join("\\");
     }
 
-    for (const entry of visibleEntries) {
-      if (entry.id === selectedFolder.id) continue;
+    return pathMap;
+  }, [currentFolder.pathCollection, rootFolderId]);
+  const collaborators = useMemo<CollaborationListItem[]>(() => {
+    const rows = collaborationsByFolderId[currentFolder.id] ?? [];
 
-      // 祖先フォルダの direct を、表示上は inherited として混ぜる
-      for (const collaborator of getDirectForFolder(entry.id)) {
-        inheritedItems.push({
-          collaborator,
-          isInherited: true,
-          canRemove: false,
-          sourcePath: pathMap[entry.id],
-        });
-      }
-    }
-
-    return [...directItems, ...inheritedItems];
-  }, [collaborationsByFolderId, rootFolderId, selectedFolder]);
-  const collaborationFetchFolderIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          selectedFolder.id,
-          ...(
-            selectedFolder.pathCollection?.entries?.filter(
-              (entry) => entry.id !== "0" && entry.id !== selectedFolder.id,
-            ) ?? []
-          ).map((entry) => entry.id),
-        ]),
-      ),
-    [selectedFolder.id, selectedFolder.pathCollection],
-  );
+    return rows.map((item) =>
+      toCollaborationListItem(item, currentFolder.id, sourcePathByFolderId),
+    );
+  }, [collaborationsByFolderId, currentFolder.id, sourcePathByFolderId]);
 
   const resetForm = useCallback(() => {
     setSelectedCollaborator(null);
     setSelectedRole(DEFAULT_ROLE);
   }, []);
+
+  const refreshCollaborations = useCallback(async () => {
+    await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
+  }, [currentFolder.id, dispatch]);
 
   useEffect(() => {
     if (!location.search.includes("currentFolderId")) return;
@@ -300,13 +266,9 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   }, [location.search, navigate, rootFolderPath]);
 
   const handleNavigate = useCallback(
-    (payload: unknown) => {
-      const folder = extractFolderFromEvent(payload);
-      if (!folder || folder.type !== "folder") return;
-
-      const nextFolder = toFolderInfo(folder);
-
-      setSelectedFolderState(nextFolder);
+    (payload: BoxFolder) => {
+      const nextFolder = toFolderInfo(payload);
+      setCurrentFolder(nextFolder);
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
       );
@@ -322,33 +284,33 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   );
 
   useEffect(() => {
-    collaborationFetchFolderIds.forEach((folderId) => {
-      void dispatch(getFolderCollaborations(folderId));
+    void refreshCollaborations().catch(() => {
+      toast.error("コラボレーター一覧の取得に失敗しました");
     });
-  }, [collaborationFetchFolderIds, dispatch]);
+  }, [refreshCollaborations]);
 
   const handleOpenBox = useCallback(() => {
     window.open(
-      `https://app.box.com/folder/${selectedFolder.id}`,
+      `https://app.box.com/folder/${currentFolder.id}`,
       "_blank",
       "noopener,noreferrer",
     );
-  }, [selectedFolder.id]);
+  }, [currentFolder.id]);
 
   const handleOpenExplorer = useCallback(() => {
-    const fileUrl = `file://${selectedFolderPath.replace(/\\/g, "/")}`;
+    const fileUrl = `file://${currentFolderPath.replace(/\\/g, "/")}`;
     window.open(fileUrl, "_blank");
     toast.info("エクスプローラーで開きます");
-  }, [selectedFolderPath]);
+  }, [currentFolderPath]);
 
   const handleCopyPath = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(selectedFolderPath);
+      await navigator.clipboard.writeText(currentFolderPath);
       toast.success("パスをコピーしました");
     } catch {
       toast.error("コピーに失敗しました");
     }
-  }, [selectedFolderPath]);
+  }, [currentFolderPath]);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -387,39 +349,47 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
         ? "user"
         : "user";
     const nextCollaborator: Collaborator = {
-      id: `${selectedFolder.id}:${collaboratorType}:${selectedCollaborator.value}`,
+      id: `${currentFolder.id}:${collaboratorType}:${selectedCollaborator.value}`,
       type: collaboratorType,
       name: selectedCollaborator.label,
       role: selectedRole,
-      canViewPath: true,
-      sourceFolderId: selectedFolder.id,
+      canEdit: true,
+      sourceFolderId: currentFolder.id,
     };
 
     try {
       await dispatch(
         createCollaborations({
-          folderId: selectedFolder.id,
+          folderId: currentFolder.id,
           collaboratorId: selectedCollaborator.value,
           collaboratorType,
           collaboratorName: nextCollaborator.name,
           role: selectedRole,
-          canViewPath: true,
+          can_view_path: true,
         }),
       ).unwrap();
-      toast.success(`${nextCollaborator.name} を追加しました`);
-      setSelectedCollaborator(null);
     } catch (error) {
       toast.error(
         typeof error === "string"
           ? error
           : "コラボレーターの追加に失敗しました",
       );
+      return;
+    }
+
+    try {
+      await refreshCollaborations();
+      toast.success(`${nextCollaborator.name} を追加しました`);
+      setSelectedCollaborator(null);
+    } catch {
+      toast.error("追加は完了しましたが一覧の更新に失敗しました");
     }
   }, [
+    currentFolder.id,
     dispatch,
     groups,
+    refreshCollaborations,
     selectedCollaborator,
-    selectedFolder.id,
     selectedRole,
     users,
   ]);
@@ -429,16 +399,22 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       try {
         await dispatch(
           deleteCollaborations({
-            folderId: selectedFolder.id,
             collaborationId: collaborator.id,
           }),
         ).unwrap();
-        toast.success(`${collaborator.name} を削除しました`);
       } catch {
         toast.error("コラボレーターの削除に失敗しました");
+        return;
+      }
+
+      try {
+        await refreshCollaborations();
+        toast.success(`${collaborator.name} を削除しました`);
+      } catch {
+        toast.error("削除は完了しましたが一覧の更新に失敗しました");
       }
     },
-    [dispatch, selectedFolder.id],
+    [dispatch, refreshCollaborations],
   );
 
   const handleUpdateCollaboratorRole = useCallback(
@@ -446,21 +422,27 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       try {
         await dispatch(
           updateCollaborations({
-            folderId: selectedFolder.id,
             collaborationId: collaborator.id,
             params: { role },
           }),
         ).unwrap();
-        toast.success(`${collaborator.name} のロールを更新しました`);
       } catch (error) {
         toast.error(
           typeof error === "string"
             ? error
             : "コラボレーターのロール更新に失敗しました",
         );
+        return;
+      }
+
+      try {
+        await refreshCollaborations();
+        toast.success(`${collaborator.name} のロールを更新しました`);
+      } catch {
+        toast.error("更新は完了しましたが一覧の更新に失敗しました");
       }
     },
-    [dispatch, selectedFolder.id],
+    [dispatch, refreshCollaborations],
   );
 
   const handleBackToShareArea = useCallback(() => {
@@ -496,8 +478,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
           </div>
 
           <PathBar
-            folderName={selectedFolderName}
-            relativePath={selectedFolderRelativePath}
+            folderName={currentFolderName}
+            relativePath={currentFolderRelativePath}
             onCopyPath={handleCopyPath}
             onOpenBox={handleOpenBox}
             onOpenExplorer={handleOpenExplorer}
@@ -521,7 +503,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
             <div className="flex min-h-0 flex-col lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
-                folderName={selectedFolderName}
+                folderName={currentFolderName}
                 collaborators={collaborators}
                 isBusy={isSavingCollaborator}
                 selectedCollaborator={selectedCollaborator}

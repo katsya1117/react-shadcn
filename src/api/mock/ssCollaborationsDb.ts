@@ -9,20 +9,34 @@ const db = new Map<string, GetFolderCollaborationsResponse[]>([
     "0",
     [
       {
-        id: "0:ops-admin",
-        type: "user",
-        name: "Ops Admin",
+        id: "0:ops-admin:direct",
         role: "editor",
-        canViewPath: true,
-        sourceFolderId: "0",
+        can_view_path: true,
+        accessible_by: {
+          id: "ops-admin",
+          type: "user",
+          name: "Ops Admin",
+        },
+        item: {
+          id: "0",
+          type: "folder",
+          name: "All Files",
+        },
       },
       {
-        id: "0:tokyo-center",
-        type: "department",
-        name: "東京センター",
+        id: "0:tokyo-center:direct",
         role: "viewer",
-        canViewPath: false,
-        sourceFolderId: "0",
+        can_view_path: false,
+        accessible_by: {
+          id: "tokyo-center",
+          type: "group",
+          name: "東京センター",
+        },
+        item: {
+          id: "0",
+          type: "folder",
+          name: "All Files",
+        },
       },
     ],
   ],
@@ -38,28 +52,62 @@ const buildDummyRows = (
 
   return [
     {
-      id: `${folderId}:dummy-owner`,
-      type: "user",
-      name: `検証ユーザー-${suffix}`,
+      id: `${folderId}:dummy-direct-editor`,
       role: "editor",
-      canViewPath: true,
-      sourceFolderId: folderId,
+      can_view_path: true,
+      accessible_by: {
+        id: `dummy-direct-editor-${suffix}`,
+        type: "user",
+        name: `直下編集ユーザー-${suffix}`,
+      },
+      item: {
+        id: folderId,
+        type: "folder",
+      },
     },
     {
-      id: `${folderId}:dummy-team`,
-      type: "department",
-      name: `検証部署-${suffix}`,
+      id: `${folderId}:dummy-direct-viewer`,
       role: "viewer",
-      canViewPath: true,
-      sourceFolderId: folderId,
+      can_view_path: false,
+      accessible_by: {
+        id: `dummy-direct-viewer-${suffix}`,
+        type: "group",
+        name: `直下制限部署-${suffix}`,
+      },
+      item: {
+        id: folderId,
+        type: "folder",
+      },
     },
     {
-      id: `${folderId}:dummy-hidden`,
-      type: "user",
-      name: `パス非表示ユーザー-${suffix}`,
+      id: `${folderId}:dummy-inherited-editor`,
+      role: "editor",
+      can_view_path: true,
+      accessible_by: {
+        id: `dummy-inherited-editor-${suffix}`,
+        type: "user",
+        name: `継承編集ユーザー-${suffix}`,
+      },
+      item: {
+        id: "0",
+        type: "folder",
+        name: "All Files",
+      },
+    },
+    {
+      id: `${folderId}:dummy-inherited-viewer`,
       role: "viewer",
-      canViewPath: false,
-      sourceFolderId: folderId,
+      can_view_path: false,
+      accessible_by: {
+        id: `dummy-inherited-viewer-${suffix}`,
+        type: "user",
+        name: `継承制限ユーザー-${suffix}`,
+      },
+      item: {
+        id: "0",
+        type: "folder",
+        name: "All Files",
+      },
     },
   ];
 };
@@ -107,11 +155,17 @@ export const mockSsCollaborationsDb = {
     const subjectId = normalizeSubjectId(params);
     const nextRow: GetFolderCollaborationsResponse = {
       id: `${folderId}:${subjectId}`,
-      type: normalizeType(params),
-      name: normalizeName(params),
       role: params.role,
-      canViewPath: normalizeCanViewPath(params),
-      sourceFolderId: folderId,
+      can_view_path: normalizeCanViewPath(params),
+      accessible_by: {
+        id: subjectId,
+        type: normalizeType(params) === "department" ? "group" : "user",
+        name: normalizeName(params),
+      },
+      item: {
+        id: folderId,
+        type: "folder",
+      },
     };
 
     const rows = ensureFolderRows(folderId);
@@ -138,8 +192,8 @@ export const mockSsCollaborationsDb = {
     const updated: GetFolderCollaborationsResponse = {
       ...current,
       role: params.role ?? current.role,
-      canViewPath:
-        params.canViewPath ?? params.can_view_path ?? current.canViewPath,
+      can_view_path:
+        params.canViewPath ?? params.can_view_path ?? current.can_view_path,
     };
 
     hit.rows[hit.index] = updated;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { SingleValue } from "react-select";
 import { Building2, EyeOff, User, UserPlus, X } from "lucide-react";
 
@@ -28,7 +28,7 @@ import type { CollaborationListItem, Collaborator, RoleType } from "./types";
 const getRoleLabel = (role: RoleType) =>
   ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
 
-const OverflowTooltip = ({
+const TooltipText = ({
   children,
   text,
   className,
@@ -36,46 +36,24 @@ const OverflowTooltip = ({
   children: string;
   text: string;
   className?: string;
-}) => {
-  const [isOverflowing, setIsOverflowing] = useState(false);
-  const [element, setElement] = useState<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    if (!element) return;
-
-    const update = () => {
-      setIsOverflowing(element.scrollWidth > element.clientWidth);
-    };
-
-    update();
-
-    if (typeof ResizeObserver === "undefined") return;
-
-    const resizeObserver = new ResizeObserver(update);
-    resizeObserver.observe(element);
-    return () => resizeObserver.disconnect();
-  }, [element, text]);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          ref={setElement}
-          className={cn("block w-full truncate", className)}
-          title={isOverflowing ? undefined : text}
-        >
-          {children}
-        </span>
-      </TooltipTrigger>
-      {isOverflowing ? <TooltipContent>{text}</TooltipContent> : null}
-    </Tooltip>
-  );
-};
+}) => (
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <span className={cn("block w-full truncate", className)}>
+        {children}
+      </span>
+    </TooltipTrigger>
+    <TooltipContent>{text}</TooltipContent>
+  </Tooltip>
+);
 
 type CollaboratorRowProps = {
   item: CollaborationListItem;
   isBusy: boolean;
-  onUpdateRole: (collaborator: Collaborator, role: RoleType) => Promise<void> | void;
+  onUpdateRole: (
+    collaborator: Collaborator,
+    role: RoleType,
+  ) => Promise<void> | void;
   onRemove: (collaborator: Collaborator) => void;
 };
 
@@ -86,20 +64,16 @@ const CollaboratorRow = ({
   onRemove,
 }: CollaboratorRowProps) => {
   const { collaborator, isInherited, canRemove, sourcePath } = item;
-  const canEditRole = !isInherited && collaborator.canViewPath;
+  const canEditRole = !isInherited && collaborator.canEdit;
   const [pendingRole, setPendingRole] = useState<RoleType>(collaborator.role);
   const [isRoleConfirmOpen, setIsRoleConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    setPendingRole(collaborator.role);
-  }, [collaborator.role]);
 
   return (
     <div
       className={cn(
         "group px-3 py-2.5 transition-colors hover:bg-muted/20",
         isInherited && "bg-muted/55",
-        !collaborator.canViewPath && "opacity-55",
+        !collaborator.canEdit && "opacity-55",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -114,10 +88,13 @@ const CollaboratorRow = ({
             </div>
 
             <div className="min-w-0 flex flex-1 items-center gap-2 text-sm font-medium leading-5 text-foreground">
-              <OverflowTooltip text={collaborator.name} className="min-w-0 flex-1">
+              <TooltipText
+                text={collaborator.name}
+                className="min-w-0 flex-1"
+              >
                 {collaborator.name}
-              </OverflowTooltip>
-              {!collaborator.canViewPath ? (
+              </TooltipText>
+              {!collaborator.canEdit ? (
                 <EyeOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
               ) : null}
             </div>
@@ -173,12 +150,12 @@ const CollaboratorRow = ({
 
           {isInherited && sourcePath ? (
             <div className="pl-6">
-              <OverflowTooltip
+              <TooltipText
                 text={sourcePath}
                 className="text-xs leading-5 text-muted-foreground"
               >
                 {sourcePath}
-              </OverflowTooltip>
+              </TooltipText>
             </div>
           ) : null}
         </div>
@@ -212,9 +189,7 @@ type CollaborationPanelProps = {
   isBusy: boolean;
   selectedCollaborator: SingleValue<AutoCompleteData>;
   selectedRole: RoleType;
-  onSelectedCollaboratorChange: (
-    value: SingleValue<AutoCompleteData>,
-  ) => void;
+  onSelectedCollaboratorChange: (value: SingleValue<AutoCompleteData>) => void;
   onSelectedRoleChange: (role: RoleType) => void;
   onAddCollaborator: () => Promise<void> | void;
   onUpdateCollaboratorRole: (
@@ -321,7 +296,9 @@ export const CollaborationPanel = ({
           <div
             ref={listContainerRef}
             className="min-h-0 overflow-y-auto rounded-md border bg-background"
-            style={listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined}
+            style={
+              listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined
+            }
           >
             {collaborators.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
@@ -331,7 +308,7 @@ export const CollaborationPanel = ({
               <div className="divide-y">
                 {collaborators.map((item) => (
                   <CollaboratorRow
-                    key={item.collaborator.id}
+                    key={`${item.collaborator.id}:${item.collaborator.role}:${item.isInherited ? "inherited" : "direct"}`}
                     item={item}
                     isBusy={isBusy}
                     onUpdateRole={onUpdateCollaboratorRole}

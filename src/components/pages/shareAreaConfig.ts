@@ -38,20 +38,3 @@ export const SHARE_AREAS: ShareArea[] = [
     boxFolderId: "370615941389",
   },
 ];
-
-const SHARE_AREA_ROUTE_FOLDER_ID_SET = new Set(
-  SHARE_AREAS.map((area) => area.boxFolderId),
-);
-
-export const isShareAreaRouteFolderId = (
-  folderId: string | null | undefined,
-): folderId is string =>
-  typeof folderId === "string" && SHARE_AREA_ROUTE_FOLDER_ID_SET.has(folderId);
-
-export const stripCurrentFolderIdFromSearch = (search: string): string => {
-  const params = new URLSearchParams(search);
-  params.delete("currentFolderId");
-
-  const nextSearch = params.toString();
-  return nextSearch ? `?${nextSearch}` : "";
-};

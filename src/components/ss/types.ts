@@ -1,8 +1,10 @@
+import type { BoxFolder } from "@/@types/BoxUiElements";
+
 export type ContentExplorerInstance = {
   show: (folderId: string, token: string, opts: unknown) => void;
   hide?: () => void;
   removeAllListeners?: () => void;
-  addListener?: (event: string, callback: (item: unknown) => void) => void;
+  addListener?: (event: "navigate", callback: (item: BoxFolder) => void) => void;
 };
 
 export type RoleType = "editor" | "viewer";
@@ -13,8 +15,8 @@ export type Collaborator = {
   type: CollaboratorType;
   name: string;
   role: RoleType;
-  canViewPath: boolean;
-  // そのコラボレートが直接設定されたフォルダID
+  canEdit: boolean;
+  // Box API item.id: そのコラボレートが設定されているフォルダID
   sourceFolderId: string;
 };
 

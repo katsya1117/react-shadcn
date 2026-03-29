@@ -175,14 +175,23 @@ export type AccessToken = string;
 
 export type MockCollaborationRole = "editor" | "viewer";
 export type MockCollaborationType = "user" | "department";
+export type BoxCollaborationAccessibleByType = "user" | "group";
 
 export type GetFolderCollaborationsResponse = {
   id: string;
-  type: MockCollaborationType;
-  name: string;
   role: MockCollaborationRole;
-  canViewPath: boolean;
-  sourceFolderId: string;
+  can_view_path?: boolean;
+  canViewPath?: boolean;
+  accessible_by?: {
+    id: string;
+    type: BoxCollaborationAccessibleByType;
+    name: string;
+  };
+  item?: {
+    id: string;
+    type: "folder";
+    name?: string | null;
+  };
 };
 
 export type CreateCollaborationsParams = {
