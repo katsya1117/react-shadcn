@@ -48,6 +48,8 @@ import { useAppDispatch } from "@/store/hooks";
 import { SHARE_AREAS } from "./shareAreaConfig";
 
 const ROOT_SHARE_PATH = "\\share";
+// SS は ShareArea から遷移した公開対象フォルダだけを root として扱う。
+// URL 直打ちで任意の folderId を渡されても、この集合にないものは画面を開かせない。
 const SHARE_AREA_ROUTE_FOLDER_ID_SET = new Set(
   SHARE_AREAS.map((area) => area.boxFolderId),
 );
@@ -58,6 +60,8 @@ const isShareAreaRouteFolderId = (
   typeof folderId === "string" && SHARE_AREA_ROUTE_FOLDER_ID_SET.has(folderId);
 
 const stripCurrentFolderIdFromSearch = (search: string): string => {
+  // 旧実装で query に currentFolderId を載せていた名残を無効化する。
+  // 現在フォルダは explorer の navigate 結果を正とし、URL では持たない。
   const params = new URLSearchParams(search);
   params.delete("currentFolderId");
 
@@ -81,6 +85,8 @@ const toFolderInfo = (folder: BoxFolder): FolderInfo => {
 };
 
 const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
+  // パスバーは常に \share\<showしたroot folder名>\... で始める。
+  // Box 全体の root(0) は見せず、show() した rootFolderId より下だけを表示する。
   const entries = folder.pathCollection?.entries ?? [];
   const filteredEntries = entries.filter((entry) => entry.id !== "0");
   const rootIndex = filteredEntries.findIndex(
@@ -117,8 +123,13 @@ const toCollaborationListItem = (
   currentFolderId: string,
   sourcePathByFolderId: Record<string, string>,
 ): CollaborationListItem => {
+  // Box の folders/:id/collaborations は、現在フォルダの direct だけでなく
+  // 親から継承されている collaboration も返す。
+  // item.id は collaboration 自体の ID、item.item.id は設定元フォルダの ID。
   const sourceFolderId = item.item?.id ?? currentFolderId;
   const isInherited = sourceFolderId !== currentFolderId;
+  // 本アプリでは can_view_path=true の collaboration だけを管理対象として扱う。
+  // Box UI 由来の can_view_path=false は一覧には出すが、読み取り専用。
   const canEdit = item.can_view_path ?? item.canViewPath ?? true;
 
   return {
@@ -131,7 +142,7 @@ const toCollaborationListItem = (
       sourceFolderId,
     },
     isInherited,
-    canRemove: !isInherited && canEdit,
+    canRemove: canEdit,
     sourcePath: isInherited ? sourcePathByFolderId[sourceFolderId] : undefined,
   };
 };
@@ -172,6 +183,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
   const initialFolder = useMemo<FolderInfo>(
     () => ({
+      // 初回描画直後は explorer から navigate がまだ飛んでいないので、
+      // rootFolderId を仮の currentFolder として先に置いておく。
       id: rootFolderId,
       name: rememberedRootFolder?.name ?? "",
       pathCollection: rememberedRootFolder?.pathCollection ?? {
@@ -204,6 +217,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   }, [currentFolder, rootFolderId]);
   const currentFolderName = currentFolder.name || "対象フォルダ";
   const layoutSubtitle = useMemo(() => {
+    // レイアウトの subtitle は「ShareArea から入ってきた root フォルダ名」を出したい。
+    // currentFolder が配下に潜っていても、pathCollection から rootFolderId の名前を拾う。
     if (currentFolder.id === rootFolderId && currentFolder.name) {
       return currentFolder.name;
     }
@@ -218,6 +233,9 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     currentFolder.pathCollection,
   ]);
   const sourcePathByFolderId = useMemo(() => {
+    // 継承元表示用のパス辞書。
+    // folders/:id/collaborations の各 row には sourceFolderId(item.id) が入るので、
+    // それを \share\...\... に引けるようにしておく。
     const pathEntries =
       currentFolder.pathCollection?.entries?.filter(
         (entry) => entry.id !== "0",
@@ -242,6 +260,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     return pathMap;
   }, [currentFolder.pathCollection, rootFolderId]);
   const collaborators = useMemo<CollaborationListItem[]>(() => {
+    // 現在表示中フォルダの API レスポンスだけを表示元にする。
+    // 祖先フォルダを個別 fetch してマージはせず、Box が返す inherited 情報をそのまま使う。
     const rows = collaborationsByFolderId[currentFolder.id] ?? [];
 
     return rows.map((item) =>
@@ -255,12 +275,16 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   }, []);
 
   const refreshCollaborations = useCallback(async () => {
+    // 一覧更新は reducer の局所パッチではなく、常に Box の最新結果を再取得して揃える。
+    // unwrap しているので、取得失敗は呼び出し元の try/catch へそのまま返る。
     await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
   }, [currentFolder.id, dispatch]);
 
   useEffect(() => {
     if (!location.search.includes("currentFolderId")) return;
 
+    // currentFolderId を URL の truth source にしない方針に統一したので、
+    // 残っている query は見つけ次第取り除く。
     const nextSearch = stripCurrentFolderIdFromSearch(location.search);
     navigate(`${rootFolderPath}${nextSearch}`, { replace: true });
   }, [location.search, navigate, rootFolderPath]);
@@ -268,6 +292,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   const handleNavigate = useCallback(
     (payload: BoxFolder) => {
       const nextFolder = toFolderInfo(payload);
+      // currentFolder は ContentExplorer が通知してきた navigate 結果を正とする。
       setCurrentFolder(nextFolder);
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
@@ -284,6 +309,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   );
 
   useEffect(() => {
+    // 初回表示時、および explorer で階層を移動して currentFolder が変わった時に
+    // そのフォルダ視点の collaborations を再取得する。
     void refreshCollaborations().catch(() => {
       toast.error("コラボレーター一覧の取得に失敗しました");
     });
@@ -325,6 +352,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     const explorer = explorerRef.current;
     if (!explorer) return;
     explorer.removeAllListeners?.();
+    // show() した rootFolderId 配下だけを explorer の管理対象にし、
+    // 現在フォルダは navigate イベントから同期する。
     explorer.addListener?.("navigate", handleNavigate);
     explorer.show(rootFolderId, accessToken, {
       container: "#box-content-explorer",
@@ -356,8 +385,31 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       canEdit: true,
       sourceFolderId: currentFolder.id,
     };
+    const existingRows = collaborationsByFolderId[currentFolder.id] ?? [];
+    const accessibleByType = collaboratorType === "department" ? "group" : "user";
+    const duplicatedCollaboration = existingRows.find((item) => {
+      // 本アプリ経由で管理するのは can_view_path=true の collaboration だけ。
+      // そのため重複禁止も can_view_path=true 同士だけを対象にする。
+      // Box UI で作られた can_view_path=false は一覧には見せるが、追加ブロックには使わない。
+      const canManage = item.can_view_path ?? item.canViewPath ?? true;
+
+      return (
+        canManage &&
+        item.accessible_by?.id === selectedCollaborator.value &&
+        item.accessible_by?.type === accessibleByType
+      );
+    });
+
+    if (duplicatedCollaboration) {
+      // 親フォルダで既に can_view_path=true が設定されていれば、
+      // currentFolder のレスポンスに inherited として乗ってくるのでここで止められる。
+      toast.error("同じコラボレーターは既に設定されています");
+      return;
+    }
 
     try {
+      // mutation thunk は API 1 回だけを責務にしている。
+      // UI が成功/失敗を判断できるよう unwrap し、失敗はここで catch する。
       await dispatch(
         createCollaborations({
           folderId: currentFolder.id,
@@ -378,6 +430,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     }
 
     try {
+      // 追加成功後に一覧を再取得して、親子関係を含む最終状態を Box のレスポンスで揃える。
       await refreshCollaborations();
       toast.success(`${nextCollaborator.name} を追加しました`);
       setSelectedCollaborator(null);
@@ -385,6 +438,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       toast.error("追加は完了しましたが一覧の更新に失敗しました");
     }
   }, [
+    collaborationsByFolderId,
     currentFolder.id,
     dispatch,
     groups,
@@ -397,6 +451,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   const handleRemoveCollaborator = useCallback(
     async (collaborator: Collaborator) => {
       try {
+        // collaborator.id は画面用の user/group ID ではなく collaboration レコードの ID。
+        // Box API はこの collaborationId を受け取って削除する。
         await dispatch(
           deleteCollaborations({
             collaborationId: collaborator.id,
@@ -408,6 +464,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       }
 
       try {
+        // 削除対象が inherited でも、sourceFolderId 側の collaboration を触った結果が
+        // currentFolder の表示へどう反映されたかは再取得で確定させる。
         await refreshCollaborations();
         toast.success(`${collaborator.name} を削除しました`);
       } catch {
@@ -420,6 +478,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   const handleUpdateCollaboratorRole = useCallback(
     async (collaborator: Collaborator, role: RoleType) => {
       try {
+        // ロール更新も collaborationId 単位の操作。
+        // inherited 行でも can_view_path=true なら、継承元 collaboration を更新する。
         await dispatch(
           updateCollaborations({
             collaborationId: collaborator.id,
@@ -436,6 +496,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       }
 
       try {
+        // 更新後の一覧は Box を再取得して、ロール変更後の direct / inherited 表示を同期する。
         await refreshCollaborations();
         toast.success(`${collaborator.name} のロールを更新しました`);
       } catch {

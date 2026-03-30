@@ -64,14 +64,27 @@ const CollaboratorRow = ({
   onRemove,
 }: CollaboratorRowProps) => {
   const { collaborator, isInherited, canRemove, sourcePath } = item;
-  const canEditRole = !isInherited && collaborator.canEdit;
+  // 編集可否は direct / inherited ではなく can_view_path=true かどうかで決める。
+  // 本アプリ経由で管理する collaboration だけを操作可能にし、
+  // Box UI 由来の can_view_path=false は一覧表示のみ。
+  const canEditRole = collaborator.canEdit;
   const [pendingRole, setPendingRole] = useState<RoleType>(collaborator.role);
   const [isRoleConfirmOpen, setIsRoleConfirmOpen] = useState(false);
+  // inherited 行を触る時は、現在フォルダではなく継承元の collaboration を変更する。
+  // 誤解を減らすため、確認ダイアログに sourcePath を明示する。
+  const updateDialogBody = isInherited && sourcePath
+    ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を ${getRoleLabel(pendingRole)} に変更します。`
+    : `${collaborator.name} のロールを ${getRoleLabel(pendingRole)} に変更します。`;
+  const removeDialogBody = isInherited && sourcePath
+    ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を削除します。`
+    : `${collaborator.name} のコラボレーションを削除します。`;
 
   return (
     <div
       className={cn(
         "group px-3 py-2.5 transition-colors hover:bg-muted/20",
+        // inherited は背景で区別し、can_view_path=false は減光して
+        // 「見えてはいるがこの画面では触れない」ことを示す。
         isInherited && "bg-muted/55",
         !collaborator.canEdit && "opacity-55",
       )}
@@ -126,7 +139,7 @@ const CollaboratorRow = ({
                 <ConfirmButton
                   buttonLabel={null}
                   dialogTitle="ロールを更新しますか？"
-                  dialogBody={`${collaborator.name} のロールを ${getRoleLabel(pendingRole)} に変更します。`}
+                  dialogBody={updateDialogBody}
                   onHandle={() => onUpdateRole(collaborator, pendingRole)}
                   open={isRoleConfirmOpen}
                   onOpenChange={(open) => {
@@ -165,7 +178,7 @@ const CollaboratorRow = ({
             <ConfirmButton
               buttonLabel={<X className="h-3.5 w-3.5" />}
               dialogTitle="コラボレーションを削除しますか？"
-              dialogBody={`${collaborator.name} のコラボレーションを削除します。`}
+              dialogBody={removeDialogBody}
               onHandle={() => onRemove(collaborator)}
               variant="ghost"
               size="icon-xs"

@@ -28,6 +28,8 @@ const api = new BoxApi(Config.apiConfig);
 export const getFolderCollaborations = createAsyncThunk(
   sliceName + "/getFolderCollaborations",
   async (folderId: string) => {
+    // collaborations 一覧だけは folderId ごとに store へ保持する。
+    // 画面側は byFolderId[currentFolder.id] を読み、direct / inherited の判定は component で行う。
     const response = api.getFolderCollaborations(folderId, Config.apiOption);
     return {
       folderId,
@@ -39,6 +41,8 @@ export const getFolderCollaborations = createAsyncThunk(
 export const createCollaborations = createAsyncThunk(
   sliceName + "/createCollaborations",
   async (param: CreateCollaborationsParams) => {
+    // mutation thunk は API 呼び出しだけを責務にする。
+    // 一覧再取得と toast 制御は component 側で unwrap + try/catch して扱う。
     await api.createCollaborations(param, Config.apiOption);
   },
 );
@@ -46,6 +50,7 @@ export const createCollaborations = createAsyncThunk(
 export const deleteCollaborations = createAsyncThunk(
   sliceName + "/deleteCollaborations",
   async (param: { collaborationId: string }) => {
+    // Box API の削除対象は collaborator 本体ではなく collaboration レコード ID。
     await api.deleteCollaborations(param.collaborationId, Config.apiOption);
   },
 );
@@ -58,6 +63,8 @@ export const updateCollaborations = createAsyncThunk(
       params: UpdateCollaborationParams;
     },
   ) => {
+    // ロール更新も collaborationId 単位。
+    // inherited 行を触る場合は、継承元にある collaboration レコードを更新することになる。
     await api.updateCollaboration(
       param.collaborationId,
       param.params,
@@ -67,6 +74,8 @@ export const updateCollaborations = createAsyncThunk(
 );
 
 interface SSState {
+  // Box から返ってきた raw row を folderId ごとに保持する。
+  // 親フォルダを別途走査せず、current folder のレスポンスに含まれる inherited 情報をそのまま使う。
   byFolderId: Record<string, GetFolderCollaborationsResponse[]>;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
   isLoading: boolean;
