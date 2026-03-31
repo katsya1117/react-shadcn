@@ -6,7 +6,6 @@ import type { AutoCompleteData } from "@/api";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -21,9 +20,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useConfirmState } from "@/hooks/useConfirmState";
 
 import { ROLE_OPTIONS } from "./constants";
 import type { CollaborationListItem, Collaborator, RoleType } from "./types";
+import { ConfirmButton } from "../parts/Confirm/ConfirmButton";
+import { ConfirmDialog } from "../parts/Confirm/ConfirmDialog";
 
 const getRoleLabel = (role: RoleType) =>
   ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
@@ -39,9 +41,7 @@ const TooltipText = ({
 }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <span className={cn("block w-full truncate", className)}>
-        {children}
-      </span>
+      <span className={cn("block w-full truncate", className)}>{children}</span>
     </TooltipTrigger>
     <TooltipContent>{text}</TooltipContent>
   </Tooltip>
@@ -69,16 +69,17 @@ const CollaboratorRow = ({
   // Box UI 由来の can_view_path=false は一覧表示のみ。
   const canEditRole = collaborator.canEdit;
   const [pendingRole, setPendingRole] = useState<RoleType>(collaborator.role);
-  const [isRoleConfirmOpen, setIsRoleConfirmOpen] = useState(false);
+  const { isOpen, open, handleOpenChange } = useConfirmState();
   // inherited 行を触る時は、現在フォルダではなく継承元の collaboration を変更する。
   // 誤解を減らすため、確認ダイアログに sourcePath を明示する。
-  const updateDialogBody = isInherited && sourcePath
-    ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を ${getRoleLabel(pendingRole)} に変更します。`
-    : `${collaborator.name} のロールを ${getRoleLabel(pendingRole)} に変更します。`;
-  const removeDialogBody = isInherited && sourcePath
-    ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を削除します。`
-    : `${collaborator.name} のコラボレーションを削除します。`;
-
+  const updateDialogBody =
+    isInherited && sourcePath
+      ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を ${getRoleLabel(pendingRole)} に変更します。`
+      : `${collaborator.name} のロールを ${getRoleLabel(pendingRole)} に変更します。`;
+  const removeDialogBody =
+    isInherited && sourcePath
+      ? `${collaborator.name} の継承元コラボレーション（${sourcePath}）を削除します。`
+      : `${collaborator.name} のコラボレーションを削除します。`;
   return (
     <div
       className={cn(
@@ -101,10 +102,7 @@ const CollaboratorRow = ({
             </div>
 
             <div className="min-w-0 flex flex-1 items-center gap-2 text-sm font-medium leading-5 text-foreground">
-              <TooltipText
-                text={collaborator.name}
-                className="min-w-0 flex-1"
-              >
+              <TooltipText text={collaborator.name} className="min-w-0 flex-1">
                 {collaborator.name}
               </TooltipText>
               {!collaborator.canEdit ? (
@@ -121,7 +119,8 @@ const CollaboratorRow = ({
                   onValueChange={(value) => {
                     const nextRole = value as RoleType;
                     setPendingRole(nextRole);
-                    setIsRoleConfirmOpen(nextRole !== collaborator.role);
+                    if (nextRole === collaborator.role) return;
+                    open();
                   }}
                   disabled={isBusy}
                 >
@@ -136,20 +135,19 @@ const CollaboratorRow = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <ConfirmButton
-                  buttonLabel={null}
-                  dialogTitle="ロールを更新しますか？"
-                  dialogBody={updateDialogBody}
-                  onHandle={() => onUpdateRole(collaborator, pendingRole)}
-                  open={isRoleConfirmOpen}
-                  onOpenChange={(open) => {
-                    setIsRoleConfirmOpen(open);
-                    if (!open) {
+                <ConfirmDialog
+                  open={isOpen}
+                  onOpenChange={(nextOpen) => {
+                    handleOpenChange(nextOpen);
+                    if (!nextOpen) {
                       setPendingRole(collaborator.role);
                     }
                   }}
-                  hideTrigger
-                />
+                  dialogTitle="ロールの変更"
+                  onHandle={() => onUpdateRole(collaborator, pendingRole)}
+                >
+                  {updateDialogBody}
+                </ConfirmDialog>
               </>
             ) : (
               <Badge

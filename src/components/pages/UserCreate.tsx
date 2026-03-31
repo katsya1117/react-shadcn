@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import ConfirmButton from "@/components/parts/Confirm/ConfirmButton";
 import {
   getAdUserList,
   userCreation,
@@ -30,7 +31,6 @@ import {
 import type { AppDispatch } from "@/store";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import ConfirmButton from "../ui/confirm-button";
 
 // type ADUser = {
 //   account: string;
@@ -364,7 +364,7 @@ export const UserCreate = () => {
                               dialogBody={
                                 <>ユーザー{item.disp_name}を登録しますか？</>
                               }
-                              onClick={() => onHandleRegist(item)}
+                              onHandle={() => onHandleRegist(item)}
                             />
                           )}
                         </TableCell>

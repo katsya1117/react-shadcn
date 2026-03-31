@@ -1,0 +1,48 @@
+import type { ComponentProps } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
+type Props = ComponentProps<typeof Dialog> & {
+  dialogTitle?: string;
+  onHandle?: () => void | Promise<unknown>;
+};
+
+export const ConfirmDialog = ({
+  dialogTitle,
+  onHandle,
+  children,
+  open,
+  onOpenChange,
+}: Props) => {
+  const handleOk = async () => {
+    await onHandle?.();
+    onOpenChange?.(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 text-sm text-muted-foreground">
+          {children}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange?.(false)}>
+            キャンセル
+          </Button>
+          <Button onClick={handleOk}>OK</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+ConfirmDialog.displayName = "ConfirmDialog";

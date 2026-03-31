@@ -78,12 +78,9 @@ jest.mock("@/components/ui/select", () => ({
   ),
 }));
 
-jest.mock("@/components/ui/confirm-button", () => ({
+jest.mock("@/components/parts/Confirm/ConfirmButton", () => ({
   __esModule: true,
   ConfirmButton: ({ onHandle, buttonLabel }: any) => (
-    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
-  ),
-  ConFirmButton: ({ onHandle, buttonLabel }: any) => (
     <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
   ),
 }));

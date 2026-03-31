@@ -14,7 +14,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { ConfirmButton, ConFirmButton } from "@/components/ui/confirm-button";
+import { ConfirmButton } from "@/components/parts/Confirm/ConfirmButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -342,12 +342,17 @@ export const UserEdit = () => {
       toast.error(message);
       return;
     }
-    const { dispName: trimmedDisp, account: trimmedAcc, mail: trimmedMail } =
-      parsed.data;
+    const {
+      dispName: trimmedDisp,
+      account: trimmedAcc,
+      mail: trimmedMail,
+    } = parsed.data;
     const derivedUserId = deriveUserId(trimmedAcc);
     const userIdParsed = userIdSchema.safeParse(derivedUserId);
     if (!userIdParsed.success) {
-      toast.error(userIdParsed.error.errors[0]?.message ?? "ユーザーIDが不正です");
+      toast.error(
+        userIdParsed.error.errors[0]?.message ?? "ユーザーIDが不正です",
+      );
       return;
     }
     const params: UserUpdateParams = {
@@ -603,7 +608,7 @@ export const UserEdit = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <ConFirmButton
+              <ConfirmButton
                 size="lg"
                 variant="outline"
                 buttonLabel={"リセット"}

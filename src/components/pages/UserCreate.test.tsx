@@ -36,21 +36,13 @@ const buildUserState = (overrides: Partial<UserState> = {}) => {
 
 let radioOnValueChange: ((value: string) => void) | undefined;
 
-jest.mock("@/components/ui/confirm-button", () => ({
+jest.mock("@/components/parts/Confirm/ConfirmButton", () => ({
   __esModule: true,
-  default: ({ onClick, buttonLabel }: any) => (
-    <button onClick={onClick}>{buttonLabel}</button>
+  default: ({ onHandle, buttonLabel }: any) => (
+    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
   ),
-  ConfirmButton: ({ onClick, buttonLabel }: any) => (
-    <button onClick={onClick}>{buttonLabel}</button>
-  ),
-}));
-
-// コンポーネント内の相対パスで参照される ConfirmButton もモックする
-jest.mock("../ui/confirm-button", () => ({
-  __esModule: true,
-  default: ({ onClick, buttonLabel }: any) => (
-    <button onClick={onClick}>{buttonLabel}</button>
+  ConfirmButton: ({ onHandle, buttonLabel }: any) => (
+    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
   ),
 }));
 
