@@ -4,7 +4,11 @@ export type ContentExplorerInstance = {
   show: (folderId: string, token: string, opts: unknown) => void;
   hide?: () => void;
   removeAllListeners?: () => void;
-  addListener?: (event: "navigate", callback: (item: BoxFolder) => void) => void;
+  addListener?: (
+    event: "navigate",
+    callback: (item: BoxFolder) => void,
+  ) => void;
+  navigateTo?: (folderId: string) => void;
 };
 
 export type RoleType = "editor" | "viewer";

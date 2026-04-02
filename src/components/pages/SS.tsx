@@ -10,10 +10,7 @@ import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
 
-import type {
-  AutoCompleteData,
-  GetFolderCollaborationsResponse,
-} from "@/api";
+import type { AutoCompleteData, GetFolderCollaborationsResponse } from "@/api";
 import type { BoxFolder } from "@/@types/BoxUiElements";
 import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
@@ -92,7 +89,8 @@ const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
   const rootIndex = filteredEntries.findIndex(
     (entry) => entry.id === rootFolderId,
   );
-  const descendantEntries = rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : [];
+  const descendantEntries =
+    rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : [];
   const segments = [ROOT_SHARE_PATH];
   const rootName =
     rootIndex >= 0
@@ -195,11 +193,45 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   );
   const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
 
-  const [currentFolder, setCurrentFolder] =
-    useState<FolderInfo>(initialFolder);
+  const [currentFolder, setCurrentFolder] = useState<FolderInfo>(initialFolder);
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
+
+  // フォルダ履歴スタック管理
+  const [folderHistory, setFolderHistory] = useState<string[]>([rootFolderId]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const canGoBack = historyIndex > 0;
+  const canGoForward = historyIndex < folderHistory.length - 1;
+
+  const isNavigatingRef = useRef(false);
+  const historyIndexRef = useRef(0);
+
+  const updateHistoryIndex = useCallback((next: number) => {
+    historyIndexRef.current = next;
+    setHistoryIndex(next);
+  }, []);
+
+  const handleGoBack = useCallback(() => {
+    if (!canGoBack) return;
+    const nextIndex = historyIndexRef.current - 1;
+    const folderId = folderHistory[nextIndex];
+    if (!folderId) return;
+    isNavigatingRef.current = true;
+    updateHistoryIndex(nextIndex);
+    explorerRef.current?.navigateTo?.(folderId);
+  }, [canGoBack, folderHistory, updateHistoryIndex]);
+
+  const handleGoForward = useCallback(() => {
+    if (!canGoForward) return;
+    const nextIndex = historyIndexRef.current + 1;
+    const folderId = folderHistory[nextIndex];
+    if (!folderId) return;
+    isNavigatingRef.current = true;
+    updateHistoryIndex(nextIndex);
+    explorerRef.current?.navigateTo?.(folderId);
+  }, [canGoForward, folderHistory, updateHistoryIndex]);
 
   const { currentFolderPath, currentFolderRelativePath } = useMemo(() => {
     const fullPath = buildSharePath(currentFolder, rootFolderId);
@@ -240,13 +272,12 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       currentFolder.pathCollection?.entries?.filter(
         (entry) => entry.id !== "0",
       ) ?? [];
-    const visibleEntries =
-      (() => {
-        const rootIndex = pathEntries.findIndex(
-          (entry) => entry.id === rootFolderId,
-        );
-        return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
-      })();
+    const visibleEntries = (() => {
+      const rootIndex = pathEntries.findIndex(
+        (entry) => entry.id === rootFolderId,
+      );
+      return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
+    })();
     const pathMap: Record<string, string> = {};
     const segments = [ROOT_SHARE_PATH];
     pathMap["0"] = ROOT_SHARE_PATH;
@@ -304,8 +335,19 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
         }),
       );
       resetForm();
+
+      if (isNavigatingRef.current) {
+        isNavigatingRef.current = false;
+        return;
+      }
+
+      setFolderHistory((prev) => {
+        const trimmed = prev.slice(0, historyIndexRef.current + 1);
+        return [...trimmed, nextFolder.id];
+      });
+      updateHistoryIndex(historyIndexRef.current + 1);
     },
-    [dispatch, resetForm, rootFolderId, rootFolderPath],
+    [dispatch, resetForm, rootFolderId, rootFolderPath, updateHistoryIndex],
   );
 
   useEffect(() => {
@@ -351,10 +393,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
     const explorer = explorerRef.current;
     if (!explorer) return;
-    explorer.removeAllListeners?.();
+    // explorer.removeAllListeners?.();
     // show() した rootFolderId 配下だけを explorer の管理対象にし、
     // 現在フォルダは navigate イベントから同期する。
-    explorer.addListener?.("navigate", handleNavigate);
+    // explorer.addListener?.("navigate", handleNavigate);
     explorer.show(rootFolderId, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
@@ -365,7 +407,19 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       explorer.removeAllListeners?.();
       explorer.hide?.();
     };
-  }, [accessToken, handleNavigate, rootFolderId]);
+  }, [accessToken, rootFolderId]);
+
+  useEffect(() => {
+    const explorer = explorerRef.current;
+    if (!explorer) return;
+
+    explorer.removeAllListeners?.();
+    explorer.addListener?.("navigate", handleNavigate);
+
+    return () => {
+      explorer.removeAllListeners?.();
+    };
+  }, [handleNavigate]);
 
   const handleAddCollaborator = useCallback(async () => {
     if (!selectedCollaborator) return;
@@ -386,7 +440,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       sourceFolderId: currentFolder.id,
     };
     const existingRows = collaborationsByFolderId[currentFolder.id] ?? [];
-    const accessibleByType = collaboratorType === "department" ? "group" : "user";
+    const accessibleByType =
+      collaboratorType === "department" ? "group" : "user";
     const duplicatedCollaboration = existingRows.find((item) => {
       // 本アプリ経由で管理するのは can_view_path=true の collaboration だけ。
       // そのため重複禁止も can_view_path=true 同士だけを対象にする。
@@ -541,6 +596,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
           <PathBar
             folderName={currentFolderName}
             relativePath={currentFolderRelativePath}
+            canGoBack={canGoBack}
+            canGoForward={canGoForward}
+            onGoBack={handleGoBack}
+            onGoForward={handleGoForward}
             onCopyPath={handleCopyPath}
             onOpenBox={handleOpenBox}
             onOpenExplorer={handleOpenExplorer}
