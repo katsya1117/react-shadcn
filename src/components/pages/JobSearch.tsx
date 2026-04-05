@@ -78,7 +78,7 @@ const JobSearch = () => {
           </div>
         </div>
 
-        <Card className="p-0">
+        <Card>
           <SearchSet
             user_cd={user_cd}
             mode={mode}

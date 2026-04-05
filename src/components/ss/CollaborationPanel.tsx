@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState } from "react";
 import type { SingleValue } from "react-select";
 import { Building2, EyeOff, User, UserPlus, X } from "lucide-react";
 
@@ -208,6 +208,7 @@ type CollaborationPanelProps = {
     role: RoleType,
   ) => Promise<void> | void;
   onRemoveCollaborator: (collaborator: Collaborator) => void;
+  className?: string;
 };
 
 export const CollaborationPanel = ({
@@ -221,33 +222,21 @@ export const CollaborationPanel = ({
   onAddCollaborator,
   onUpdateCollaboratorRole,
   onRemoveCollaborator,
+  className,
 }: CollaborationPanelProps) => {
-  const listContainerRef = useRef<HTMLDivElement | null>(null);
-  const [listMaxHeight, setListMaxHeight] = useState<number>();
-
-  useEffect(() => {
-    const updateListMaxHeight = () => {
-      const element = listContainerRef.current;
-      if (!element) return;
-
-      const top = element.getBoundingClientRect().top;
-      const nextMaxHeight = Math.max(180, window.innerHeight - top - 24);
-      setListMaxHeight(nextMaxHeight);
-    };
-
-    updateListMaxHeight();
-    window.addEventListener("resize", updateListMaxHeight);
-    return () => window.removeEventListener("resize", updateListMaxHeight);
-  }, [folderName, collaborators.length]);
-
   return (
-    <Card className="flex min-h-0 flex-col lg:flex-1">
-      <CardHeader className="pb-2">
+    <Card
+      className={cn(
+        "flex flex-col overflow-hidden",
+        className,
+      )}
+    >
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-lg">{folderName}</CardTitle>
       </CardHeader>
 
       <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="space-y-3">
+        <div className="space-y-3 shrink-0">
           <div className="text-sm font-medium">コラボレーターを追加</div>
 
           <AutoCompleteSingle
@@ -301,16 +290,10 @@ export const CollaborationPanel = ({
 
         <Separator />
 
-        <div className="flex min-h-0 flex-col gap-2">
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
           <div className="text-sm font-medium">コラボレータ一覧</div>
 
-          <div
-            ref={listContainerRef}
-            className="min-h-0 overflow-y-auto rounded-md border bg-background"
-            style={
-              listMaxHeight ? { maxHeight: `${listMaxHeight}px` } : undefined
-            }
-          >
+          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background">
             {collaborators.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 コラボレーターは設定されていません

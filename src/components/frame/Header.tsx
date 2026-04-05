@@ -11,17 +11,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { UrlPath } from "@/constant/UrlPath";
+import { cn } from "@/lib/utils";
 import { NavLink as RouterNavLink, useLocation } from "react-router";
 import { ChevronUp, ChevronDown, UserRound } from "lucide-react";
 
 type HeaderProps = {
   subtitle?: string;
+  className?: string;
 };
 
 /**
  * サイドレイアウト用ヘッダー（タイトルなし、操作系のみ）
  */
-export const Header = ({ subtitle }: HeaderProps) => {
+export const Header = ({ subtitle, className }: HeaderProps) => {
   const loginUser = useSelector(userSelector.loginUserSelector());
   const { pathname } = useLocation();
   const [userOpen, setUserOpen] = useState(false);
@@ -44,7 +46,12 @@ export const Header = ({ subtitle }: HeaderProps) => {
     : "Guest";
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur">
+    <header
+      className={cn(
+        "sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur",
+        className,
+      )}
+    >
       <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
         <div className="flex items-center gap-3 text-sm text-muted-foreground min-w-0">
           <span className="text-lg font-semibold text-foreground tracking-tight font-mono shrink-0">

@@ -13,6 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 import { DISPLAY_PATH_ROOT } from "./constants";
 
@@ -26,6 +27,7 @@ type PathBarProps = {
   onCopyPath: () => void;
   onOpenBox: () => void;
   onOpenExplorer: () => void;
+  className?: string;
 };
 
 const FolderActionButtons = ({
@@ -37,7 +39,7 @@ const FolderActionButtons = ({
   onOpenBox: () => void;
   onOpenExplorer: () => void;
 }) => (
-  <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-0.5 lg:w-auto">
+  <div className="flex shrink-0 items-center justify-end gap-0.5">
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
@@ -93,13 +95,24 @@ export const PathBar = ({
   onCopyPath,
   onOpenBox,
   onOpenExplorer,
+  className,
 }: PathBarProps) => {
   const displayPath = relativePath
     ? `${DISPLAY_PATH_ROOT}${relativePath}`
     : DISPLAY_PATH_ROOT;
+  const pathSegments = relativePath.split("\\").filter(Boolean);
+  const hasSplitPath = pathSegments.length > 1;
+  const rootPathDisplay = hasSplitPath
+    ? `${DISPLAY_PATH_ROOT}\\${pathSegments[0]}`
+    : displayPath;
+  const middlePathDisplay =
+    pathSegments.length > 2 ? `\\${pathSegments.slice(1, -1).join("\\")}` : "";
+  const currentPathDisplay = hasSplitPath ? `\\${pathSegments.at(-1) ?? ""}` : "";
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
+    <div
+      className={cn("flex min-w-0 items-end gap-3", className)}
+    >
       <div className="min-w-0 flex-1">
         <div className="relative flex min-w-0 items-center gap-1 pb-2 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-border/60">
           {/* 戻る/進むボタン */}
@@ -135,12 +148,29 @@ export const PathBar = ({
           </Tooltip>
 
           <Folder className="h-4 w-4 shrink-0 text-muted-foreground/75" />
-          <div
-            className="truncate font-mono text-sm leading-6 text-foreground/90"
-            title={displayPath}
-          >
-            {displayPath || folderName}
-          </div>
+          {hasSplitPath ? (
+            <div
+              className="flex min-w-0 flex-1 items-center font-mono text-sm leading-6 text-foreground/90"
+              title={displayPath}
+            >
+              <span className="shrink-0">{rootPathDisplay}</span>
+              {middlePathDisplay ? (
+                <span className="min-w-0 shrink truncate">
+                  {middlePathDisplay}
+                </span>
+              ) : null}
+              <span className="shrink-0">
+                {currentPathDisplay}
+              </span>
+            </div>
+          ) : (
+            <div
+              className="truncate font-mono text-sm leading-6 text-foreground/90"
+              title={displayPath}
+            >
+              {displayPath || folderName}
+            </div>
+          )}
         </div>
       </div>
 

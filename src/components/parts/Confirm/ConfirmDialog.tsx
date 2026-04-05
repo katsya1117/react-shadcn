@@ -7,10 +7,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Props = ComponentProps<typeof Dialog> & {
   dialogTitle?: string;
   onHandle?: () => void | Promise<unknown>;
+  className?: string;
 };
 
 export const ConfirmDialog = ({
@@ -19,6 +21,7 @@ export const ConfirmDialog = ({
   children,
   open,
   onOpenChange,
+  className,
 }: Props) => {
   const handleOk = async () => {
     await onHandle?.();
@@ -27,7 +30,7 @@ export const ConfirmDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className={cn(className)}>
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>

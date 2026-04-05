@@ -22,6 +22,7 @@ import type { AppDispatch } from "../../redux/store";
 type Props = {
   collapsed: boolean;
   onHandle: () => void;
+  className?: string;
 };
 
 type NavItem = {
@@ -84,7 +85,7 @@ const navItems: NavItem[] = [
   },
 ] as const;
 
-export const SideMenu = ({ collapsed, onHandle }: Props) => {
+export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
   const { pathname, search } = useLocation();
   const dispatch: AppDispatch = useDispatch();
   const lastVisited = useSelector(uiSelector.lastVisited);
@@ -112,6 +113,7 @@ export const SideMenu = ({ collapsed, onHandle }: Props) => {
       className={cn(
         "border-r bg-background/85 backdrop-blur-sm flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
         collapsed ? "w-20 min-w-20" : "w-60 min-w-60",
+        className,
       )}
     >
       <nav className="p-3 pb-16 space-y-2 text-[15px] flex-1 min-h-0 overflow-auto">

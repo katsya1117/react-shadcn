@@ -1,7 +1,7 @@
 import { style } from "@vanilla-extract/css";
 
 export const layoutContainer = style({
-  minHeight: "100vh",
+  height: "100vh",
   width: "100%",
   display: "flex",
   flexDirection: "column",
@@ -13,6 +13,7 @@ export const layoutBody = style({
   flex: 1,
   minHeight: 0,
   width: "100%",
+  minWidth: "48rem",
   display: "flex",
   flexDirection: "column",
 });

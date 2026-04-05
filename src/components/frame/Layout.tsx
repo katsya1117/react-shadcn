@@ -26,6 +26,7 @@ type LayoutProps = PropsWithChildren<{
   hideTabs?: boolean;
   fluid?: boolean;
   subtitle?: string;
+  className?: string;
 }>;
 
 export const Layout = ({
@@ -35,6 +36,7 @@ export const Layout = ({
   hideTabs,
   fluid,
   subtitle,
+  className,
 }: LayoutProps) => {
   const isCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
   const dispatch: AppDispatch = useDispatch();
@@ -51,7 +53,7 @@ export const Layout = ({
   // }, [collapsed]);
 
   return (
-    <div className={layoutContainer}>
+    <div className={cn(layoutContainer, className)}>
       {/* <SimpleSingleSignOn /> */}
       {!hideSideMenu && (
         <div className="fixed inset-y-0 left-0 z-50">

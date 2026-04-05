@@ -1,6 +1,7 @@
 import type { SearchSetConditionItem } from '@/api'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export const SearchSetMode = {
   Search: 'Search',
@@ -17,6 +18,7 @@ type Props = {
   onHandleModuleChange: (next: SearchSetMode) => void
   onSetDefaultConditions: (items: SearchSetConditionItem[]) => void
   onConditionsChange?: (items: SearchSetConditionItem[]) => void
+  className?: string
 }
 
 export const SearchSet = ({
@@ -28,6 +30,7 @@ export const SearchSet = ({
   onHandleModuleChange,
   onSetDefaultConditions,
   onConditionsChange,
+  className,
 }: Props) => {
   const activeCount = condition.length
   const addCondition = () => {
@@ -36,7 +39,7 @@ export const SearchSet = ({
   }
 
   return (
-    <Card>
+    <div className={cn("flex flex-col gap-6", className)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
@@ -77,6 +80,6 @@ export const SearchSet = ({
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </div>
   )
 }

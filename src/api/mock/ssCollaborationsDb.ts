@@ -49,66 +49,78 @@ const buildDummyRows = (
   folderId: string,
 ): GetFolderCollaborationsResponse[] => {
   const suffix = folderId.slice(-4).padStart(4, "0");
+  const buildRows = ({
+    prefix,
+    role,
+    canViewPath,
+    type,
+    namePrefix,
+    itemId,
+    itemName,
+  }: {
+    prefix: string;
+    role: "editor" | "viewer";
+    canViewPath: boolean;
+    type: "user" | "group";
+    namePrefix: string;
+    itemId: string;
+    itemName?: string;
+  }) =>
+    Array.from({ length: 5 }, (_, index) => {
+      const serial = `${suffix}-${index + 1}`;
+
+      return {
+        id: `${folderId}:${prefix}-${index + 1}`,
+        role,
+        can_view_path: canViewPath,
+        accessible_by: {
+          id: `${prefix}-${serial}`,
+          type,
+          name: `${namePrefix}-${serial}`,
+        },
+        item: {
+          id: itemId,
+          type: "folder" as const,
+          name: itemName,
+        },
+      };
+    });
 
   return [
-    {
-      id: `${folderId}:dummy-direct-editor`,
+    ...buildRows({
+      prefix: "dummy-direct-editor",
       role: "editor",
-      can_view_path: true,
-      accessible_by: {
-        id: `dummy-direct-editor-${suffix}`,
-        type: "user",
-        name: `直下編集ユーザー-${suffix}`,
-      },
-      item: {
-        id: folderId,
-        type: "folder",
-      },
-    },
-    {
-      id: `${folderId}:dummy-direct-viewer`,
+      canViewPath: true,
+      type: "user",
+      namePrefix: "直下編集ユーザー",
+      itemId: folderId,
+    }),
+    ...buildRows({
+      prefix: "dummy-direct-viewer",
       role: "viewer",
-      can_view_path: false,
-      accessible_by: {
-        id: `dummy-direct-viewer-${suffix}`,
-        type: "group",
-        name: `直下制限部署-${suffix}`,
-      },
-      item: {
-        id: folderId,
-        type: "folder",
-      },
-    },
-    {
-      id: `${folderId}:dummy-inherited-editor`,
+      canViewPath: false,
+      type: "group",
+      namePrefix: "直下制限部署",
+      itemId: folderId,
+    }),
+    ...buildRows({
+      prefix: "dummy-inherited-editor",
       role: "editor",
-      can_view_path: true,
-      accessible_by: {
-        id: `dummy-inherited-editor-${suffix}`,
-        type: "user",
-        name: `継承編集ユーザー-${suffix}`,
-      },
-      item: {
-        id: "0",
-        type: "folder",
-        name: "All Files",
-      },
-    },
-    {
-      id: `${folderId}:dummy-inherited-viewer`,
+      canViewPath: true,
+      type: "user",
+      namePrefix: "継承編集ユーザー",
+      itemId: "0",
+      itemName: "All Files",
+    }),
+    ...buildRows({
+      prefix: "dummy-inherited-viewer",
       role: "viewer",
-      can_view_path: false,
-      accessible_by: {
-        id: `dummy-inherited-viewer-${suffix}`,
-        type: "user",
-        name: `継承制限ユーザー-${suffix}`,
-      },
-      item: {
-        id: "0",
-        type: "folder",
-        name: "All Files",
-      },
-    },
+      canViewPath: false,
+      type: "user",
+      namePrefix: "継承制限ユーザー",
+      itemId: "0",
+      itemName: "All Files",
+    }),
   ];
 };
 

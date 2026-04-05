@@ -4,14 +4,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 import { Search } from 'lucide-react'
 
 type Props = {
   defaultConditions?: SearchSetConditionItem[]
   onChangeCondition?: (items: SearchSetConditionItem[]) => void
+  className?: string
 }
 
-export const Conditions = ({ defaultConditions = [], onChangeCondition }: Props) => {
+export const Conditions = ({
+  defaultConditions = [],
+  onChangeCondition,
+  className,
+}: Props) => {
   const [currentConditions, setCurrentConditions] =
     useState<SearchSetConditionItem[]>(defaultConditions)
   const [keyword, setKeyword] = useState('')
@@ -40,7 +46,7 @@ export const Conditions = ({ defaultConditions = [], onChangeCondition }: Props)
   }
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", className)}>
       <div className="rounded-lg border border-dashed border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">
         <div className="mb-1 flex items-center justify-between gap-2 font-semibold text-foreground">
           <span>適用中の検索条件</span>

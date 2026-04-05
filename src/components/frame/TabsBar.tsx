@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
@@ -32,13 +32,15 @@ const MANAGE_TABS = [
   { to: UrlPath.Batch, label: "バッチステータス" },
 ];
 
-export const TabsBar = () => {
+export const TabsBar = ({ className }: { className?: string }) => {
   const { pathname } = useLocation();
   const dispatch: AppDispatch = useDispatch();
   const lastVisited = useSelector(uiSelector.lastVisited);
+  const isSideMenuCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const prevWidthRef = useRef<number>(0);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
 
   const group = useMemo(() => {
     if (pathname.startsWith("/OA/")) return "OA";
@@ -62,32 +64,49 @@ export const TabsBar = () => {
 
   const [visibleCount, setVisibleCount] = useState(items.length);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (!containerRef.current) return;
-      const container = containerRef.current;
-      const containerWidth = container.offsetWidth;
+  useLayoutEffect(() => {
+    const updateVisibleCount = () => {
+      if (!containerRef.current || !measureRef.current) return;
 
-      if (containerWidth === prevWidthRef.current) return;
-      prevWidthRef.current = containerWidth;
+      const containerWidth = containerRef.current.offsetWidth;
+      const measuredTabs =
+        measureRef.current.querySelectorAll<HTMLElement>("[data-tab-measure]");
+      const tabWidths = Array.from(measuredTabs, (item) => item.offsetWidth);
+      const totalWidth = tabWidths.reduce((sum, width) => sum + width, 0);
 
-      const items = container.querySelectorAll(".tab-item");
-      let totalWidth = 0;
+      if (totalWidth <= containerWidth) {
+        setVisibleCount(items.length);
+        return;
+      }
+
+      const overflowTriggerWidth =
+        overflowTriggerMeasureRef.current?.offsetWidth ?? 0;
+      const availableWidth = Math.max(containerWidth - overflowTriggerWidth, 0);
+
       let count = 0;
-      items.forEach((item) => {
-        totalWidth += (item as HTMLElement).offsetWidth;
-        if (totalWidth <= containerWidth) {
-          count++;
-        }
-      });
-      setVisibleCount((prev) => (prev !== count ? count : prev));
-    };
-    const resizeObserver = new ResizeObserver(handleResize);
-    if (containerRef.current) resizeObserver.observe(containerRef.current);
-    handleResize();
-    return () => resizeObserver.disconnect();
-  }, [items]);
+      let usedWidth = 0;
+      for (const width of tabWidths) {
+        if (usedWidth + width > availableWidth) break;
+        usedWidth += width;
+        count++;
+      }
 
+      setVisibleCount(count);
+    };
+
+    const resizeObserver = new ResizeObserver(updateVisibleCount);
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
+    if (measureRef.current) resizeObserver.observe(measureRef.current);
+
+    updateVisibleCount();
+
+    return () => resizeObserver.disconnect();
+  }, [items, isSideMenuCollapsed]);
+
+  const visibleTabs = useMemo(
+    () => items.slice(0, visibleCount),
+    [items, visibleCount],
+  );
   const overflowTabs = useMemo(
     () => items.slice(visibleCount),
     [items, visibleCount],
@@ -98,14 +117,37 @@ export const TabsBar = () => {
   const active = matched ? matched.to : items[0].to;
 
   return (
-    <div className={TabsBarStyle.container}>
-      <div className={TabsBarStyle.inner} ref={containerRef}>
+    <div className={cn(TabsBarStyle.container, className)}>
+      <div className={cn(TabsBarStyle.inner, "relative")} ref={containerRef}>
+        <div
+          ref={measureRef}
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute left-0 top-0 -z-10 flex items-center gap-2"
+        >
+          <Tabs value={active} className="w-auto">
+            <TabsList variant="line" className="mx-auto">
+              {items.map((item) => (
+                <TabsTrigger
+                  key={`measure-${item.to}`}
+                  value={item.to}
+                  data-tab-measure
+                  className="relative h-9 rounded-none after:hidden data-[state=active]:shadow-none"
+                >
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Button ref={overflowTriggerMeasureRef} variant="ghost" size="icon">
+            <MoreHorizontal className="h-5 w-5" />
+          </Button>
+        </div>
+
         <div>
           <Tabs value={active} className="w-auto">
             <TabsList variant="line" className="mx-auto">
-              {items.map((item, index) => {
+              {visibleTabs.map((item) => {
                 const resolvedTo = lastVisited[item.to] || item.to;
-                const isHidden = index >= visibleCount;
                 return (
                   <TabsTrigger
                     key={item.to}
@@ -113,8 +155,6 @@ export const TabsBar = () => {
                     className={cn(
                       "tab-item relative h-9 rounded-none data-[state=active]:text-foreground data-[state=active]:shadow-none",
                       "after:hidden",
-                      isHidden &&
-                        "opacity-0 pointer-events-none absolute inset-0",
                     )}
                     asChild
                   >
@@ -142,22 +182,27 @@ export const TabsBar = () => {
         {overflowTabs.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-5 w-5"/>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  overflowTabs.some((item) => item.to === active) &&
+                    "bg-muted text-foreground",
+                )}
+              >
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end"
-            className="p-2 [&>a]:p-2">
-              {overflowTabs.map((item)=>{
-                const resolvedTo =
-                lastVisited[item.to] || item.to;
-                return(
+            <DropdownMenuContent align="end" className="p-2 [&>a]:p-2">
+              {overflowTabs.map((item) => {
+                const resolvedTo = lastVisited[item.to] || item.to;
+                return (
                   <DropdownMenuItem key={item.to} asChild>
                     <RouterNavLink to={resolvedTo}>
                       {item.label}
                     </RouterNavLink>
                   </DropdownMenuItem>
-                )
+                );
               })}
             </DropdownMenuContent>
           </DropdownMenu>

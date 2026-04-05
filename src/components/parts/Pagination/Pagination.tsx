@@ -12,6 +12,7 @@ import type { Pagination as PaginationProps } from "../../../api";
 export const CustomPagination = <T,>(props: {
   pagination: PaginationProps;
   onHandle: (params: T) => void;
+  className?: string;
 }) => {
   const urlParse = (url?: string | null) => {
     if (!url) return;
@@ -52,7 +53,12 @@ export const CustomPagination = <T,>(props: {
   const pages = displayNums();
 
   return (
-    <div className="flex flex-col w-full flex-wrap items-center justify-center space-y-4 py-6">
+    <div
+      className={cn(
+        "flex flex-col w-full flex-wrap items-center justify-center space-y-4 py-6",
+        props.className,
+      )}
+    >
       <div className="text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">{from}</span>{" "}-{" "}
         <span className="font-semibold text-foreground">{to}</span>{" "}/{" "}

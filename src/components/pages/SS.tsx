@@ -67,17 +67,27 @@ const stripCurrentFolderIdFromSearch = (search: string): string => {
 };
 
 const toFolderInfo = (folder: BoxFolder): FolderInfo => {
+  const folderWithPath = folder as BoxFolder & {
+    name?: string | null;
+    path_collection?: { entries?: { id: string; name?: string | null }[] };
+  };
+  const pathEntries =
+    folderWithPath.path_collection?.entries ??
+    folderWithPath.pathCollection ??
+    [];
+
   return {
     id: folder.id,
     name: folder.name ?? "",
-    pathCollection: folder.pathCollection
-      ? {
-          entries: folder.pathCollection.map((entry) => ({
-            id: entry.id,
-            name: entry.name ?? "",
-          })),
-        }
-      : undefined,
+    pathCollection:
+      pathEntries.length > 0
+        ? {
+            entries: pathEntries.map((entry) => ({
+              id: entry.id,
+              name: entry.name ?? "",
+            })),
+          }
+        : undefined,
   };
 };
 
@@ -89,15 +99,11 @@ const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
   const rootIndex = filteredEntries.findIndex(
     (entry) => entry.id === rootFolderId,
   );
-  const descendantEntries =
-    rootIndex >= 0 ? filteredEntries.slice(rootIndex + 1) : [];
+  const visibleEntries = rootIndex >= 0 ? filteredEntries.slice(rootIndex) : [];
+  const [rootEntry, ...descendantEntries] = visibleEntries;
   const segments = [ROOT_SHARE_PATH];
   const rootName =
-    rootIndex >= 0
-      ? filteredEntries[rootIndex]?.name
-      : folder.id === rootFolderId
-        ? folder.name
-        : undefined;
+    rootEntry?.name ?? (folder.id === rootFolderId ? folder.name : undefined);
 
   if (rootName) {
     segments.push(rootName);
@@ -272,12 +278,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       currentFolder.pathCollection?.entries?.filter(
         (entry) => entry.id !== "0",
       ) ?? [];
-    const visibleEntries = (() => {
-      const rootIndex = pathEntries.findIndex(
-        (entry) => entry.id === rootFolderId,
-      );
-      return rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
-    })();
+    const rootIndex = pathEntries.findIndex(
+      (entry) => entry.id === rootFolderId,
+    );
+    const visibleEntries = rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
     const pathMap: Record<string, string> = {};
     const segments = [ROOT_SHARE_PATH];
     pathMap["0"] = ROOT_SHARE_PATH;
@@ -577,7 +581,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       <Layout hideTabs fluid subtitle={layoutSubtitle}>
         <BoxManager />
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:h-full lg:overflow-hidden">
           <div className="space-y-1">
             <Button
               variant="ghost"
@@ -587,10 +591,6 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
               <ArrowLeft className="mr-1.5 h-4 w-4" />
               センター専用領域に戻る
             </Button>
-            <p className="text-sm text-muted-foreground">センター専用領域</p>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              共有領域管理
-            </h1>
           </div>
 
           <PathBar
@@ -605,8 +605,8 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
             onOpenExplorer={handleOpenExplorer}
           />
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
-            <div className="flex min-h-0 min-w-0 flex-col lg:flex-1">
+          <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch lg:overflow-hidden">
+            <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
               <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
                 {accessToken ? (
                   <div
@@ -621,8 +621,9 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
               </Card>
             </div>
 
-            <div className="flex min-h-0 flex-col lg:w-96 lg:shrink-0 lg:self-stretch">
+            <div className="flex h-[60dvh] flex-col lg:h-full lg:min-h-0 lg:flex-1 lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
+                className="h-full min-h-0"
                 folderName={currentFolderName}
                 collaborators={collaborators}
                 isBusy={isSavingCollaborator}
