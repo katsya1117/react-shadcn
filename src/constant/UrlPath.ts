@@ -22,7 +22,8 @@ export const UrlPath = {
   Batch: "/manage/Batch",
   MyPageEdit: "/user/MyPageEdit",
   UserProfile: "/user/Profile",
-  SS: "/job/ShareArea/:folderId/manage",
+  SS: "/job/ShareArea/:rootFolderId",
+  SSManageLegacy: "/job/ShareArea/:rootFolderId/manage",
   SSLegacy: "/ss",
   Development: "/Development",
 } as const;

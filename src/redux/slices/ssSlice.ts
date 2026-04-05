@@ -77,14 +77,23 @@ interface SSState {
   // Box から返ってきた raw row を folderId ごとに保持する。
   // 親フォルダを別途走査せず、current folder のレスポンスに含まれる inherited 情報をそのまま使う。
   byFolderId: Record<string, GetFolderCollaborationsResponse[]>;
+  collaborationStatusByFolderId: Record<
+    string,
+    "idle" | "loading" | "succeeded" | "failed"
+  >;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
+  folderHistoryByRootId: Record<string, string[]>;
+  historyIndexByRootId: Record<string, number>;
   isLoading: boolean;
   error: SliceError;
 }
 
 const initialState: SSState = {
   byFolderId: {},
+  collaborationStatusByFolderId: {},
   currentFolderByRootId: {},
+  folderHistoryByRootId: {},
+  historyIndexByRootId: {},
   isLoading: false,
   error: initialSliceError,
 };
@@ -100,20 +109,38 @@ const ssSlice = createSlice({
       const { rootFolderId, folder } = action.payload;
       state.currentFolderByRootId[rootFolderId] = folder;
     },
+    setFolderHistory: (
+      state,
+      action: PayloadAction<{
+        rootFolderId: string;
+        history: string[];
+        index: number;
+      }>,
+    ) => {
+      const { rootFolderId, history, index } = action.payload;
+      state.folderHistoryByRootId[rootFolderId] = history;
+      state.historyIndexByRootId[rootFolderId] = index;
+    },
     clearCurrentFolder: (state, action: PayloadAction<string>) => {
       delete state.currentFolderByRootId[action.payload];
+    },
+    clearFolderHistory: (state, action: PayloadAction<string>) => {
+      delete state.folderHistoryByRootId[action.payload];
+      delete state.historyIndexByRootId[action.payload];
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getFolderCollaborations.pending, (state) => {
+      .addCase(getFolderCollaborations.pending, (state, action) => {
         state.isLoading = true;
         state.error = initialSliceError;
+        state.collaborationStatusByFolderId[action.meta.arg] = "loading";
       })
       .addCase(getFolderCollaborations.fulfilled, (state, action) => {
         if (action.payload !== null) {
           const { folderId, data } = action.payload;
           state.byFolderId[folderId] = data;
+          state.collaborationStatusByFolderId[folderId] = "succeeded";
         } else {
           state.error = setSliceError(
             "データの取得に失敗しました。",
@@ -122,9 +149,10 @@ const ssSlice = createSlice({
         }
         state.isLoading = false;
       })
-      .addCase(getFolderCollaborations.rejected, (state) => {
+      .addCase(getFolderCollaborations.rejected, (state, action) => {
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
+        state.collaborationStatusByFolderId[action.meta.arg] = "failed";
       });
     builder
       .addCase(createCollaborations.pending, (state) => {
@@ -174,10 +202,25 @@ export const ssSelector = {
     createSelector(ssRootSelector, (state) => state.isLoading),
   byFolderIdSelector: () =>
     createSelector(ssRootSelector, (state) => state.byFolderId),
+  collaborationStatusSelector: (folderId: string) =>
+    createSelector(
+      ssRootSelector,
+      (state) => state.collaborationStatusByFolderId[folderId] ?? "idle",
+    ),
   currentFolderSelector: (rootFolderId: string) =>
     createSelector(
       ssRootSelector,
       (state) => state.currentFolderByRootId[rootFolderId],
+    ),
+  folderHistorySelector: (rootFolderId: string) =>
+    createSelector(
+      ssRootSelector,
+      (state) => state.folderHistoryByRootId[rootFolderId] ?? [rootFolderId],
+    ),
+  historyIndexSelector: (rootFolderId: string) =>
+    createSelector(
+      ssRootSelector,
+      (state) => state.historyIndexByRootId[rootFolderId] ?? 0,
     ),
 };
 

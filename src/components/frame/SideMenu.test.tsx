@@ -58,7 +58,7 @@ describe("SideMenu", () => {
     expect(screen.getByText("Ops Console")).toBeInTheDocument();
   });
 
-  it("管理配下では lastVisited を更新する", async () => {
+  it("管理配下では section の lastVisited を更新する", async () => {
     const { Wrapper, dispatchSpy } = createWrapper("/manage/User");
     setup(<SideMenu collapsed={false} onHandle={jest.fn()} />, {
       wrapper: Wrapper,
@@ -66,7 +66,7 @@ describe("SideMenu", () => {
 
     await waitFor(() => {
       expect(dispatchSpy).toHaveBeenCalledWith(
-        uiActions.setLastVisited({
+        uiActions.setLastVisitedSection({
           key: "/manage",
           path: "/manage/User",
         }),
@@ -87,12 +87,12 @@ describe("SideMenu", () => {
     ).toBeInTheDocument();
   });
 
-  it("lastVisited が同じ場合は更新しない", async () => {
+  it("section の lastVisited が同じ場合は更新しない", async () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper, dispatchSpy } = createWrapper("/manage/User", {
       ui: {
         ...baseUiState,
-        lastVisited: {
+        lastVisitedSections: {
           "/manage": "/manage/User",
         },
       },
@@ -103,7 +103,7 @@ describe("SideMenu", () => {
 
     await waitFor(() => {
       expect(dispatchSpy).not.toHaveBeenCalledWith(
-        uiActions.setLastVisited({
+        uiActions.setLastVisitedSection({
           key: "/manage",
           path: "/manage/User",
         }),
@@ -122,12 +122,12 @@ describe("SideMenu", () => {
     });
   });
 
-  it("lastVisited をリンク先として使う", () => {
+  it("section の lastVisited をリンク先として使う", () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper } = createWrapper("/OA/Users", {
       ui: {
         ...baseUiState,
-        lastVisited: {
+        lastVisitedSections: {
           "/manage": "/manage/User/abc",
         },
       },

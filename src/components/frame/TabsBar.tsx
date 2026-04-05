@@ -33,9 +33,9 @@ const MANAGE_TABS = [
 ];
 
 export const TabsBar = ({ className }: { className?: string }) => {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const dispatch: AppDispatch = useDispatch();
-  const lastVisited = useSelector(uiSelector.lastVisited);
+  const lastVisitedTabs = useSelector(uiSelector.lastVisitedTabs);
   const isSideMenuCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -58,9 +58,10 @@ export const TabsBar = ({ className }: { className?: string }) => {
   );
   useEffect(() => {
     if (!matched) return;
-    if (lastVisited[matched.to] === pathname) return;
-    dispatch(uiActions.setLastVisited({ key: matched.to, path: pathname }));
-  }, [pathname, matched, dispatch, lastVisited]);
+    const currentPath = `${pathname}${search}`;
+    if (lastVisitedTabs[matched.to] === currentPath) return;
+    dispatch(uiActions.setLastVisitedTab({ key: matched.to, path: currentPath }));
+  }, [pathname, search, matched, dispatch, lastVisitedTabs]);
 
   const [visibleCount, setVisibleCount] = useState(items.length);
 
@@ -147,7 +148,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
           <Tabs value={active} className="w-auto">
             <TabsList variant="line" className="mx-auto">
               {visibleTabs.map((item) => {
-                const resolvedTo = lastVisited[item.to] || item.to;
+                const resolvedTo = lastVisitedTabs[item.to] || item.to;
                 return (
                   <TabsTrigger
                     key={item.to}
@@ -195,7 +196,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="p-2 [&>a]:p-2">
               {overflowTabs.map((item) => {
-                const resolvedTo = lastVisited[item.to] || item.to;
+                const resolvedTo = lastVisitedTabs[item.to] || item.to;
                 return (
                   <DropdownMenuItem key={item.to} asChild>
                     <RouterNavLink to={resolvedTo}>

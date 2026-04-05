@@ -88,7 +88,7 @@ const navItems: NavItem[] = [
 export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
   const { pathname, search } = useLocation();
   const dispatch: AppDispatch = useDispatch();
-  const lastVisited = useSelector(uiSelector.lastVisited);
+  const lastVisitedSections = useSelector(uiSelector.lastVisitedSections);
 
   // ページ遷移後に現在パスを記録（直接URL遷移でも更新される）
   useEffect(() => {
@@ -98,15 +98,15 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
 
     if (rememberTarget?.prefix) {
       const currentPath = `${pathname}${search}`;
-      if (lastVisited[rememberTarget.prefix] === currentPath) return;
+      if (lastVisitedSections[rememberTarget.prefix] === currentPath) return;
       dispatch(
-        uiActions.setLastVisited({
+        uiActions.setLastVisitedSection({
           key: rememberTarget.prefix,
           path: currentPath,
         }),
       );
     }
-  }, [pathname, search, dispatch, lastVisited]);
+  }, [pathname, search, dispatch, lastVisitedSections]);
 
   return (
     <aside
@@ -141,7 +141,7 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
             prefix,
           } = item;
           const resolvedTo =
-            (shouldRemember && prefix && lastVisited[prefix]) || to;
+            (shouldRemember && prefix && lastVisitedSections[prefix]) || to;
 
           return (
             <RouterNavLink

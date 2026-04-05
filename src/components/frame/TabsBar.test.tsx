@@ -115,18 +115,18 @@ describe("TabsBar", () => {
     const { Wrapper } = createWrapper("/OA/Users");
     setup(<TabsBar />, { wrapper: Wrapper });
 
-    expect(screen.getByText("OAユーザ表示")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "OAユーザ表示" })).toBeInTheDocument();
   });
 
-  it("管理系パスではタブを表示し、lastVisited を更新する", async () => {
+  it("管理系パスではタブを表示し、tab の lastVisited を更新する", async () => {
     const { Wrapper, dispatchSpy } = createWrapper("/manage/User");
     setup(<TabsBar />, { wrapper: Wrapper });
 
-    expect(screen.getByText("ユーザー設定")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ユーザー設定" })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(dispatchSpy).toHaveBeenCalledWith(
-        uiActions.setLastVisited({
+        uiActions.setLastVisitedTab({
           key: UrlPath.UserManage,
           path: "/manage/User",
         }),
@@ -138,22 +138,22 @@ describe("TabsBar", () => {
     const { Wrapper } = createWrapper("/manage/User/123");
     setup(<TabsBar />, { wrapper: Wrapper });
 
-    expect(screen.getByText("ユーザー設定")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ユーザー設定" })).toBeInTheDocument();
   });
 
   it("一致しない場合は先頭タブが active になる", () => {
     const { Wrapper } = createWrapper("/manage/Unknown");
     setup(<TabsBar />, { wrapper: Wrapper });
 
-    expect(screen.getByText("ユーザー設定")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "ユーザー設定" })).toBeInTheDocument();
   });
 
-  it("同じパスが保存済みの場合は lastVisited を更新しない", async () => {
+  it("tab の lastVisited が同じ場合は更新しない", async () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper, dispatchSpy } = createWrapper("/manage/User", {
       ui: {
         ...baseUiState,
-        lastVisited: {
+        lastVisitedTabs: {
           [UrlPath.UserManage]: "/manage/User",
         },
       },
@@ -162,7 +162,7 @@ describe("TabsBar", () => {
 
     await waitFor(() => {
       expect(dispatchSpy).not.toHaveBeenCalledWith(
-        uiActions.setLastVisited({
+        uiActions.setLastVisitedTab({
           key: UrlPath.UserManage,
           path: "/manage/User",
         }),
@@ -170,12 +170,12 @@ describe("TabsBar", () => {
     });
   });
 
-  it("lastVisited をリンク先として使う", () => {
+  it("tab の lastVisited をリンク先として使う", () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper } = createWrapper("/manage/User", {
       ui: {
         ...baseUiState,
-        lastVisited: {
+        lastVisitedTabs: {
           [UrlPath.CenterManage]: "/manage/Center/abc",
         },
       },
@@ -188,12 +188,12 @@ describe("TabsBar", () => {
     );
   });
 
-  it("リサイズで表示数が更新され、overflow に lastVisited が反映される", async () => {
+  it("リサイズで表示数が更新され、overflow に tab の lastVisited が反映される", async () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper } = createWrapper("/manage/User", {
       ui: {
         ...baseUiState,
-        lastVisited: {
+        lastVisitedTabs: {
           [UrlPath.System]: "/manage/System/abc",
         },
       },

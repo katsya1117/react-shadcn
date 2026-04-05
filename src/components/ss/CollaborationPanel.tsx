@@ -7,6 +7,7 @@ import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoComplete
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -45,6 +46,23 @@ const TooltipText = ({
     </TooltipTrigger>
     <TooltipContent>{text}</TooltipContent>
   </Tooltip>
+);
+
+const CollaboratorRowSkeleton = () => (
+  <div className="px-3 py-2.5">
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4 rounded-full" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="pl-6">
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+      </div>
+      <Skeleton className="h-6 w-6 rounded-md" />
+    </div>
+  </div>
 );
 
 type CollaboratorRowProps = {
@@ -197,6 +215,7 @@ const CollaboratorRow = ({
 type CollaborationPanelProps = {
   folderName: string;
   collaborators: CollaborationListItem[];
+  isListLoading?: boolean;
   isBusy: boolean;
   selectedCollaborator: SingleValue<AutoCompleteData>;
   selectedRole: RoleType;
@@ -214,6 +233,7 @@ type CollaborationPanelProps = {
 export const CollaborationPanel = ({
   folderName,
   collaborators,
+  isListLoading = false,
   isBusy,
   selectedCollaborator,
   selectedRole,
@@ -294,7 +314,13 @@ export const CollaborationPanel = ({
           <div className="text-sm font-medium">コラボレータ一覧</div>
 
           <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background">
-            {collaborators.length === 0 ? (
+            {isListLoading ? (
+              <div className="divide-y">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <CollaboratorRowSkeleton key={index} />
+                ))}
+              </div>
+            ) : collaborators.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 コラボレーターは設定されていません
               </div>

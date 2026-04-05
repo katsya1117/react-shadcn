@@ -16,10 +16,10 @@ import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
-import { uiActions } from "@/redux/slices/uiSlice";
 import { boxSelector } from "@/redux/slices/userSlice";
 import {
   createCollaborations,
@@ -155,6 +155,32 @@ type SSContentProps = {
   rootFolderId: string;
 };
 
+const PathBarSkeleton = () => (
+  <div className="flex flex-col gap-3">
+    <div className="space-y-1">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-8 w-full rounded-lg" />
+    </div>
+    <div className="flex items-center justify-end gap-2">
+      <Skeleton className="h-8 w-8 rounded-lg" />
+      <Skeleton className="h-8 w-8 rounded-lg" />
+      <Skeleton className="h-8 w-8 rounded-lg" />
+    </div>
+  </div>
+);
+
+const ExplorerRestoreSkeleton = () => (
+  <div className="absolute inset-0 z-10 flex flex-col gap-3 bg-background/92 p-4 backdrop-blur-xs">
+    <Skeleton className="h-4 w-36" />
+    <Skeleton className="h-9 w-full rounded-lg" />
+    <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Skeleton key={index} className="rounded-xl" />
+      ))}
+    </div>
+  </div>
+);
+
 const SSContent = ({ rootFolderId }: SSContentProps) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,6 +193,12 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
   const rememberedCurrentFolder = useSelector(
     ssSelector.currentFolderSelector(rootFolderId),
+  );
+  const savedFolderHistory = useSelector(
+    ssSelector.folderHistorySelector(rootFolderId),
+  );
+  const savedHistoryIndex = useSelector(
+    ssSelector.historyIndexSelector(rootFolderId),
   );
   const isSavingCollaborator = useSelector(ssSelector.isLoadingSelector());
   const devToken = useMemo(() => {
@@ -184,6 +216,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     rememberedCurrentFolder?.id === rootFolderId
       ? rememberedCurrentFolder
       : undefined;
+  const restoreTargetFolderId =
+    rememberedCurrentFolder && rememberedCurrentFolder.id !== rootFolderId
+      ? rememberedCurrentFolder.id
+      : undefined;
 
   const initialFolder = useMemo<FolderInfo>(
     () => ({
@@ -197,27 +233,78 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     }),
     [rememberedRootFolder, rootFolderId],
   );
-  const rootFolderPath = generatePath(UrlPath.SS, { folderId: rootFolderId });
+  const initialFolderHistory = useMemo(() => {
+    let folderHistory = savedFolderHistory.filter(Boolean);
 
-  const [currentFolder, setCurrentFolder] = useState<FolderInfo>(initialFolder);
+    if (folderHistory.length === 0 || folderHistory[0] !== rootFolderId) {
+      folderHistory = [
+        rootFolderId,
+        ...folderHistory.filter((folderId) => folderId !== rootFolderId),
+      ];
+    }
+
+    const rememberedFolderId = rememberedCurrentFolder?.id;
+    if (rememberedFolderId && !folderHistory.includes(rememberedFolderId)) {
+      folderHistory = [...folderHistory, rememberedFolderId];
+    }
+
+    return folderHistory;
+  }, [rememberedCurrentFolder, rootFolderId, savedFolderHistory]);
+  const initialHistoryIndex = useMemo(() => {
+    const rememberedFolderId = rememberedCurrentFolder?.id;
+    const rememberedIndex =
+      rememberedFolderId != null
+        ? initialFolderHistory.lastIndexOf(rememberedFolderId)
+        : savedHistoryIndex;
+
+    return rememberedIndex >= 0 && rememberedIndex < initialFolderHistory.length
+      ? rememberedIndex
+      : 0;
+  }, [
+    initialFolderHistory,
+    rememberedCurrentFolder,
+    savedHistoryIndex,
+  ]);
+  const rootFolderPath = generatePath(UrlPath.SS, { rootFolderId });
+
+  const [currentFolder, setCurrentFolder] = useState<FolderInfo>(
+    rememberedCurrentFolder ?? initialFolder,
+  );
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
 
   // フォルダ履歴スタック管理
-  const [folderHistory, setFolderHistory] = useState<string[]>([rootFolderId]);
-  const [historyIndex, setHistoryIndex] = useState(0);
+  const [folderHistory, setFolderHistory] =
+    useState<string[]>(initialFolderHistory);
+  const [historyIndex, setHistoryIndex] = useState(initialHistoryIndex);
 
   const canGoBack = historyIndex > 0;
   const canGoForward = historyIndex < folderHistory.length - 1;
 
   const isNavigatingRef = useRef(false);
-  const historyIndexRef = useRef(0);
+  const isRestoringDeepFolderRef = useRef(Boolean(restoreTargetFolderId));
+  const restoreTargetFolderIdRef = useRef(restoreTargetFolderId);
+  const historyIndexRef = useRef(initialHistoryIndex);
+  const [isRestoringDeepFolder, setIsRestoringDeepFolder] = useState(
+    Boolean(restoreTargetFolderId),
+  );
 
-  const updateHistoryIndex = useCallback((next: number) => {
-    historyIndexRef.current = next;
-    setHistoryIndex(next);
-  }, []);
+  const updateHistoryIndex = useCallback(
+    (next: number, history?: string[]) => {
+      const nextHistory = history ?? folderHistory;
+      historyIndexRef.current = next;
+      setHistoryIndex(next);
+      dispatch(
+        ssActions.setFolderHistory({
+          rootFolderId,
+          history: nextHistory,
+          index: next,
+        }),
+      );
+    },
+    [dispatch, folderHistory, rootFolderId],
+  );
 
   const handleGoBack = useCallback(() => {
     if (!canGoBack) return;
@@ -225,7 +312,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     const folderId = folderHistory[nextIndex];
     if (!folderId) return;
     isNavigatingRef.current = true;
-    updateHistoryIndex(nextIndex);
+    updateHistoryIndex(nextIndex, folderHistory);
     explorerRef.current?.navigateTo?.(folderId);
   }, [canGoBack, folderHistory, updateHistoryIndex]);
 
@@ -235,7 +322,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
     const folderId = folderHistory[nextIndex];
     if (!folderId) return;
     isNavigatingRef.current = true;
-    updateHistoryIndex(nextIndex);
+    updateHistoryIndex(nextIndex, folderHistory);
     explorerRef.current?.navigateTo?.(folderId);
   }, [canGoForward, folderHistory, updateHistoryIndex]);
 
@@ -294,15 +381,24 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
     return pathMap;
   }, [currentFolder.pathCollection, rootFolderId]);
+  const currentCollaborationStatus = useSelector(
+    ssSelector.collaborationStatusSelector(currentFolder.id),
+  );
+  const currentCollaborationRows = collaborationsByFolderId[currentFolder.id];
   const collaborators = useMemo<CollaborationListItem[]>(() => {
     // 現在表示中フォルダの API レスポンスだけを表示元にする。
     // 祖先フォルダを個別 fetch してマージはせず、Box が返す inherited 情報をそのまま使う。
-    const rows = collaborationsByFolderId[currentFolder.id] ?? [];
+    const rows = currentCollaborationRows ?? [];
 
     return rows.map((item) =>
       toCollaborationListItem(item, currentFolder.id, sourcePathByFolderId),
     );
-  }, [collaborationsByFolderId, currentFolder.id, sourcePathByFolderId]);
+  }, [currentCollaborationRows, currentFolder.id, sourcePathByFolderId]);
+  const isCollaboratorsListLoading =
+    isRestoringDeepFolder ||
+    (currentCollaborationRows === undefined &&
+      (currentCollaborationStatus === "idle" ||
+        currentCollaborationStatus === "loading"));
 
   const resetForm = useCallback(() => {
     setSelectedCollaborator(null);
@@ -327,16 +423,31 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
   const handleNavigate = useCallback(
     (payload: BoxFolder) => {
       const nextFolder = toFolderInfo(payload);
+
+      if (isRestoringDeepFolderRef.current) {
+        const restoreTargetFolderId = restoreTargetFolderIdRef.current;
+
+        if (restoreTargetFolderId && nextFolder.id === rootFolderId) {
+          explorerRef.current?.navigateTo?.(restoreTargetFolderId);
+          return;
+        }
+
+        if (restoreTargetFolderId && nextFolder.id === restoreTargetFolderId) {
+          setCurrentFolder(nextFolder);
+          dispatch(
+            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
+          );
+          resetForm();
+          isRestoringDeepFolderRef.current = false;
+          setIsRestoringDeepFolder(false);
+          return;
+        }
+      }
+
       // currentFolder は ContentExplorer が通知してきた navigate 結果を正とする。
       setCurrentFolder(nextFolder);
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-      );
-      dispatch(
-        uiActions.setLastVisited({
-          key: UrlPath.ShareArea,
-          path: rootFolderPath,
-        }),
       );
       resetForm();
 
@@ -352,33 +463,35 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
         const backwardIndex = prev.lastIndexOf(nextFolder.id, currentIndex);
 
         if (backwardIndex >= 0) {
-          updateHistoryIndex(backwardIndex);
+          updateHistoryIndex(backwardIndex, prev);
           return prev;
         }
 
         const forwardIndex = prev.indexOf(nextFolder.id, currentIndex + 1);
 
         if (forwardIndex >= 0) {
-          updateHistoryIndex(forwardIndex);
+          updateHistoryIndex(forwardIndex, prev);
           return prev;
         }
 
         const trimmed = prev.slice(0, historyIndexRef.current + 1);
         const nextHistory = [...trimmed, nextFolder.id];
-        updateHistoryIndex(trimmed.length);
+        updateHistoryIndex(trimmed.length, nextHistory);
         return nextHistory;
       });
     },
-    [dispatch, resetForm, rootFolderId, rootFolderPath, updateHistoryIndex],
+    [dispatch, resetForm, rootFolderId, updateHistoryIndex],
   );
 
   useEffect(() => {
+    if (isRestoringDeepFolder) return;
+
     // 初回表示時、および explorer で階層を移動して currentFolder が変わった時に
     // そのフォルダ視点の collaborations を再取得する。
     void refreshCollaborations().catch(() => {
       toast.error("コラボレーター一覧の取得に失敗しました");
     });
-  }, [refreshCollaborations]);
+  }, [isRestoringDeepFolder, refreshCollaborations]);
 
   const handleOpenBox = useCallback(() => {
     window.open(
@@ -415,10 +528,10 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
     const explorer = explorerRef.current;
     if (!explorer) return;
-    // explorer.removeAllListeners?.();
-    // show() した rootFolderId 配下だけを explorer の管理対象にし、
-    // 現在フォルダは navigate イベントから同期する。
-    // explorer.addListener?.("navigate", handleNavigate);
+    // listener を付けた状態で show() する。
+    // 初期表示と復元時の navigate を同じハンドラで受けて currentFolder を揃える。
+    explorer.removeAllListeners?.();
+    explorer.addListener?.("navigate", handleNavigate);
     explorer.show(rootFolderId, accessToken, {
       container: "#box-content-explorer",
       canPreview: false,
@@ -429,19 +542,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       explorer.removeAllListeners?.();
       explorer.hide?.();
     };
-  }, [accessToken, rootFolderId]);
-
-  useEffect(() => {
-    const explorer = explorerRef.current;
-    if (!explorer) return;
-
-    explorer.removeAllListeners?.();
-    explorer.addListener?.("navigate", handleNavigate);
-
-    return () => {
-      explorer.removeAllListeners?.();
-    };
-  }, [handleNavigate]);
+  }, [accessToken, handleNavigate, rootFolderId]);
 
   const handleAddCollaborator = useCallback(async () => {
     if (!selectedCollaborator) return;
@@ -585,12 +686,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
   const handleBackToShareArea = useCallback(() => {
     dispatch(ssActions.clearCurrentFolder(rootFolderId));
-    dispatch(
-      uiActions.setLastVisited({
-        key: UrlPath.ShareArea,
-        path: UrlPath.ShareArea,
-      }),
-    );
+    dispatch(ssActions.clearFolderHistory(rootFolderId));
     navigate(UrlPath.ShareArea);
   }, [dispatch, navigate, rootFolderId]);
 
@@ -611,21 +707,25 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
             </Button>
           </div>
 
-          <PathBar
-            folderName={currentFolderName}
-            relativePath={currentFolderRelativePath}
-            canGoBack={canGoBack}
-            canGoForward={canGoForward}
-            onGoBack={handleGoBack}
-            onGoForward={handleGoForward}
-            onCopyPath={handleCopyPath}
-            onOpenBox={handleOpenBox}
-            onOpenExplorer={handleOpenExplorer}
-          />
+          {isRestoringDeepFolder ? (
+            <PathBarSkeleton />
+          ) : (
+            <PathBar
+              folderName={currentFolderName}
+              relativePath={currentFolderRelativePath}
+              canGoBack={canGoBack}
+              canGoForward={canGoForward}
+              onGoBack={handleGoBack}
+              onGoForward={handleGoForward}
+              onCopyPath={handleCopyPath}
+              onOpenBox={handleOpenBox}
+              onOpenExplorer={handleOpenExplorer}
+            />
+          )}
 
           <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch lg:overflow-hidden">
             <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
-              <Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
+              <Card className="relative flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
                 {accessToken ? (
                   <div
                     id="box-content-explorer"
@@ -636,14 +736,16 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
                     Box に接続中...
                   </div>
                 )}
+                {isRestoringDeepFolder ? <ExplorerRestoreSkeleton /> : null}
               </Card>
             </div>
 
             <div className="flex max-h-[72dvh] flex-col overflow-hidden lg:h-full lg:min-h-0 lg:flex-1 lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
                 className="max-h-full lg:h-full lg:min-h-0"
-                folderName={currentFolderName}
+                folderName={rememberedCurrentFolder?.name || currentFolderName}
                 collaborators={collaborators}
+                isListLoading={isCollaboratorsListLoading}
                 isBusy={isSavingCollaborator}
                 selectedCollaborator={selectedCollaborator}
                 selectedRole={selectedRole}
@@ -662,7 +764,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 };
 
 export const SS = () => {
-  const { folderId: routeFolderId } = useParams();
+  const { rootFolderId: routeFolderId } = useParams();
 
   if (!isShareAreaRouteFolderId(routeFolderId)) {
     return <Navigate replace to={UrlPath.ShareArea} />;

@@ -70,7 +70,7 @@ const ShareArea = () => {
                           onClick={() =>
                             navigate(
                               generatePath(UrlPath.SS, {
-                                folderId: area.boxFolderId,
+                                rootFolderId: area.boxFolderId,
                               }),
                             )
                           }

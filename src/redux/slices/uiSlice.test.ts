@@ -9,13 +9,25 @@ describe("uiSlice", () => {
     expect(state2.isSideMenuCollapsed).toBe(false);
   });
 
-  it("setLastVisited で path を保存する", () => {
+  it("setLastVisitedSection で section path を保存する", () => {
     const next = uiSliceReducer(
       undefined,
-      uiActions.setLastVisited({ key: "/manage", path: "/manage/User" }),
+      uiActions.setLastVisitedSection({ key: "/manage", path: "/manage/User" }),
     );
 
-    expect(next.lastVisited["/manage"]).toBe("/manage/User");
+    expect(next.lastVisitedSections["/manage"]).toBe("/manage/User");
+  });
+
+  it("setLastVisitedTab で tab path を保存する", () => {
+    const next = uiSliceReducer(
+      undefined,
+      uiActions.setLastVisitedTab({
+        key: "/manage/User",
+        path: "/manage/User/abc",
+      }),
+    );
+
+    expect(next.lastVisitedTabs["/manage/User"]).toBe("/manage/User/abc");
   });
 
   it("setSideMenuCollapsed で状態を指定できる", () => {
@@ -26,9 +38,12 @@ describe("uiSlice", () => {
 
   it("selectors で値を取得できる", () => {
     const state = uiSliceReducer(undefined, uiActions.toggleSideMenu());
-    const root = { ui: state } as any;
+    const root = { ui: state } as Parameters<
+      typeof uiSelector.isSideMenuCollapsed
+    >[0];
 
     expect(uiSelector.isSideMenuCollapsed(root)).toBe(true);
-    expect(uiSelector.lastVisited(root)).toEqual({});
+    expect(uiSelector.lastVisitedSections(root)).toEqual({});
+    expect(uiSelector.lastVisitedTabs(root)).toEqual({});
   });
 });
