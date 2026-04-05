@@ -6,7 +6,6 @@ export const layoutContainer = style({
   display: "flex",
   flexDirection: "column",
   color: "var(--foreground)",
-  background: "linear-gradient(to bottom, #f8fafc, #ffffff, #f1f5f9)",
 });
 
 export const layoutBody = style({

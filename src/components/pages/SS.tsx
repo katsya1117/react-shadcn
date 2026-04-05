@@ -346,10 +346,28 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       }
 
       setFolderHistory((prev) => {
+        // パンくずクリックなどで既に履歴内にあるフォルダへ移動した場合は、
+        // 新しい履歴を積まずにその位置へ index だけ戻す/進める。
+        const currentIndex = historyIndexRef.current;
+        const backwardIndex = prev.lastIndexOf(nextFolder.id, currentIndex);
+
+        if (backwardIndex >= 0) {
+          updateHistoryIndex(backwardIndex);
+          return prev;
+        }
+
+        const forwardIndex = prev.indexOf(nextFolder.id, currentIndex + 1);
+
+        if (forwardIndex >= 0) {
+          updateHistoryIndex(forwardIndex);
+          return prev;
+        }
+
         const trimmed = prev.slice(0, historyIndexRef.current + 1);
-        return [...trimmed, nextFolder.id];
+        const nextHistory = [...trimmed, nextFolder.id];
+        updateHistoryIndex(trimmed.length);
+        return nextHistory;
       });
-      updateHistoryIndex(historyIndexRef.current + 1);
     },
     [dispatch, resetForm, rootFolderId, rootFolderPath, updateHistoryIndex],
   );
@@ -585,7 +603,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
           <div className="space-y-1">
             <Button
               variant="ghost"
-              className="mb-1 h-8 px-2 text-muted-foreground"
+              className="mb-1 h-8 px-2 text-muted-foreground hover:bg-[color:var(--brand-soft)] hover:text-muted-foreground"
               onClick={handleBackToShareArea}
             >
               <ArrowLeft className="mr-1.5 h-4 w-4" />
@@ -621,9 +639,9 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
               </Card>
             </div>
 
-            <div className="flex h-[60dvh] flex-col lg:h-full lg:min-h-0 lg:flex-1 lg:w-96 lg:shrink-0 lg:self-stretch">
+            <div className="flex max-h-[72dvh] flex-col overflow-hidden lg:h-full lg:min-h-0 lg:flex-1 lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
-                className="h-full min-h-0"
+                className="max-h-full lg:h-full lg:min-h-0"
                 folderName={currentFolderName}
                 collaborators={collaborators}
                 isBusy={isSavingCollaborator}

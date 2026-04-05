@@ -41,8 +41,22 @@ export const AutoCompleteMulti = (props: {
       ...styles,
       flexGrow: 1,
     }),
+    control: (styles, state) => ({
+      ...styles,
+      borderColor: state.isFocused
+        ? "var(--brand-border)"
+        : "var(--input)",
+      boxShadow: state.isFocused
+        ? "0 0 0 3px color-mix(in oklch, var(--brand) 18%, transparent)"
+        : "none",
+      "&:hover": {
+        borderColor: state.isFocused
+          ? "var(--brand-border)"
+          : "var(--border)",
+      },
+    }),
     multiValue: (styles, { data }) => {
-      const color = chroma((data as any).color);
+      const color = chroma(data.color ?? "#64748b");
       return {
         ...styles,
         backgroundColor: color.alpha(0.1).css(),

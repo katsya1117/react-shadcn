@@ -17,6 +17,9 @@ import { cn } from "@/lib/utils";
 
 import { DISPLAY_PATH_ROOT } from "./constants";
 
+const pathBarIconButtonClass =
+  "rounded-lg border border-border/60 bg-background/70 text-muted-foreground shadow-xs backdrop-blur-xs hover:bg-[color:var(--brand-soft)] hover:text-foreground";
+
 type PathBarProps = {
   folderName: string;
   relativePath: string;
@@ -45,7 +48,7 @@ const FolderActionButtons = ({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          className={pathBarIconButtonClass}
           onClick={onCopyPath}
           aria-label="パスをコピー"
         >
@@ -59,7 +62,7 @@ const FolderActionButtons = ({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          className={pathBarIconButtonClass}
           onClick={onOpenBox}
           aria-label="Boxで開く"
         >
@@ -73,7 +76,7 @@ const FolderActionButtons = ({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          className={pathBarIconButtonClass}
           onClick={onOpenExplorer}
           aria-label="Box Driveで開く"
         >
@@ -121,7 +124,7 @@ export const PathBar = ({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                className={`shrink-0 ${pathBarIconButtonClass} disabled:opacity-30`}
                 onClick={onGoBack}
                 disabled={!canGoBack}
                 aria-label="戻る"
@@ -136,7 +139,7 @@ export const PathBar = ({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                className={`shrink-0 ${pathBarIconButtonClass} disabled:opacity-30`}
                 onClick={onGoForward}
                 disabled={!canGoForward}
                 aria-label="進む"

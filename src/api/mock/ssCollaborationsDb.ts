@@ -4,44 +4,6 @@ import type {
   UpdateCollaborationParams,
 } from "../index";
 
-const db = new Map<string, GetFolderCollaborationsResponse[]>([
-  [
-    "0",
-    [
-      {
-        id: "0:ops-admin:direct",
-        role: "editor",
-        can_view_path: true,
-        accessible_by: {
-          id: "ops-admin",
-          type: "user",
-          name: "Ops Admin",
-        },
-        item: {
-          id: "0",
-          type: "folder",
-          name: "All Files",
-        },
-      },
-      {
-        id: "0:tokyo-center:direct",
-        role: "viewer",
-        can_view_path: false,
-        accessible_by: {
-          id: "tokyo-center",
-          type: "group",
-          name: "東京センター",
-        },
-        item: {
-          id: "0",
-          type: "folder",
-          name: "All Files",
-        },
-      },
-    ],
-  ],
-]);
-
 const cloneRows = (rows: GetFolderCollaborationsResponse[]) =>
   rows.map((row) => ({ ...row }));
 
@@ -49,6 +11,7 @@ const buildDummyRows = (
   folderId: string,
 ): GetFolderCollaborationsResponse[] => {
   const suffix = folderId.slice(-4).padStart(4, "0");
+  const rowsPerPattern = 5;
   const buildRows = ({
     prefix,
     role,
@@ -66,7 +29,7 @@ const buildDummyRows = (
     itemId: string;
     itemName?: string;
   }) =>
-    Array.from({ length: 5 }, (_, index) => {
+    Array.from({ length: rowsPerPattern }, (_, index) => {
       const serial = `${suffix}-${index + 1}`;
 
       return {
@@ -123,6 +86,64 @@ const buildDummyRows = (
     }),
   ];
 };
+
+const db = new Map<string, GetFolderCollaborationsResponse[]>([
+  [
+    "0",
+    [
+      {
+        id: "0:ops-admin:direct",
+        role: "editor",
+        can_view_path: true,
+        accessible_by: {
+          id: "ops-admin",
+          type: "user",
+          name: "Ops Admin",
+        },
+        item: {
+          id: "0",
+          type: "folder",
+          name: "All Files",
+        },
+      },
+      {
+        id: "0:tokyo-center:direct",
+        role: "viewer",
+        can_view_path: false,
+        accessible_by: {
+          id: "tokyo-center",
+          type: "group",
+          name: "東京センター",
+        },
+        item: {
+          id: "0",
+          type: "folder",
+          name: "All Files",
+        },
+      },
+    ],
+  ],
+  // QMS は少件数パターン確認用
+  [
+    "370613768434",
+    [
+      {
+        id: "370613768434:qms-direct-editor-1",
+        role: "editor",
+        can_view_path: true,
+        accessible_by: {
+          id: "dummy-direct-editor-8434-1",
+          type: "user",
+          name: "直下編集ユーザー-8434-1",
+        },
+        item: {
+          id: "370613768434",
+          type: "folder",
+        },
+      },
+    ],
+  ],
+]);
 
 const ensureFolderRows = (folderId: string) => {
   const existingRows = db.get(folderId);

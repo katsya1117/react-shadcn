@@ -422,7 +422,12 @@ export const UserEdit = () => {
             </span>
           </div>
 
-          <Button variant="outline" size="lg" className="gap-2 px-3 py-3">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="gap-2 px-3 py-3 hover:border-[color:var(--brand-border)] hover:bg-[color:var(--brand-soft)] hover:text-foreground"
+          >
             <NavLink className="nav-link" to={UrlPath.UserManage}>
               <div>
                 <ChevronLeft size={24} className="mr-1" />

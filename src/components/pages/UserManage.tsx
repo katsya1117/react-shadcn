@@ -199,7 +199,7 @@ const UserManage = () => {
                           {item.box_user_id ? "&#x3007;" : ""}
                         </TableCell>
                         <TableCell className="py-3 text-right pr-4">
-                          <Button size="sm" variant="secondary">
+                          <Button asChild size="sm" variant="secondary">
                             <NavLink
                               to={UrlPath.UserEdit.replace(
                                 ":user_cd",

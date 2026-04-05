@@ -150,16 +150,14 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
               end={!hasSubPages}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-muted/70 text-left",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-[color:var(--brand-soft)]",
                   isActive
-                    ? "bg-muted text-foreground font-semibold"
+                    ? "bg-[color:var(--brand-soft)] text-[color:var(--brand)] font-semibold"
                     : "text-muted-foreground",
                 )
               }
             >
-              {Icon && (
-                <Icon size={18} className="shrink-0 text-muted-foreground" />
-              )}
+              {Icon && <Icon size={18} className="shrink-0" />}
               <span
                 className={cn(
                   "truncate",

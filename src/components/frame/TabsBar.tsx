@@ -153,7 +153,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     key={item.to}
                     value={item.to}
                     className={cn(
-                      "tab-item relative h-9 rounded-none data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                      "tab-item relative h-9 rounded-none data-[state=active]:text-[color:var(--brand)] data-[state=active]:shadow-none",
                       "after:hidden",
                     )}
                     asChild
@@ -163,7 +163,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                       {active === item.to && (
                         <motion.div
                           layoutId={`activeLine-${group}`}
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground z-20"
+                          className="absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-[color:var(--brand)]"
                           transition={{
                             type: "spring",
                             stiffness: 250,
@@ -187,7 +187,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                 size="icon"
                 className={cn(
                   overflowTabs.some((item) => item.to === active) &&
-                    "bg-muted text-foreground",
+                    "bg-[color:var(--brand-soft)] text-[color:var(--brand)]",
                 )}
               >
                 <MoreHorizontal className="h-5 w-5" />
