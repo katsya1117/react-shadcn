@@ -117,15 +117,23 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
       )}
     >
       <nav className="p-3 pb-16 space-y-1 text-[15px] flex-1 min-h-0 overflow-auto">
-        <div className="flex items-center justify-between px-3 py-3 mb-2">
-          <div className="text-base font-semibold leading-tight text-sidebar-foreground tracking-tight">
-            {collapsed ? "" : "Ops Console"}
+        {/* ロゴ/タイトルエリア - ブランドカラーでアクセント */}
+        <div className="flex items-center justify-between px-3 py-4 mb-3">
+          <div className="flex items-center gap-2.5">
+            {!collapsed && (
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">O</span>
+              </div>
+            )}
+            <span className="text-base font-semibold text-foreground tracking-tight">
+              {collapsed ? "" : "Ops Console"}
+            </span>
           </div>
           <button
             type="button"
             onClick={onHandle}
             aria-label={collapsed ? "Expand menu" : "Collapse menu"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -150,14 +158,14 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
               end={!hasSubPages}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-200",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                    ? "bg-secondary text-primary font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-6 before:w-1 before:rounded-r-full before:bg-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )
               }
             >
-              {Icon && <Icon size={18} className="shrink-0 opacity-80" />}
+              {Icon && <Icon size={18} className={cn("shrink-0 ml-1")} />}
               <span
                 className={cn(
                   "truncate",

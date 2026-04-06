@@ -48,13 +48,13 @@ export const Header = ({ subtitle, className }: HeaderProps) => {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b border-border bg-[color:var(--header-bg)] backdrop-blur-xl",
+        "sticky top-0 z-40 w-full border-b border-border/60 bg-[color:var(--header-bg)] backdrop-blur-xl",
         className,
       )}
     >
       <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 max-w-screen-xl">
         <div className="flex items-center gap-3 text-sm text-muted-foreground min-w-0">
-          <span className="text-lg font-semibold text-primary tracking-tight shrink-0">
+          <span className="text-lg font-semibold text-foreground tracking-tight shrink-0">
             {autoTitle}
           </span>
           {subtitle ? (
