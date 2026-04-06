@@ -111,7 +111,7 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
   return (
     <aside
       className={cn(
-        "border-r bg-background/85 backdrop-blur-sm flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
+        "border-r border-sidebar-border bg-sidebar/95 backdrop-blur-sm flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
         collapsed ? "w-20 min-w-20" : "w-60 min-w-60",
         className,
       )}
@@ -150,9 +150,9 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
               end={!hasSubPages}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-[color:var(--brand-soft)]",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   isActive
-                    ? "bg-[color:var(--brand-soft)] text-[color:var(--brand)] font-semibold"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
                     : "text-muted-foreground",
                 )
               }
