@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { DISPLAY_PATH_ROOT } from "./constants";
 
 const pathBarIconButtonClass =
-  "rounded-lg border border-border/60 bg-background/70 text-muted-foreground shadow-xs backdrop-blur-xs hover:bg-[color:var(--brand-soft)] hover:text-foreground";
+  "rounded-full bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground";
 
 type PathBarProps = {
   folderName: string;

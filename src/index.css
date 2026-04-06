@@ -133,10 +133,10 @@
   --brand-dark: #043c5c;
   --brand-light: #38bdf8;
   
-  /* Page gradient - わずかにブランドを感じるグラデーション */
-  --page-gradient-top: #f0f9ff;
-  --page-gradient-mid: #f8fafc;
-  --page-gradient-bottom: #f1f5f9;
+  /* Page gradient - ほぼフラットに近い、極めて繊細なグラデーション */
+  --page-gradient-top: oklch(0.988 0.004 230);
+  --page-gradient-mid: oklch(0.995 0.001 240);
+  --page-gradient-bottom: oklch(0.975 0.006 235);
   
   /* Header */
   --header-bg: rgba(255, 255, 255, 0.95);

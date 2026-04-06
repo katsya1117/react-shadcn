@@ -1,23 +1,28 @@
+import { LoaderCircle } from "lucide-react";
+
 import { Layout } from "@/components/frame/Layout";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
   CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 
 export const SimpleSingleSignOn = () => (
-  <Layout>
-    <Card>
+  <Layout hideHeader hideSideMenu hideTabs className="items-center">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Simple SSO</CardTitle>
+        <CardTitle>サインイン中</CardTitle>
         <CardDescription>
-          簡易シングルサインオンのプレースホルダーです。
+          シングルサインオンで認証しています。
         </CardDescription>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        認証フローが決まり次第ここに実装してください。
+      <CardContent className="flex flex-col items-center gap-4 py-10 text-center text-sm text-muted-foreground">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+          <LoaderCircle className="h-6 w-6 animate-spin text-[color:var(--brand)]" />
+        </div>
+        <p>認証が完了するまでそのままお待ちください。</p>
       </CardContent>
     </Card>
   </Layout>

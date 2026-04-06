@@ -325,18 +325,68 @@ Pages
 
 ---
 
-必要なら、この README を「図 + 依存 + 画面別」だけの軽量版にもできます。
+このコミットは、ひとことで言うと
+「SS 画面を、深い階層まで含めて戻れるようにしつつ、その復元中のチラつきや誤表示を抑えるようにした」 変更です。
 
-整理しました。今の ss 周りはこう揃えています。
+主な変更
+SS.tsx
+SS の状態管理が大きく拡張されています。rootFolderId ごとに、
 
-ssSlice.ts (line 39) の mutation thunk は API 1 回だけ にしました。create/delete/update の中で getFolderCollaborations はもう呼びません。
-再取得は SS.tsx (line 257) の refreshCollaborations に寄せ、一覧取得も更新後の再取得も dispatch(...).unwrap() を component 側で try/catch しています。更新 API のあとに再取得しているのは、今の reducer が mutation 成功時に byFolderId を直接更新しておらず、ssSlice.ts (line 121) 付近でも表示データは getFolderCollaborations.fulfilled でしか変わらないからです。つまり、今の構成では再取得しないと表示更新は保証されません。
+現在開いていたフォルダ
+戻る/進む用の履歴
+履歴インデックス
+を復元できるようになりました。
+戻ってきた時は show(root) のあとに保存済み deep folder へ navigateTo() して復元します。復元中は PathBar と explorer に skeleton を被せて、root が一瞬見えてから deep folder に飛ぶチラつきを抑える実装です。
+ssSlice.ts
+SS 専用の Redux state が増えています。
 
-「昨今の標準」で言うと、Redux Toolkit 公式は server-state には RTK Query を推していて、自動再取得は invalidation でやる形です。
-ただ、この画面は createAsyncThunk ベースなので、その前提で一番筋が良いのは「thunk は単機能」「component が unwrap と成功後フローを管理」です。今回の整理はその寄せ方です。将来 RTK Query に寄せるなら、この再取得 dispatch 自体を消せます。
-公式: https://redux-toolkit.js.org/api/createAsyncThunk#unwrapping-result-actions
-公式: https://redux-toolkit.js.org/rtk-query/usage/automated-refetching
+currentFolderByRootId
+folderHistoryByRootId
+historyIndexByRootId
+collaborationStatusByFolderId
+特に collaborationStatusByFolderId が入ったのが大きくて、
+「まだ API 未取得なのに コラボレーターは設定されていません を出してしまう」問題を避けられるようになっています。
 
-補足すると、unwrap() を付けない dispatch(thunk) は、失敗しても Promise 自体は reject されず rejected action を返して resolve します。unwrap() を付けた時だけ、fulfilled は payload を返し、rejected は throw されるので try/catch に入ります。今の ssSlice は rejectWithValue を使っていないので、catch に来るのは主に API 呼び出しが throw した時の error です。
+CollaborationPanel.tsx
+一覧部に skeleton 表示が入りました。
+これで初回 navigate 時にキャッシュが無い場合でも、空表示ではなく loading 表示になります。
 
-確認は npx eslint src/components/pages/SS.tsx src/redux/slices/ssSlice.ts と npm test -- --runInBand src/components/pages/SS.test.tsx が通っています。
+URL と遷移の変更
+UrlPath.ts
+SS の URL が
+
+旧: /job/ShareArea/:folderId/manage
+新: /job/ShareArea/:rootFolderId
+に変わっています。
+末尾の /manage を外し、folderId ではなく rootFolderId にしたので、「この URL は今いるフォルダではなく、SS を開いた root を指す」という意味が明確になりました。
+
+App.tsx
+旧 URL は即死させず、/job/ShareArea/:rootFolderId/manage から新 URL へリダイレクトする後方互換も入っています。
+
+ShareArea.tsx
+ShareArea から SS へ飛ぶ時も、新しい rootFolderId param で遷移するように変わっています。
+
+画面全体の loading 方針
+App.tsx
+各 page を lazy() 読み込みに変えて、route 全体を Suspense で包んでいます。fallback UI も shadcn の Skeleton です。
+つまりこのコミットで、SS だけでなくアプリ全体に「最低限の loading fallback」が入りました。
+
+メニュー記憶の整理
+uiSlice.ts
+lastVisited 1本だったものを、
+
+lastVisitedSections
+lastVisitedTabs
+に分けています。
+SideMenu.tsx
+サイドメニューは section 単位の記憶だけを使うようになりました。
+
+TabsBar.tsx
+タブバーは tab 単位の記憶だけを使うようになり、search 付き URL も保存対象にしています。
+
+要するに、
+「SS の deep folder 復帰」 と
+「その前提になる URL/履歴/ローディング表現の整理」
+が、このコミットの中心です。
+
+テストも追加・更新されています。特に ssSlice.test.ts が新規追加で、SS 用の復元 state を reducer レベルで確認するようになっています。
