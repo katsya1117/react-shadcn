@@ -48,7 +48,7 @@ export const Header = ({ subtitle, className }: HeaderProps) => {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur",
+        "sticky top-0 z-40 w-full border-b border-border/50 bg-[color:var(--header-bg)] backdrop-blur-md backdrop-saturate-150",
         className,
       )}
     >
