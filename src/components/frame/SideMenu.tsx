@@ -111,21 +111,21 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
   return (
     <aside
       className={cn(
-        "border-r border-sidebar-border bg-sidebar/95 backdrop-blur-sm flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
+        "border-r border-sidebar-border bg-sidebar flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
         collapsed ? "w-20 min-w-20" : "w-60 min-w-60",
         className,
       )}
     >
-      <nav className="p-3 pb-16 space-y-2 text-[15px] flex-1 min-h-0 overflow-auto">
-        <div className="flex items-center justify-between px-3 pt-1">
-          <div className="text-lg font-semibold leading-tight text-foreground">
+      <nav className="p-3 pb-16 space-y-1 text-[15px] flex-1 min-h-0 overflow-auto">
+        <div className="flex items-center justify-between px-3 py-3 mb-2">
+          <div className="text-base font-semibold leading-tight text-sidebar-foreground tracking-tight">
             {collapsed ? "" : "Ops Console"}
           </div>
           <button
             type="button"
             onClick={onHandle}
             aria-label={collapsed ? "Expand menu" : "Collapse menu"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
           >
             {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
@@ -150,14 +150,14 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
               end={!hasSubPages}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
-                    : "text-muted-foreground",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
                 )
               }
             >
-              {Icon && <Icon size={18} className="shrink-0" />}
+              {Icon && <Icon size={18} className="shrink-0 opacity-80" />}
               <span
                 className={cn(
                   "truncate",
