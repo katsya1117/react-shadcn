@@ -16,7 +16,7 @@ const BoxIcon = ({
     aria-hidden="true"
     className={cn(
       // モノクロ化: brightness(0) で黒、dark モードでは invert で白
-      "brightness-0 dark:invert",
+      // "brightness-0 dark:invert",
       className,
     )}
     {...props}
