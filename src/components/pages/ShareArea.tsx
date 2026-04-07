@@ -100,9 +100,9 @@ const ShareArea = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-10 w-10 rounded-full hover:bg-muted"
+                          size="sm"
+                          variant="outline"
+                          className="gap-2 hover:bg-accent"
                           onClick={() =>
                             openLink(
                               `https://app.box.com/folder/${area.boxFolderId}`,
@@ -111,6 +111,7 @@ const ShareArea = () => {
                           aria-label="BOXで開く"
                         >
                           <BoxIcon className="h-4 w-4" />
+                          <span className="hidden sm:inline text-xs font-medium">BOX</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>BOXで開く</TooltipContent>
