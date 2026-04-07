@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { SingleValue } from "react-select";
-import { Building2, EyeOff, User, UserPlus, X } from "lucide-react";
+import {
+  Building2,
+  CornerDownRight,
+  EyeOff,
+  User,
+  UserPlus,
+  X,
+} from "lucide-react";
 
 import type { AutoCompleteData } from "@/api";
 import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
@@ -85,7 +92,6 @@ const CollaboratorRow = ({
   // 編集可否は direct / inherited ではなく can_view_path=true かどうかで決める。
   // 本アプリ経由で管理する collaboration だけを操作可能にし、
   // Box UI 由来の can_view_path=false は一覧表示のみ。
-  const canEditRole = collaborator.canEdit;
   const [pendingRole, setPendingRole] = useState<RoleType>(collaborator.role);
   const { isOpen, open, handleOpenChange } = useConfirmState();
   // inherited 行を触る時は、現在フォルダではなく継承元の collaboration を変更する。
@@ -102,110 +108,98 @@ const CollaboratorRow = ({
     <div
       className={cn(
         "group px-3 py-2.5 transition-colors hover:bg-muted/20",
-        // inherited は背景で区別し、can_view_path=false は減光して
-        // 「見えてはいるがこの画面では触れない」ことを示す。
         isInherited && "bg-muted/55",
-        !collaborator.canEdit && "opacity-55",
+        !canRemove && "opacity-55",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex min-w-0 items-start gap-2">
-            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center text-muted-foreground">
-              {collaborator.type === "department" ? (
-                <Building2 className="h-4 w-4" />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </div>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 shrink-0 flex items-center text-muted-foreground">
+          {isInherited && <CornerDownRight className="size-4" />}
+          {collaborator.type === "department" ? (
+            <Building2 className="size-4" />
+          ) : (
+            <User className="size-4" />
+          )}
+        </div>
 
-            <div className="min-w-0 flex flex-1 items-center gap-2 text-sm font-medium leading-5 text-foreground">
-              <TooltipText text={collaborator.name} className="min-w-0 flex-1">
-                {collaborator.name}
-              </TooltipText>
-              {!collaborator.canEdit ? (
-                <EyeOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
-              ) : null}
-            </div>
-          </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex w-full items-center justify-between text-sm font-medium text-foreground">
+            <TooltipText text={collaborator.name} className="min-w-0 flex-1">
+              {collaborator.name}
+            </TooltipText>
 
-          <div className="pl-6">
-            {canEditRole ? (
-              <>
-                <Select
-                  value={pendingRole}
-                  onValueChange={(value) => {
-                    const nextRole = value as RoleType;
-                    setPendingRole(nextRole);
-                    if (nextRole === collaborator.role) return;
-                    open();
-                  }}
-                  disabled={isBusy}
-                >
-                  <SelectTrigger size="xs" className="shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        {role.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <ConfirmDialog
-                  open={isOpen}
-                  onOpenChange={(nextOpen) => {
-                    handleOpenChange(nextOpen);
-                    if (!nextOpen) {
-                      setPendingRole(collaborator.role);
-                    }
-                  }}
-                  dialogTitle="ロールの変更"
-                  onHandle={() => onUpdateRole(collaborator, pendingRole)}
-                >
-                  {updateDialogBody}
-                </ConfirmDialog>
-              </>
+            {!canRemove ? (
+              <EyeOff className="size-3.5 shrink-0 text-muted-foreground/80" />
             ) : (
-              <Badge
-                variant="outline"
-                className="h-6 w-fit max-w-full px-2 font-normal leading-none"
-              >
-                {getRoleLabel(collaborator.role)}
-              </Badge>
+              <ConfirmButton
+                buttonLabel={<X className="h-3.5 w-3.5" />}
+                dialogTitle="コラボレーションを削除しますか？"
+                dialogBody={removeDialogBody}
+                onHandle={() => onRemove(collaborator)}
+                variant="ghost"
+                size="icon-xs"
+                className={cn(
+                  "shrink-0 text-muted-foreground transition-opacity hover:text-destructive",
+                  isBusy ? "opacity-40" : "opacity-0 group-hover:opacity-100",
+                )}
+                aria-label="権限を削除"
+                disabled={isBusy}
+              />
             )}
           </div>
 
-          {isInherited && sourcePath ? (
-            <div className="pl-6">
-              <TooltipText
-                text={sourcePath}
-                className="text-xs leading-5 text-muted-foreground"
-              >
-                {sourcePath}
-              </TooltipText>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 items-start justify-end">
           {canRemove ? (
-            <ConfirmButton
-              buttonLabel={<X className="h-3.5 w-3.5" />}
-              dialogTitle="コラボレーションを削除しますか？"
-              dialogBody={removeDialogBody}
-              onHandle={() => onRemove(collaborator)}
-              variant="ghost"
-              size="icon-xs"
-              className={cn(
-                "shrink-0 text-muted-foreground transition-opacity hover:text-destructive",
-                isBusy ? "opacity-40" : "opacity-0 group-hover:opacity-100",
-              )}
-              aria-label="権限を削除"
-              disabled={isBusy}
-            />
-          ) : null}
+            <>
+              <Select
+                value={pendingRole}
+                onValueChange={(value) => {
+                  const nextRole = value as RoleType;
+                  setPendingRole(nextRole);
+                  if (nextRole === collaborator.role) return;
+                  open();
+                }}
+                disabled={isBusy}
+              >
+                <SelectTrigger size="xs" className="shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <ConfirmDialog
+                open={isOpen}
+                onOpenChange={(nextOpen) => {
+                  handleOpenChange(nextOpen);
+                  if (!nextOpen) setPendingRole(collaborator.role);
+                }}
+                dialogTitle="ロールの変更"
+                onHandle={() => onUpdateRole(collaborator, pendingRole)}
+              >
+                {updateDialogBody}
+              </ConfirmDialog>
+            </>
+          ) : (
+            <Badge
+              variant="outline"
+              className="h-6 w-fit max-w-full px-2 font-normal leading-none"
+            >
+              {getRoleLabel(collaborator.role)}
+            </Badge>
+          )}
+
+          {isInherited && sourcePath && (
+            <TooltipText
+              text={sourcePath}
+              className="text-xs leading-5 text-muted-foreground"
+            >
+              {sourcePath}
+            </TooltipText>
+          )}
         </div>
       </div>
     </div>
@@ -245,12 +239,7 @@ export const CollaborationPanel = ({
   className,
 }: CollaborationPanelProps) => {
   return (
-    <Card
-      className={cn(
-        "flex flex-col overflow-hidden",
-        className,
-      )}
-    >
+    <Card className={cn("flex flex-col overflow-hidden", className)}>
       <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-lg">{folderName}</CardTitle>
       </CardHeader>
