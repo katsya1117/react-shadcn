@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
 import { Folder, Monitor, Settings } from "lucide-react";
+import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
   TooltipTrigger,
@@ -109,12 +110,7 @@ const ShareArea = () => {
                           }
                           aria-label="BOXで開く"
                         >
-                          <img 
-                            src="/box-logo.jpg" 
-                            alt="" 
-                            className="h-4 w-4 object-contain"
-                            aria-hidden="true"
-                          />
+                          <BoxIcon className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>BOXで開く</TooltipContent>
