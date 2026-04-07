@@ -11,7 +11,7 @@ const BoxIcon = ({
   ...props
 }: Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "alt">) => (
   <img
-    src="/box-logo.png"
+    src="/Box Logo_Black (000000).png"
     alt=""
     aria-hidden="true"
     className={cn(
