@@ -26,17 +26,19 @@ export const UserTabsShell = ({ active, onTabChange, children }: Props) => {
     <Layout>
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">ユーザー設定</h1>
-        <Tabs value={active} onValueChange={handleChange}>
-          <div className="w-full border-b border-border/70">
-            <TabsList
-              variant="line"
-              className="w-auto justify-start gap-3 px-0"
-            >
-              <TabsTrigger value="setting">編集</TabsTrigger>
-              <TabsTrigger value="add">登録（AD連携）</TabsTrigger>
-            </TabsList>
-          </div>
-        </Tabs>
+        <div className="sticky top-24 z-20 bg-background -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <Tabs value={active} onValueChange={handleChange}>
+            <div className="w-full border-b border-border/70">
+              <TabsList
+                variant="line"
+                className="w-auto justify-start gap-3 px-0"
+              >
+                <TabsTrigger value="setting">編集</TabsTrigger>
+                <TabsTrigger value="add">登録（AD連携）</TabsTrigger>
+              </TabsList>
+            </div>
+          </Tabs>
+        </div>
         {children}
       </div>
     </Layout>

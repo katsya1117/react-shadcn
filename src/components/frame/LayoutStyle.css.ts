@@ -1,11 +1,13 @@
 import { style } from "@vanilla-extract/css";
 
 export const layoutContainer = style({
-  height: "100vh",
+  minHeight: "100vh",
+  // height: "100vh",
   width: "100%",
   display: "flex",
   flexDirection: "column",
   color: "var(--foreground)",
+  // overflowY: "hidden",
 });
 
 export const layoutBody = style({

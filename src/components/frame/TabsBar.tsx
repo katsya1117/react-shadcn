@@ -60,7 +60,9 @@ export const TabsBar = ({ className }: { className?: string }) => {
     if (!matched) return;
     const currentPath = `${pathname}${search}`;
     if (lastVisitedTabs[matched.to] === currentPath) return;
-    dispatch(uiActions.setLastVisitedTab({ key: matched.to, path: currentPath }));
+    dispatch(
+      uiActions.setLastVisitedTab({ key: matched.to, path: currentPath }),
+    );
   }, [pathname, search, matched, dispatch, lastVisitedTabs]);
 
   const [visibleCount, setVisibleCount] = useState(items.length);
@@ -118,7 +120,13 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const active = matched ? matched.to : items[0].to;
 
   return (
-    <div className={cn(TabsBarStyle.container, className)}>
+    <div
+      className={cn(
+        TabsBarStyle.container,
+        "sticky top-14 z-30 bg-background",
+        className,
+      )}
+    >
       <div className={cn(TabsBarStyle.inner, "relative")} ref={containerRef}>
         <div
           ref={measureRef}
@@ -199,9 +207,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                 const resolvedTo = lastVisitedTabs[item.to] || item.to;
                 return (
                   <DropdownMenuItem key={item.to} asChild>
-                    <RouterNavLink to={resolvedTo}>
-                      {item.label}
-                    </RouterNavLink>
+                    <RouterNavLink to={resolvedTo}>{item.label}</RouterNavLink>
                   </DropdownMenuItem>
                 );
               })}
