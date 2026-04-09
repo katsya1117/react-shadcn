@@ -1,17 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Navigate,
-  generatePath,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router";
 import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
 
 import type { AutoCompleteData, GetFolderCollaborationsResponse } from "@/api";
-import type { BoxFolder } from "@/@types/BoxUiElements";
 import { Layout } from "@/components/frame/Layout";
 import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
 import { Button } from "@/components/ui/button";
@@ -20,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
-import { boxSelector } from "@/redux/slices/userSlice";
 import {
   createCollaborations,
   deleteCollaborations,
@@ -32,19 +24,17 @@ import {
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { DEFAULT_ROLE } from "@/components/ss/constants";
 import { PathBar } from "@/components/ss/PathBar";
+import { useBoxExplorer } from "@/components/ss/useBoxExplorer";
 import type {
   CollaborationListItem,
   Collaborator,
   CollaboratorType,
-  ContentExplorerInstance,
-  FolderInfo,
   RoleType,
 } from "@/components/ss/types";
 import { UrlPath } from "@/constant/UrlPath";
 import { useAppDispatch } from "@/store/hooks";
 import { SHARE_AREAS } from "./shareAreaConfig";
 
-const ROOT_SHARE_PATH = "\\share";
 // SS は ShareArea から遷移した公開対象フォルダだけを root として扱う。
 // URL 直打ちで任意の folderId を渡されても、この集合にないものは画面を開かせない。
 const SHARE_AREA_ROUTE_FOLDER_ID_SET = new Set(
@@ -55,72 +45,6 @@ const isShareAreaRouteFolderId = (
   folderId: string | null | undefined,
 ): folderId is string =>
   typeof folderId === "string" && SHARE_AREA_ROUTE_FOLDER_ID_SET.has(folderId);
-
-const stripCurrentFolderIdFromSearch = (search: string): string => {
-  // 旧実装で query に currentFolderId を載せていた名残を無効化する。
-  // 現在フォルダは explorer の navigate 結果を正とし、URL では持たない。
-  const params = new URLSearchParams(search);
-  params.delete("currentFolderId");
-
-  const nextSearch = params.toString();
-  return nextSearch ? `?${nextSearch}` : "";
-};
-
-const toFolderInfo = (folder: BoxFolder): FolderInfo => {
-  const folderWithPath = folder as BoxFolder & {
-    name?: string | null;
-    path_collection?: { entries?: { id: string; name?: string | null }[] };
-  };
-  const pathEntries =
-    folderWithPath.path_collection?.entries ??
-    folderWithPath.pathCollection ??
-    [];
-
-  return {
-    id: folder.id,
-    name: folder.name ?? "",
-    pathCollection:
-      pathEntries.length > 0
-        ? {
-            entries: pathEntries.map((entry) => ({
-              id: entry.id,
-              name: entry.name ?? "",
-            })),
-          }
-        : undefined,
-  };
-};
-
-const buildSharePath = (folder: FolderInfo, rootFolderId: string): string => {
-  // パスバーは常に \share\<showしたroot folder名>\... で始める。
-  // Box 全体の root(0) は見せず、show() した rootFolderId より下だけを表示する。
-  const entries = folder.pathCollection?.entries ?? [];
-  const filteredEntries = entries.filter((entry) => entry.id !== "0");
-  const rootIndex = filteredEntries.findIndex(
-    (entry) => entry.id === rootFolderId,
-  );
-  const visibleEntries = rootIndex >= 0 ? filteredEntries.slice(rootIndex) : [];
-  const [rootEntry, ...descendantEntries] = visibleEntries;
-  const segments = [ROOT_SHARE_PATH];
-  const rootName =
-    rootEntry?.name ?? (folder.id === rootFolderId ? folder.name : undefined);
-
-  if (rootName) {
-    segments.push(rootName);
-  }
-
-  segments.push(
-    ...descendantEntries
-      .map((entry) => entry.name)
-      .filter((name): name is string => Boolean(name)),
-  );
-
-  if (folder.id !== rootFolderId && folder.name) {
-    segments.push(folder.name);
-  }
-
-  return segments.join("\\");
-};
 
 const toCollaborationListItem = (
   item: GetFolderCollaborationsResponse,
@@ -182,205 +106,43 @@ const ExplorerRestoreSkeleton = () => (
 );
 
 const SSContent = ({ rootFolderId }: SSContentProps) => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const explorerRef = useRef<ContentExplorerInstance | null>(null);
   const dispatch = useAppDispatch();
 
-  const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
   const users = useSelector(autoCompleteSelector.usersSelector());
   const groups = useSelector(autoCompleteSelector.groupsSelector());
   const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
-  const rememberedCurrentFolder = useSelector(
-    ssSelector.currentFolderSelector(rootFolderId),
-  );
-  const savedFolderHistory = useSelector(
-    ssSelector.folderHistorySelector(rootFolderId),
-  );
-  const savedHistoryIndex = useSelector(
-    ssSelector.historyIndexSelector(rootFolderId),
-  );
   const isSavingCollaborator = useSelector(ssSelector.isLoadingSelector());
-  const devToken = useMemo(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const params = new URLSearchParams(window.location.search);
-    const queryToken = params.get("devToken")?.trim();
-    if (queryToken) return queryToken;
-
-    const storedToken = window.localStorage.getItem("box_dev_token")?.trim();
-    return storedToken && storedToken.length > 0 ? storedToken : undefined;
-  }, []);
-  const accessToken = devToken ?? token;
-  const rememberedRootFolder =
-    rememberedCurrentFolder?.id === rootFolderId
-      ? rememberedCurrentFolder
-      : undefined;
-  const restoreTargetFolderId =
-    rememberedCurrentFolder && rememberedCurrentFolder.id !== rootFolderId
-      ? rememberedCurrentFolder.id
-      : undefined;
-
-  const initialFolder = useMemo<FolderInfo>(
-    () => ({
-      // 初回描画直後は explorer から navigate がまだ飛んでいないので、
-      // rootFolderId を仮の currentFolder として先に置いておく。
-      id: rootFolderId,
-      name: rememberedRootFolder?.name ?? "",
-      pathCollection: rememberedRootFolder?.pathCollection ?? {
-        entries: [],
-      },
-    }),
-    [rememberedRootFolder, rootFolderId],
-  );
-  const initialFolderHistory = useMemo(() => {
-    let folderHistory = savedFolderHistory.filter(Boolean);
-
-    if (folderHistory.length === 0 || folderHistory[0] !== rootFolderId) {
-      folderHistory = [
-        rootFolderId,
-        ...folderHistory.filter((folderId) => folderId !== rootFolderId),
-      ];
-    }
-
-    const rememberedFolderId = rememberedCurrentFolder?.id;
-    if (rememberedFolderId && !folderHistory.includes(rememberedFolderId)) {
-      folderHistory = [...folderHistory, rememberedFolderId];
-    }
-
-    return folderHistory;
-  }, [rememberedCurrentFolder, rootFolderId, savedFolderHistory]);
-  const initialHistoryIndex = useMemo(() => {
-    const rememberedFolderId = rememberedCurrentFolder?.id;
-    const rememberedIndex =
-      rememberedFolderId != null
-        ? initialFolderHistory.lastIndexOf(rememberedFolderId)
-        : savedHistoryIndex;
-
-    return rememberedIndex >= 0 && rememberedIndex < initialFolderHistory.length
-      ? rememberedIndex
-      : 0;
-  }, [
-    initialFolderHistory,
-    rememberedCurrentFolder,
-    savedHistoryIndex,
-  ]);
-  const rootFolderPath = generatePath(UrlPath.SS, { rootFolderId });
-
-  const [currentFolder, setCurrentFolder] = useState<FolderInfo>(
-    rememberedCurrentFolder ?? initialFolder,
-  );
   const [selectedCollaborator, setSelectedCollaborator] =
     useState<SingleValue<AutoCompleteData>>(null);
   const [selectedRole, setSelectedRole] = useState<RoleType>(DEFAULT_ROLE);
 
-  // フォルダ履歴スタック管理
-  const [folderHistory, setFolderHistory] =
-    useState<string[]>(initialFolderHistory);
-  const [historyIndex, setHistoryIndex] = useState(initialHistoryIndex);
+  const resetForm = useCallback(() => {
+    setSelectedCollaborator(null);
+    setSelectedRole(DEFAULT_ROLE);
+  }, []);
 
-  const canGoBack = historyIndex > 0;
-  const canGoForward = historyIndex < folderHistory.length - 1;
-
-  const isNavigatingRef = useRef(false);
-  const isRestoringDeepFolderRef = useRef(Boolean(restoreTargetFolderId));
-  const restoreTargetFolderIdRef = useRef(restoreTargetFolderId);
-  const historyIndexRef = useRef(initialHistoryIndex);
-  const [isRestoringDeepFolder, setIsRestoringDeepFolder] = useState(
-    Boolean(restoreTargetFolderId),
-  );
-
-  const updateHistoryIndex = useCallback(
-    (next: number, history?: string[]) => {
-      const nextHistory = history ?? folderHistory;
-      historyIndexRef.current = next;
-      setHistoryIndex(next);
-      dispatch(
-        ssActions.setFolderHistory({
-          rootFolderId,
-          history: nextHistory,
-          index: next,
-        }),
-      );
-    },
-    [dispatch, folderHistory, rootFolderId],
-  );
-
-  const handleGoBack = useCallback(() => {
-    if (!canGoBack) return;
-    const nextIndex = historyIndexRef.current - 1;
-    const folderId = folderHistory[nextIndex];
-    if (!folderId) return;
-    isNavigatingRef.current = true;
-    updateHistoryIndex(nextIndex, folderHistory);
-    explorerRef.current?.navigateTo?.(folderId);
-  }, [canGoBack, folderHistory, updateHistoryIndex]);
-
-  const handleGoForward = useCallback(() => {
-    if (!canGoForward) return;
-    const nextIndex = historyIndexRef.current + 1;
-    const folderId = folderHistory[nextIndex];
-    if (!folderId) return;
-    isNavigatingRef.current = true;
-    updateHistoryIndex(nextIndex, folderHistory);
-    explorerRef.current?.navigateTo?.(folderId);
-  }, [canGoForward, folderHistory, updateHistoryIndex]);
-
-  const { currentFolderPath, currentFolderRelativePath } = useMemo(() => {
-    const fullPath = buildSharePath(currentFolder, rootFolderId);
-    const relativePath =
-      fullPath === ROOT_SHARE_PATH
-        ? ""
-        : fullPath.startsWith(`${ROOT_SHARE_PATH}\\`)
-          ? fullPath.slice(`${ROOT_SHARE_PATH}\\`.length)
-          : fullPath;
-
-    return {
-      currentFolderPath: fullPath,
-      currentFolderRelativePath: relativePath,
-    };
-  }, [currentFolder, rootFolderId]);
-  const currentFolderName = currentFolder.name || "対象フォルダ";
-  const layoutSubtitle = useMemo(() => {
-    // レイアウトの subtitle は「ShareArea から入ってきた root フォルダ名」を出したい。
-    // currentFolder が配下に潜っていても、pathCollection から rootFolderId の名前を拾う。
-    if (currentFolder.id === rootFolderId && currentFolder.name) {
-      return currentFolder.name;
-    }
-
-    return currentFolder.pathCollection?.entries?.find(
-      (entry) => entry.id === rootFolderId,
-    )?.name;
-  }, [
+  const {
+    accessToken,
+    canGoBack,
+    canGoForward,
+    containerId,
+    currentFolder,
+    currentFolderName,
+    currentFolderRelativePath,
+    handleCopyPath,
+    handleGoBack,
+    handleGoForward,
+    handleOpenBox,
+    handleOpenExplorer,
+    isRestoringDeepFolder,
+    layoutSubtitle,
+    sourcePathByFolderId,
+  } = useBoxExplorer({
     rootFolderId,
-    currentFolder.id,
-    currentFolder.name,
-    currentFolder.pathCollection,
-  ]);
-  const sourcePathByFolderId = useMemo(() => {
-    // 継承元表示用のパス辞書。
-    // folders/:id/collaborations の各 row には sourceFolderId(item.id) が入るので、
-    // それを \share\...\... に引けるようにしておく。
-    const pathEntries =
-      currentFolder.pathCollection?.entries?.filter(
-        (entry) => entry.id !== "0",
-      ) ?? [];
-    const rootIndex = pathEntries.findIndex(
-      (entry) => entry.id === rootFolderId,
-    );
-    const visibleEntries = rootIndex >= 0 ? pathEntries.slice(rootIndex) : [];
-    const pathMap: Record<string, string> = {};
-    const segments = [ROOT_SHARE_PATH];
-    pathMap["0"] = ROOT_SHARE_PATH;
+    onCurrentFolderChange: resetForm,
+  });
 
-    for (const entry of visibleEntries) {
-      if (!entry.name) continue;
-      segments.push(entry.name);
-      pathMap[entry.id] = segments.join("\\");
-    }
-
-    return pathMap;
-  }, [currentFolder.pathCollection, rootFolderId]);
   const currentCollaborationStatus = useSelector(
     ssSelector.collaborationStatusSelector(currentFolder.id),
   );
@@ -400,88 +162,11 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       (currentCollaborationStatus === "idle" ||
         currentCollaborationStatus === "loading"));
 
-  const resetForm = useCallback(() => {
-    setSelectedCollaborator(null);
-    setSelectedRole(DEFAULT_ROLE);
-  }, []);
-
   const refreshCollaborations = useCallback(async () => {
     // 一覧更新は reducer の局所パッチではなく、常に Box の最新結果を再取得して揃える。
     // unwrap しているので、取得失敗は呼び出し元の try/catch へそのまま返る。
     await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
   }, [currentFolder.id, dispatch]);
-
-  useEffect(() => {
-    if (!location.search.includes("currentFolderId")) return;
-
-    // currentFolderId を URL の truth source にしない方針に統一したので、
-    // 残っている query は見つけ次第取り除く。
-    const nextSearch = stripCurrentFolderIdFromSearch(location.search);
-    navigate(`${rootFolderPath}${nextSearch}`, { replace: true });
-  }, [location.search, navigate, rootFolderPath]);
-
-  const handleNavigate = useCallback(
-    (payload: BoxFolder) => {
-      const nextFolder = toFolderInfo(payload);
-
-      if (isRestoringDeepFolderRef.current) {
-        const restoreTargetFolderId = restoreTargetFolderIdRef.current;
-
-        if (restoreTargetFolderId && nextFolder.id === rootFolderId) {
-          explorerRef.current?.navigateTo?.(restoreTargetFolderId);
-          return;
-        }
-
-        if (restoreTargetFolderId && nextFolder.id === restoreTargetFolderId) {
-          setCurrentFolder(nextFolder);
-          dispatch(
-            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-          );
-          resetForm();
-          isRestoringDeepFolderRef.current = false;
-          setIsRestoringDeepFolder(false);
-          return;
-        }
-      }
-
-      // currentFolder は ContentExplorer が通知してきた navigate 結果を正とする。
-      setCurrentFolder(nextFolder);
-      dispatch(
-        ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-      );
-      resetForm();
-
-      if (isNavigatingRef.current) {
-        isNavigatingRef.current = false;
-        return;
-      }
-
-      setFolderHistory((prev) => {
-        // パンくずクリックなどで既に履歴内にあるフォルダへ移動した場合は、
-        // 新しい履歴を積まずにその位置へ index だけ戻す/進める。
-        const currentIndex = historyIndexRef.current;
-        const backwardIndex = prev.lastIndexOf(nextFolder.id, currentIndex);
-
-        if (backwardIndex >= 0) {
-          updateHistoryIndex(backwardIndex, prev);
-          return prev;
-        }
-
-        const forwardIndex = prev.indexOf(nextFolder.id, currentIndex + 1);
-
-        if (forwardIndex >= 0) {
-          updateHistoryIndex(forwardIndex, prev);
-          return prev;
-        }
-
-        const trimmed = prev.slice(0, historyIndexRef.current + 1);
-        const nextHistory = [...trimmed, nextFolder.id];
-        updateHistoryIndex(trimmed.length, nextHistory);
-        return nextHistory;
-      });
-    },
-    [dispatch, resetForm, rootFolderId, updateHistoryIndex],
-  );
 
   useEffect(() => {
     if (isRestoringDeepFolder) return;
@@ -492,57 +177,6 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
       toast.error("コラボレーター一覧の取得に失敗しました");
     });
   }, [isRestoringDeepFolder, refreshCollaborations]);
-
-  const handleOpenBox = useCallback(() => {
-    window.open(
-      `https://app.box.com/folder/${currentFolder.id}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
-  }, [currentFolder.id]);
-
-  const handleOpenExplorer = useCallback(() => {
-    const fileUrl = `file://${currentFolderPath.replace(/\\/g, "/")}`;
-    window.open(fileUrl, "_blank");
-    toast.info("エクスプローラーで開きます");
-  }, [currentFolderPath]);
-
-  const handleCopyPath = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(currentFolderPath);
-      toast.success("パスをコピーしました");
-    } catch {
-      toast.error("コピーに失敗しました");
-    }
-  }, [currentFolderPath]);
-
-  useEffect(() => {
-    if (!accessToken) return;
-
-    const BoxGlobal = window.Box;
-    if (!BoxGlobal?.ContentExplorer) return;
-
-    if (!explorerRef.current) {
-      explorerRef.current = new BoxGlobal.ContentExplorer();
-    }
-
-    const explorer = explorerRef.current;
-    if (!explorer) return;
-    // listener を付けた状態で show() する。
-    // 初期表示と復元時の navigate を同じハンドラで受けて currentFolder を揃える。
-    explorer.removeAllListeners?.();
-    explorer.addListener?.("navigate", handleNavigate);
-    explorer.show(rootFolderId, accessToken, {
-      container: "#box-content-explorer",
-      canPreview: false,
-      size: "large",
-    });
-
-    return () => {
-      explorer.removeAllListeners?.();
-      explorer.hide?.();
-    };
-  }, [accessToken, handleNavigate, rootFolderId]);
 
   const handleAddCollaborator = useCallback(async () => {
     if (!selectedCollaborator) return;
@@ -728,7 +362,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
               <Card className="relative flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
                 {accessToken ? (
                   <div
-                    id="box-content-explorer"
+                    id={containerId}
                     className="h-full min-h-96 flex-1 [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3"
                   />
                 ) : (
@@ -743,7 +377,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
             <div className="flex max-h-[72dvh] flex-col overflow-hidden lg:h-full lg:min-h-0 lg:flex-1 lg:w-96 lg:shrink-0 lg:self-stretch">
               <CollaborationPanel
                 className="max-h-full lg:h-full lg:min-h-0"
-                folderName={rememberedCurrentFolder?.name || currentFolderName}
+                folderName={currentFolderName}
                 collaborators={collaborators}
                 isListLoading={isCollaboratorsListLoading}
                 isBusy={isSavingCollaborator}
