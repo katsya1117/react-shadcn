@@ -2,6 +2,7 @@ import { toast } from "@/components/ui/sonner";
 import { getPermissionList } from "@/redux/slices/permissionSlice";
 import {
   getUserInfo,
+  removeUser,
   updateUserInfo,
   userSliceReducer,
 } from "@/redux/slices/userSlice";
@@ -14,6 +15,7 @@ import { UserEdit } from "./UserEdit";
 
 // ----- mocks ----- //
 const mockDispatch = jest.fn();
+const mockNavigate = jest.fn();
 
 jest.mock("react-redux", () => {
   const actual = jest.requireActual("react-redux");
@@ -29,6 +31,7 @@ jest.mock("react-router", () => {
   return {
     ...actual,
     useParams: () => ({ user_cd: "u123" }),
+    useNavigate: () => mockNavigate,
     NavLink: ({ to, children }: any) => <a href={to}>{children}</a>,
   };
 });
@@ -167,6 +170,7 @@ describe("UserEdit", () => {
   afterEach(() => {
     jest.clearAllMocks();
     useSelectorMock.mockReset();
+    mockNavigate.mockReset();
   });
 
   it("初期表示で getUserInfo と getPermissionList を dispatch する", async () => {
@@ -175,7 +179,9 @@ describe("UserEdit", () => {
       ...basePermissionState,
       ...baseAutoCompleteState,
     };
-    useSelectorMock.mockImplementation((selector: any) => selector(state));
+    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(state),
+    );
 
     setup(
       <MemoryRouter>
@@ -198,7 +204,9 @@ describe("UserEdit", () => {
       ...basePermissionState,
       ...baseAutoCompleteState,
     };
-    useSelectorMock.mockImplementation((selector: any) => selector(state));
+    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(state),
+    );
 
     const { user } = setup(
       <MemoryRouter>
@@ -301,6 +309,35 @@ describe("UserEdit", () => {
         }),
       });
       expect(toast.success).toHaveBeenCalledWith("保存しました");
+    });
+  });
+
+  it("削除成功後はユーザー検索へ戻し、遷移先でtoastを出すstateを渡す", async () => {
+    const state = {
+      ...buildUserState(),
+      ...basePermissionState,
+      ...baseAutoCompleteState,
+    };
+    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
+      selector(state),
+    );
+    mockDispatch.mockResolvedValue({ type: "user/removeUser/fulfilled" });
+
+    const { user } = setup(
+      <MemoryRouter>
+        <UserEdit />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByText("削除する"));
+
+    expect(removeUser).toHaveBeenCalledWith("u123");
+    expect(toast.success).not.toHaveBeenCalledWith(
+      expect.stringContaining("削除"),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith("/manage/User", {
+      replace: true,
+      state: { deletedUserCd: "u123" },
     });
   });
 });

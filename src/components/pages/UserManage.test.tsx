@@ -1,8 +1,12 @@
 import type { UserInfo } from "@/api";
+import { toast } from "@/components/ui/sonner";
 import { autoCompleteSliceReducer } from "@/redux/slices/autoCompleteSlice";
 import { getUserList, userSliceReducer } from "@/redux/slices/userSlice";
-import { screen } from "@testing-library/react";
-import { createMockPagination, setupWithStore } from "@test-utils";
+import { configureStore } from "@reduxjs/toolkit";
+import { screen, waitFor } from "@testing-library/react";
+import { createMockPagination, setup, setupWithStore } from "@test-utils";
+import { Provider } from "react-redux";
+import { MemoryRouter } from "react-router";
 import UserManage from "./UserManage";
 
 const mockedGetUserList = getUserList as unknown as jest.MockedFunction<
@@ -37,6 +41,32 @@ jest.mock("@/redux/slices/userSlice", () => {
   };
 });
 
+jest.mock("@/components/ui/sonner", () => ({
+  toast: { success: jest.fn(), error: jest.fn() },
+}));
+
+const setupUserManageWithRouterState = (routerState: unknown) => {
+  const store = configureStore({
+    reducer: reducers,
+    preloadedState: basePreloadedState,
+  });
+
+  return setup(
+    <Provider store={store}>
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/manage/User",
+            state: routerState,
+          },
+        ]}
+      >
+        <UserManage />
+      </MemoryRouter>
+    </Provider>,
+  );
+};
+
 describe("UserManage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -64,6 +94,16 @@ describe("UserManage", () => {
     expect(
       screen.queryByText("該当するユーザーが見つかりませんでした。"),
     ).not.toBeInTheDocument();
+  });
+
+  it("削除完了stateがあるときはtoastを表示する", async () => {
+    setupUserManageWithRouterState({ deletedUserCd: "u123" });
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        "ユーザーu123を削除しました",
+      );
+    });
   });
 
   it("検索ボタンで getUserList を dispatch する", async () => {

@@ -21,14 +21,22 @@ import {
 } from "@/components/ui/table";
 import { UrlPath } from "@/constant/UrlPath";
 import { getUserList, userSelector } from "@/redux/slices/userSlice";
+import type { AppDispatch } from "@/store";
+import { toast } from "@/components/ui/sonner";
 import { useDispatch } from "react-redux";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { NavLink } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import type { MultiValue } from "react-select";
+
+type UserManageLocationState = {
+  deletedUserCd?: string;
+};
 
 const UserManage = () => {
   // 編集 検索条件
+  const location = useLocation();
+  const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const list = useSelector(userSelector.userListSelector());
   const searchCondition = useSelector(
@@ -53,6 +61,17 @@ const UserManage = () => {
   const [selectCenterList, setSelectCenterList] = useState<
     MultiValue<AutoCompleteData>
   >(searchCondition?.auto_complete ?? []);
+
+  useEffect(() => {
+    const state = location.state as UserManageLocationState | null;
+    if (!state?.deletedUserCd) return;
+
+    toast.success(`ユーザー${state.deletedUserCd}を削除しました`);
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: null,
+    });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   const onHandleSearch = () => {
     dispatch(

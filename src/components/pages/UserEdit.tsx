@@ -40,7 +40,7 @@ import type { AppDispatch } from "@/store";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { NavLink, useParams } from "react-router";
+import { NavLink, useNavigate, useParams } from "react-router";
 import type { SingleValue } from "react-select";
 import { z } from "zod";
 import Config from "../../config/apiConfig";
@@ -216,6 +216,7 @@ const userUpdateSchema = z.object({
 
 export const UserEdit = () => {
   const { user_cd } = useParams();
+  const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const target = useSelector(userSelector.userTargetSelector());
   const permissionList = useSelector(permissionSelector.permListSelector());
@@ -338,7 +339,7 @@ export const UserEdit = () => {
       mail,
     });
     if (!parsed.success) {
-      const message = parsed.error.errors.map((e) => e.message).join("\n");
+      const message = parsed.error.issues.map((e) => e.message).join("\n");
       toast.error(message);
       return;
     }
@@ -351,7 +352,7 @@ export const UserEdit = () => {
     const userIdParsed = userIdSchema.safeParse(derivedUserId);
     if (!userIdParsed.success) {
       toast.error(
-        userIdParsed.error.errors[0]?.message ?? "ユーザーIDが不正です",
+        userIdParsed.error.issues[0]?.message ?? "ユーザーIDが不正です",
       );
       return;
     }
@@ -363,7 +364,6 @@ export const UserEdit = () => {
       center_cd: belonging?.value ?? "",
       perm_cd: permission,
     };
-    console.log("実際に送信するデータ:", params);
     const result = await dispatch(updateUserInfo({ userCd: user_cd, params }));
     if (updateUserInfo.fulfilled.match(result)) {
       toast.success("保存しました");
@@ -376,7 +376,10 @@ export const UserEdit = () => {
     if (!user_cd) return;
     const result = await dispatch(removeUser(user_cd));
     if (removeUser.fulfilled.match(result)) {
-      toast.success(`ユーザー${user_cd}を削除しました`);
+      navigate(UrlPath.UserManage, {
+        replace: true,
+        state: { deletedUserCd: user_cd },
+      });
     } else {
       toast.error("削除に失敗しました");
     }

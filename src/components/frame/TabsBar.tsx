@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { MoreHorizontal } from "lucide-react";
+import { flushSync } from "react-dom";
 
 const OA_TABS = [
   { to: UrlPath.OAUsers, label: "OAユーザ表示" },
@@ -33,7 +34,8 @@ const MANAGE_TABS = [
 ];
 
 export const TabsBar = ({ className }: { className?: string }) => {
-  const { pathname, search } = useLocation();
+  const location = useLocation();
+  const { pathname, search } = location;
   const dispatch: AppDispatch = useDispatch();
   const lastVisitedTabs = useSelector(uiSelector.lastVisitedTabs);
   const isSideMenuCollapsed = useSelector(uiSelector.isSideMenuCollapsed);
@@ -41,6 +43,8 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
+
+  const [animateTab, setAnimateTab] = useState(true);
 
   const group = useMemo(() => {
     if (pathname.startsWith("/OA/")) return "OA";
@@ -53,9 +57,11 @@ export const TabsBar = ({ className }: { className?: string }) => {
     if (group === "manage") return MANAGE_TABS;
     return [];
   }, [group]);
+
   const matched = items.find(
     (t) => pathname === t.to || pathname.startsWith(`${t.to}/`),
   );
+
   useEffect(() => {
     if (!matched) return;
     const currentPath = `${pathname}${search}`;
@@ -167,18 +173,29 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     )}
                     asChild
                   >
-                    <RouterNavLink to={resolvedTo}>
+                    <RouterNavLink
+                      to={resolvedTo}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: "instant" });
+                        flushSync(() => {
+                          setAnimateTab(true);
+                        });
+                      }}
+                    >
                       {item.label}
                       {active === item.to && (
                         <motion.div
                           layoutId={`activeLine-${group}`}
                           className="absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-[color:var(--brand)]"
-                          transition={{
-                            type: "spring",
-                            stiffness: 250,
-                            damping: 32,
-                          }}
+                          transition={
+                            animateTab
+                              ? { type: "spring", stiffness: 250, damping: 32 }
+                              : { duration: 0 }
+                          }
                           initial={false}
+                          onLayoutAnimationComplete={() => {
+                            setAnimateTab(false);
+                          }}
                         />
                       )}
                     </RouterNavLink>
@@ -188,6 +205,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
             </TabsList>
           </Tabs>
         </div>
+
         {overflowTabs.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
