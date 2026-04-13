@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "../ui/button";
 import { MoreHorizontal } from "lucide-react";
-import { flushSync } from "react-dom";
 
 const OA_TABS = [
   { to: UrlPath.OAUsers, label: "OAユーザ表示" },
@@ -44,6 +43,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
 
+  // タブをクリックしたときだけアニメーションするためのフラグ
   const [animateTab, setAnimateTab] = useState(true);
 
   const group = useMemo(() => {
@@ -173,13 +173,12 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     )}
                     asChild
                   >
+                    {/* クリック時だけアニメーションしたいので、クリック時にAnimateTabフラグをtrueに */}
                     <RouterNavLink
                       to={resolvedTo}
                       onClick={() => {
-                        window.scrollTo({ top: 0, behavior: "instant" });
-                        flushSync(() => {
-                          setAnimateTab(true);
-                        });
+                        // window.scrollTo({ top: 0, behavior: "instant" });
+                        setAnimateTab(true);
                       }}
                     >
                       {item.label}
@@ -194,7 +193,8 @@ export const TabsBar = ({ className }: { className?: string }) => {
                           }
                           initial={false}
                           onLayoutAnimationComplete={() => {
-                            setAnimateTab(false);
+                            setAnimateTab(false); // ← 終わったらフラグを下げる
+                            // window.scrollTo({ top: 0, behavior: "instant" });
                           }}
                         />
                       )}

@@ -67,11 +67,11 @@ const UserManage = () => {
     if (!state?.deletedUserCd) return;
 
     toast.success(`ユーザー${state.deletedUserCd}を削除しました`);
-    navigate(`${location.pathname}${location.search}`, {
+    navigate(".", {
       replace: true,
       state: null,
     });
-  }, [location.pathname, location.search, location.state, navigate]);
+  }, [location.state, navigate]);
 
   const onHandleSearch = () => {
     dispatch(

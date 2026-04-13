@@ -34,11 +34,12 @@ import { UserProfile } from "./components/pages/UserProfile";
 import { UserSetting } from "./components/pages/UserSetting";
 import { SimpleSingleSignOn } from "./components/parts/SimpleSingleSignOn/SimpleSingleSignOn";
 import { UrlPath } from "./constant/UrlPath";
+import { ScrollReset } from "./components/parts/ScrollReset/ScrollReset";
+import { Layout } from "./components/frame/Layout";
+import { Outlet } from "react-router";
 
 const RootPage =
-  import.meta.env.VITE_USE_SIMPLE_SSO === "true"
-    ? SimpleSingleSignOn
-    : MyPage;
+  import.meta.env.VITE_USE_SIMPLE_SSO === "true" ? SimpleSingleSignOn : MyPage;
 
 const SSManageLegacyRedirect = () => {
   const { rootFolderId } = useParams();
@@ -59,6 +60,7 @@ const SSManageLegacyRedirect = () => {
 
 const App = () => (
   <BrowserRouter>
+    <ScrollReset />
     <Routes>
       <Route path={UrlPath.Root} element={<RootPage />} />
       <Route path={UrlPath.MyPage} element={<MyPage />} />
@@ -70,10 +72,17 @@ const App = () => (
 
       <Route path={UrlPath.OAUsers} element={<OAUsers />} />
       <Route path={UrlPath.OAOrders} element={<OAOrders />} />
-
-      <Route path={UrlPath.UserManage} element={<UserManage />} />
-      <Route path={UrlPath.UserCreate} element={<UserCreate />} />
-      <Route path={UrlPath.UserEdit} element={<UserEdit />} />
+      <Route
+        element={
+          <Layout>
+            <Outlet />
+          </Layout>
+        }
+      >
+        <Route path={UrlPath.UserManage} element={<UserManage />} />
+        <Route path={UrlPath.UserCreate} element={<UserCreate />} />
+        <Route path={UrlPath.UserEdit} element={<UserEdit />} />
+      </Route>
 
       <Route path={UrlPath.CenterManage} element={<CenterManage />} />
       <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />

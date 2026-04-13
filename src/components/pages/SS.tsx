@@ -326,7 +326,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
   return (
     <TooltipProvider delayDuration={100}>
-      <Layout hideTabs fluid subtitle={layoutSubtitle}>
+      <Layout fluid subtitle={layoutSubtitle}>
         <BoxManager />
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:h-full lg:overflow-hidden">

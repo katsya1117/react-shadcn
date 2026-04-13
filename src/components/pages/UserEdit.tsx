@@ -270,6 +270,10 @@ export const UserEdit = () => {
     };
   }, [target, groups, user_cd]);
 
+  // useEffect(() => {
+  //   window.scrollTo({ top: 0, behavior: "instant" });
+  // }, [user_cd]);
+
   const displayPermList: DispPerm[] = useMemo(() => {
     if (!permissionList) return [];
     return permissionList.map((p) => {
