@@ -82,11 +82,10 @@ const App = () => (
         <Route path={UrlPath.UserManage} element={<UserManage />} />
         <Route path={UrlPath.UserCreate} element={<UserCreate />} />
         <Route path={UrlPath.UserEdit} element={<UserEdit />} />
+        <Route path={UrlPath.CenterManage} element={<CenterManage />} />
+        <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
+        <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
       </Route>
-
-      <Route path={UrlPath.CenterManage} element={<CenterManage />} />
-      <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
-      <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
 
       <Route path={UrlPath.ManageRole} element={<RoleManage />} />
       <Route path={UrlPath.Information} element={<Information />} />

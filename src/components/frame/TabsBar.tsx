@@ -63,6 +63,11 @@ export const TabsBar = ({ className }: { className?: string }) => {
   );
 
   useEffect(() => {
+    console.log("TabsBar mounted");
+    return () => console.log("TabsBar unmounted");
+  }, []);
+
+  useEffect(() => {
     if (!matched) return;
     const currentPath = `${pathname}${search}`;
     if (lastVisitedTabs[matched.to] === currentPath) return;
@@ -177,7 +182,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     <RouterNavLink
                       to={resolvedTo}
                       onClick={() => {
-                        // window.scrollTo({ top: 0, behavior: "instant" });
+                        window.scrollTo({ top: 0, behavior: "instant" });
                         setAnimateTab(true);
                       }}
                     >
