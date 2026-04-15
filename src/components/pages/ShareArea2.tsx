@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Settings, FolderOpen, Users, Search } from "lucide-react";
+import { Folder, FolderOpen, Users, Search, UserPlus } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -152,13 +152,14 @@ const ShareArea2 = () => {
                     </div>
                   </div>
 
-                  {/* 2行目：管理系ボタン（自部署のみ、文言付き） */}
+                  {/* 2行目：管理系ボタン（自部署のみ） */}
                   {isOwnCenter && (
-                    <div className="flex items-center gap-2 px-4 py-2 border-t border-border/30">
+                    <div className="flex items-center justify-between px-4 py-2 border-t border-border/30">
+                      {/* コラボレーション設定：ピル形状・文言付き */}
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                        variant="outline"
+                        className="h-7 gap-1.5 rounded-full text-xs border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
                         onClick={() =>
                           navigate(
                             generatePath(UrlPath.SS, {
@@ -167,19 +168,25 @@ const ShareArea2 = () => {
                           )
                         }
                       >
-                        <Settings className="h-3.5 w-3.5" aria-hidden />
+                        <UserPlus className="h-3.5 w-3.5" aria-hidden />
                         コラボレーション設定
                       </Button>
 
+                      {/* センターメンバー一覧：アイコンのみ・右端固定 */}
                       {IS_ADMIN && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
-                        >
-                          <Users className="h-3.5 w-3.5" aria-hidden />
-                          センターメンバー一覧
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted"
+                              aria-label="センターメンバー一覧"
+                            >
+                              <Users className="h-3.5 w-3.5" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>センターメンバー一覧</TooltipContent>
+                        </Tooltip>
                       )}
                     </div>
                   )}
