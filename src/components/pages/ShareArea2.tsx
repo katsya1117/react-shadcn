@@ -78,16 +78,17 @@ const ShareArea2 = () => {
             </div>
           </div>
 
-          {/* リスト */}
-          <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
-            <div className="divide-y divide-border/40">
-              {filteredAreas.map((area) => {
-                const isOwnCenter = area.code === MY_CENTER_CODE;
-                return (
-                  <div
-                    key={area.code}
-                    className="flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40"
-                  >
+          {/* リスト：Vercel Storage風アイランド */}
+          <div className="space-y-2">
+            {filteredAreas.map((area) => {
+              const isOwnCenter = area.code === MY_CENTER_CODE;
+              return (
+                <div
+                  key={area.code}
+                  className="rounded-xl border border-border/60 bg-card/50 overflow-hidden transition-colors duration-150 hover:border-border hover:bg-card/70"
+                >
+                  {/* 1行目：フォルダ情報 + 開く系ボタン */}
+                  <div className="flex items-center gap-3 px-4 py-3">
                     {/* フォルダアイコン */}
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <Folder className="h-4 w-4 text-primary/70" />
@@ -113,7 +114,7 @@ const ShareArea2 = () => {
                       </p>
                     </div>
 
-                    {/* アクションボタン */}
+                    {/* 開く系ボタン（アイコンのみ） */}
                     <div className="flex items-center gap-1 shrink-0">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -148,64 +149,54 @@ const ShareArea2 = () => {
                         </TooltipTrigger>
                         <TooltipContent>Box Drive</TooltipContent>
                       </Tooltip>
-
-                      {/* 管理系ボタン（自部署のみ） */}
-                      {isOwnCenter && (
-                        <>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                                onClick={() =>
-                                  navigate(
-                                    generatePath(UrlPath.SS, {
-                                      rootFolderId: area.boxFolderId,
-                                    })
-                                  )
-                                }
-                                aria-label="コラボレーション設定"
-                              >
-                                <Settings className="h-4 w-4" aria-hidden />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>コラボレーション設定</TooltipContent>
-                          </Tooltip>
-
-                          {IS_ADMIN && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                                  aria-label="センターメンバー一覧"
-                                >
-                                  <Users className="h-4 w-4" aria-hidden />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>センターメンバー一覧</TooltipContent>
-                            </Tooltip>
-                          )}
-                        </>
-                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
 
-            {/* 空状態 */}
-            {filteredAreas.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Folder className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  該当する領域が見つかりません
-                </p>
-              </div>
-            )}
+                  {/* 2行目：管理系ボタン（自部署のみ、文言付き） */}
+                  {isOwnCenter && (
+                    <div className="flex items-center gap-2 px-4 py-2 border-t border-border/30">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                        onClick={() =>
+                          navigate(
+                            generatePath(UrlPath.SS, {
+                              rootFolderId: area.boxFolderId,
+                            })
+                          )
+                        }
+                      >
+                        <Settings className="h-3.5 w-3.5" aria-hidden />
+                        コラボレーション設定
+                      </Button>
+
+                      {IS_ADMIN && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                        >
+                          <Users className="h-3.5 w-3.5" aria-hidden />
+                          センターメンバー一覧
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {/* 空状態 */}
+          {filteredAreas.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-border/60 bg-card/50">
+              <Folder className="h-10 w-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                該当する領域が見つかりません
+              </p>
+            </div>
+          )}
         </div>
       </Layout>
     </TooltipProvider>
