@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Monitor, Settings } from "lucide-react";
+import { Folder, Settings, FolderOpen } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -36,7 +36,7 @@ const ShareArea = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {areas.map((area) => (
               <Card
                 key={area.code}
@@ -68,7 +68,7 @@ const ShareArea = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             navigate(
                               generatePath(UrlPath.SS, {
@@ -88,32 +88,32 @@ const ShareArea = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() => openLink(area.jclUrl)}
-                          aria-label="JCLで開く"
+                          aria-label="Box ブラウザ"
                         >
-                          <Monitor className="h-4 w-4" aria-hidden />
+                          <BoxIcon className="h-4 w-4" aria-hidden />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>JCLで開く</TooltipContent>
+                      <TooltipContent>Box ブラウザ</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             openLink(
                               `https://app.box.com/folder/${area.boxFolderId}`,
                             )
                           }
-                          aria-label="BOXで開く"
+                          aria-label="Box Drive"
                         >
-                          <BoxIcon className="h-4 w-4" aria-hidden />
+                          <FolderOpen className="h-4 w-4" aria-hidden />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>BOXで開く</TooltipContent>
+                      <TooltipContent>Box Drive</TooltipContent>
                     </Tooltip>
                   </div>
                 </CardContent>
