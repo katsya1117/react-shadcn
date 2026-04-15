@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Settings, FolderOpen, Users, Search, ChevronDown } from "lucide-react";
+import { Folder, Settings, FolderOpen, Users, Search } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -151,68 +151,52 @@ const ShareArea2 = () => {
                           </TooltipTrigger>
                           <TooltipContent>Box Drive</TooltipContent>
                         </Tooltip>
-
-                        {/* 自部署のみ：展開トグル */}
-                        {isOwnCenter && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground cursor-pointer transition-colors">
-                                <ChevronDown className="h-4 w-4 transition-transform duration-200 group-hover/row:rotate-180" aria-hidden />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>管理メニュー</TooltipContent>
-                          </Tooltip>
-                        )}
                       </div>
                     </div>
 
-                    {/* 2行目：管理系ボタン（自部署のみ、ホバーで展開） */}
+                    {/* 2行目：管理系ボタン（自部署のみ、常に表示） */}
                     {isOwnCenter && (
-                      <div className="grid grid-rows-[0fr] group-hover/row:grid-rows-[1fr] transition-[grid-template-rows] duration-200">
-                        <div className="overflow-hidden">
-                          <div className="flex items-center gap-3 px-4 py-2 bg-primary/[0.03]">
-                            {/* 左側スペーサー（アイコン分） */}
-                            <div className="h-9 w-9 shrink-0" />
+                      <div className="flex items-center gap-3 px-4 py-2 bg-primary/[0.03] border-t border-primary/10">
+                        {/* 左側スペーサー（アイコン分） */}
+                        <div className="h-9 w-9 shrink-0" />
 
-                            {/* 管理系ボタン */}
-                            <div className="flex items-center gap-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                                    onClick={() =>
-                                      navigate(
-                                        generatePath(UrlPath.SS, {
-                                          rootFolderId: area.boxFolderId,
-                                        })
-                                      )
-                                    }
-                                  >
-                                    <Settings className="h-3 w-3" aria-hidden />
-                                    コラボレーション設定
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>コラボレーション設定</TooltipContent>
-                              </Tooltip>
-                              {IS_ADMIN && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                                    >
-                                      <Users className="h-3 w-3" aria-hidden />
-                                      センターメンバー一覧
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>センターメンバー一覧</TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </div>
+                        {/* 管理系ボタン */}
+                        <div className="flex items-center gap-2">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                                onClick={() =>
+                                  navigate(
+                                    generatePath(UrlPath.SS, {
+                                      rootFolderId: area.boxFolderId,
+                                    })
+                                  )
+                                }
+                              >
+                                <Settings className="h-3 w-3" aria-hidden />
+                                コラボレーション設定
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>コラボレーション設定</TooltipContent>
+                          </Tooltip>
+                          {IS_ADMIN && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                                >
+                                  <Users className="h-3 w-3" aria-hidden />
+                                  センターメンバー一覧
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>センターメンバー一覧</TooltipContent>
+                            </Tooltip>
+                          )}
                         </div>
                       </div>
                     )}
