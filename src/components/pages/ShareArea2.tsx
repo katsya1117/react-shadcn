@@ -177,9 +177,9 @@ const ShareArea2 = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 rounded-lg p-1 border-border/40 text-muted-foreground hover:border-border/60 hover:bg-muted/40 hover:text-foreground"
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted"
                               aria-label="センターメンバー一覧"
                             >
                               <Users className="h-3.5 w-3.5" aria-hidden />
