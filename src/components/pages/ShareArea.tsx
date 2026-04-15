@@ -1,8 +1,7 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Settings, FolderOpen } from "lucide-react";
+import { Folder, Settings, FolderOpen, Users } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -13,6 +12,9 @@ import {
 import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 import { SHARE_AREAS } from "./shareAreaConfig";
+
+/** モック用フラグ。将来的にはセッションのロールから取得する */
+const IS_ADMIN = true;
 
 const ShareArea = () => {
   const areas = SHARE_AREAS;
@@ -25,8 +27,8 @@ const ShareArea = () => {
   return (
     <TooltipProvider delayDuration={150}>
       <Layout>
-        <div className="space-y-6">
-          <div className="space-y-2">
+        <div className="space-y-5">
+          <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
               Center Area
             </p>
@@ -36,63 +38,87 @@ const ShareArea = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {areas.map((area) => (
-              <Card
+              <div
                 key={area.code}
-                className="relative overflow-hidden rounded-lg"
+                className="relative flex flex-col justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
               >
-                <CardHeader className="flex flex-col gap-2 pt-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-foreground">
-                        <Folder className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-mono text-base font-semibold tracking-tight">
-                          {area.folderName}
-                        </span>
-                        {area.isGuest && (
-                          <Badge variant="outline">ゲスト</Badge>
-                        )}
-                      </div>
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
-                        {area.label}
-                      </CardTitle>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="pt-0 pb-4">
-                  <div className="flex justify-end gap-1">
+                {/* 右上：管理者専用ボタン（モック） */}
+                <div className="absolute top-2 right-2">
+                  {IS_ADMIN && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                          onClick={() =>
-                            navigate(
-                              generatePath(UrlPath.SS, {
-                                rootFolderId: area.boxFolderId,
-                              }),
-                            )
-                          }
-                          aria-label="共有領域管理"
+                          className="h-7 w-7 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          aria-label="センターメンバー一覧"
                         >
-                          <Settings className="h-4 w-4" aria-hidden />
+                          <Users className="h-3.5 w-3.5" aria-hidden />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>共有領域管理</TooltipContent>
+                      <TooltipContent>センターメンバー一覧</TooltipContent>
                     </Tooltip>
+                  )}
+                </div>
+
+                {/* メイン情報 */}
+                <div className="flex items-start gap-3 pr-6">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Folder className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-sm font-semibold tracking-tight text-foreground truncate">
+                        {area.folderName}
+                      </span>
+                      {area.isGuest && (
+                        <Badge variant="outline" className="text-xs py-0 px-1.5 h-4 shrink-0">
+                          ゲスト
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {area.label}
+                    </p>
+                  </div>
+                </div>
+
+                {/* フッター：左にコラボレーション設定、右にBox操作 */}
+                <div className="flex items-center justify-between border-t border-border pt-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        onClick={() =>
+                          navigate(
+                            generatePath(UrlPath.SS, {
+                              rootFolderId: area.boxFolderId,
+                            }),
+                          )
+                        }
+                        aria-label="コラボレーション設定"
+                      >
+                        <Settings className="h-3.5 w-3.5" aria-hidden />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>コラボレーション設定</TooltipContent>
+                  </Tooltip>
+
+                  <div className="flex items-center gap-0.5">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-7 w-7 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() => openLink(area.jclUrl)}
                           aria-label="Box ブラウザ"
                         >
-                          <BoxIcon className="h-4 w-4" aria-hidden />
+                          <BoxIcon className="h-3.5 w-3.5 aspect-square object-contain" aria-hidden />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Box ブラウザ</TooltipContent>
@@ -102,7 +128,7 @@ const ShareArea = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-7 w-7 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             openLink(
                               `https://app.box.com/folder/${area.boxFolderId}`,
@@ -110,14 +136,14 @@ const ShareArea = () => {
                           }
                           aria-label="Box Drive"
                         >
-                          <FolderOpen className="h-4 w-4" aria-hidden />
+                          <FolderOpen className="h-3.5 w-3.5" aria-hidden />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Box Drive</TooltipContent>
                     </Tooltip>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </div>
