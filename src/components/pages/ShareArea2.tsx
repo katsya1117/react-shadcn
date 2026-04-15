@@ -78,20 +78,22 @@ const ShareArea2 = () => {
             </div>
           </div>
 
-          {/* グリッド */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filteredAreas.map((area) => {
-              const isOwnCenter = area.code === MY_CENTER_CODE;
-              return (
-                <div
-                  key={area.code}
-                  className="flex flex-col gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-4 transition-all duration-200 hover:border-border hover:bg-card/60 hover:shadow-sm"
-                >
-                  {/* 上部：フォルダ情報 */}
-                  <div className="flex items-start gap-3 flex-1">
+          {/* リスト */}
+          <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
+            <div className="divide-y divide-border/40">
+              {filteredAreas.map((area) => {
+                const isOwnCenter = area.code === MY_CENTER_CODE;
+                return (
+                  <div
+                    key={area.code}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40"
+                  >
+                    {/* フォルダアイコン */}
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <Folder className="h-4 w-4 text-primary/70" />
                     </div>
+
+                    {/* フォルダ情報 */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-sm font-semibold text-foreground truncate">
@@ -110,101 +112,100 @@ const ShareArea2 = () => {
                         {area.label}
                       </p>
                     </div>
-                  </div>
 
-                  {/* 下部：アクションボタン */}
-                  <div className="flex flex-wrap gap-2 border-t border-border/30 pt-3">
-                    {/* 開く系ボタン */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                          onClick={() =>
-                            openLink(
-                              `https://app.box.com/folder/${area.boxFolderId}`
-                            )
-                          }
-                        >
-                          <BoxIcon className="h-3 w-3 aspect-square object-contain" aria-hidden />
-                          Box ブラウザ
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Box ブラウザで開く</TooltipContent>
-                    </Tooltip>
+                    {/* アクションボタン */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            onClick={() =>
+                              openLink(
+                                `https://app.box.com/folder/${area.boxFolderId}`
+                              )
+                            }
+                            aria-label="Box ブラウザ"
+                          >
+                            <BoxIcon className="h-4 w-4 aspect-square object-contain" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box ブラウザ</TooltipContent>
+                      </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                          onClick={() => openLink(area.jclUrl)}
-                        >
-                          <FolderOpen className="h-3 w-3" aria-hidden />
-                          Box Drive
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Box Driveで開く</TooltipContent>
-                    </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            onClick={() => openLink(area.jclUrl)}
+                            aria-label="Box Drive"
+                          >
+                            <FolderOpen className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box Drive</TooltipContent>
+                      </Tooltip>
 
-                    {/* 管理系ボタン（自部署のみ） */}
-                    {isOwnCenter && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                              onClick={() =>
-                                navigate(
-                                  generatePath(UrlPath.SS, {
-                                    rootFolderId: area.boxFolderId,
-                                  })
-                                )
-                              }
-                            >
-                              <Settings className="h-3 w-3" aria-hidden />
-                              設定
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>コラボレーション設定</TooltipContent>
-                        </Tooltip>
-
-                        {IS_ADMIN && (
+                      {/* 管理系ボタン（自部署のみ） */}
+                      {isOwnCenter && (
+                        <>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                onClick={() =>
+                                  navigate(
+                                    generatePath(UrlPath.SS, {
+                                      rootFolderId: area.boxFolderId,
+                                    })
+                                  )
+                                }
+                                aria-label="コラボレーション設定"
                               >
-                                <Users className="h-3 w-3" aria-hidden />
-                                メンバー
+                                <Settings className="h-4 w-4" aria-hidden />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>センターメンバー一覧</TooltipContent>
+                            <TooltipContent>コラボレーション設定</TooltipContent>
                           </Tooltip>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
 
-          {/* 空状態 */}
-          {filteredAreas.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Folder className="h-10 w-10 text-muted-foreground/30 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                該当する領域が見つかりません
-              </p>
+                          {IS_ADMIN && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                  aria-label="センターメンバー一覧"
+                                >
+                                  <Users className="h-4 w-4" aria-hidden />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>センターメンバー一覧</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+
+            {/* 空状態 */}
+            {filteredAreas.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Folder className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  該当する領域が見つかりません
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </Layout>
     </TooltipProvider>
