@@ -156,7 +156,10 @@ const ShareArea2 = () => {
 
                     {/* 2行目：管理系ボタン（自部署のみ、常に表示） */}
                     {isOwnCenter && (
-                      <div className="flex items-center gap-3 px-4 py-2 bg-primary/[0.03] border-t border-primary/10">
+                      <div className="relative flex items-center gap-3 pl-7 pr-4 py-2 bg-gradient-to-r from-primary/[0.05] to-transparent">
+                        {/* 左側のアクセントバー */}
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/70 via-primary/50 to-primary/30 rounded-r-sm" />
+
                         {/* 左側スペーサー（アイコン分） */}
                         <div className="h-9 w-9 shrink-0" />
 
