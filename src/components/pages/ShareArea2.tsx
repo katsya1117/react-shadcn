@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Settings, FolderOpen, Users, Search, MoreHorizontal } from "lucide-react";
+import { Folder, Settings, FolderOpen, Users, Search } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -9,19 +9,15 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 import { SHARE_AREAS } from "./shareAreaConfig";
 import { useState, useMemo } from "react";
 
-/** モック用フラグ。将来的にはセッションのロールから取得する */
+/** モック: 自分が所属するセンターコード。将来はセッションから取得 */
+const MY_CENTER_CODE = "jclgd1swdv";
+/** モック: 管理者フラグ */
 const IS_ADMIN = true;
 
 const ShareArea2 = () => {
@@ -78,111 +74,123 @@ const ShareArea2 = () => {
           <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
             {/* リストアイテム */}
             <div className="divide-y divide-border/40">
-              {filteredAreas.map((area) => (
-                <div
-                  key={area.code}
-                  className="group relative flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40"
-                >
-                  {/* フォルダアイコン */}
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors duration-150 group-hover:bg-primary/15">
-                    <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
-                  </div>
-
-                  {/* フォルダ情報：中央で伸張 */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-semibold text-foreground truncate">
-                        {area.folderName}
-                      </span>
-                      {area.isGuest && (
-                        <Badge
-                          variant="secondary"
-                          className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
-                        >
-                          ゲスト
-                        </Badge>
-                      )}
+              {filteredAreas.map((area) => {
+                const isOwnCenter = area.code === MY_CENTER_CODE;
+                return (
+                  <div
+                    key={area.code}
+                    className={`group relative flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40 ${isOwnCenter ? "bg-primary/[0.03]" : ""}`}
+                  >
+                    {/* フォルダアイコン */}
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${isOwnCenter ? "bg-primary/15 group-hover:bg-primary/20" : "bg-primary/10 group-hover:bg-primary/15"}`}>
+                      <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {area.label}
-                    </p>
-                  </div>
 
-                  {/* 右端：開く系ボタン + 設定メニュー */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                          onClick={() =>
-                            openLink(
-                              `https://app.box.com/folder/${area.boxFolderId}`
-                            )
-                          }
-                          aria-label="Box ブラウザ"
-                        >
-                          <BoxIcon
-                            className="h-4 w-4 aspect-square object-contain"
-                            aria-hidden
-                          />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Box ブラウザ</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                          onClick={() => openLink(area.jclUrl)}
-                          aria-label="Box Drive"
-                        >
-                          <FolderOpen className="h-4 w-4" aria-hidden />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Box Drive</TooltipContent>
-                    </Tooltip>
-
-                    {/* 設定メニュー */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted"
-                          aria-label="その他の操作"
-                        >
-                          <MoreHorizontal className="h-4 w-4" aria-hidden />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigate(
-                              generatePath(UrlPath.SS, {
-                                rootFolderId: area.boxFolderId,
-                              })
-                            )
-                          }
-                        >
-                          <Settings className="h-4 w-4 mr-2" aria-hidden />
-                          コラボレーション設定
-                        </DropdownMenuItem>
-                        {IS_ADMIN && (
-                          <DropdownMenuItem>
-                            <Users className="h-4 w-4 mr-2" aria-hidden />
-                            センターメンバー一覧
-                          </DropdownMenuItem>
+                    {/* フォルダ情報：中央で伸張 */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-semibold text-foreground truncate">
+                          {area.folderName}
+                        </span>
+                        {area.isGuest && (
+                          <Badge
+                            variant="secondary"
+                            className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
+                          >
+                            ゲスト
+                          </Badge>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {area.label}
+                      </p>
+                    </div>
+
+                    {/* 右端：全行共通の開く系ボタン */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* 自部署のみ：管理系ボタン（アウトライン、色違い） */}
+                      {isOwnCenter && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-8 w-8 rounded-full border-primary/30 text-primary/60 hover:border-primary hover:bg-primary/10 hover:text-primary"
+                                onClick={() =>
+                                  navigate(
+                                    generatePath(UrlPath.SS, {
+                                      rootFolderId: area.boxFolderId,
+                                    })
+                                  )
+                                }
+                                aria-label="コラボレーション設定"
+                              >
+                                <Settings className="h-3.5 w-3.5" aria-hidden />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>コラボレーション設定</TooltipContent>
+                          </Tooltip>
+                          {IS_ADMIN && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-8 w-8 rounded-full border-primary/30 text-primary/60 hover:border-primary hover:bg-primary/10 hover:text-primary"
+                                  aria-label="センターメンバー一覧"
+                                >
+                                  <Users className="h-3.5 w-3.5" aria-hidden />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>センターメンバー一覧</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {/* 視覚的なギャップで管理系と開く系を分離 */}
+                          <span className="w-3" />
+                        </>
+                      )}
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            onClick={() =>
+                              openLink(
+                                `https://app.box.com/folder/${area.boxFolderId}`
+                              )
+                            }
+                            aria-label="Box ブラウザ"
+                          >
+                            <BoxIcon
+                              className="h-4 w-4 aspect-square object-contain"
+                              aria-hidden
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box ブラウザ</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            onClick={() => openLink(area.jclUrl)}
+                            aria-label="Box Drive"
+                          >
+                            <FolderOpen className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box Drive</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 空状態 */}
