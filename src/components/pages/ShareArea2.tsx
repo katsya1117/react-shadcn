@@ -77,40 +77,83 @@ const ShareArea2 = () => {
               {filteredAreas.map((area) => {
                 const isOwnCenter = area.code === MY_CENTER_CODE;
                 return (
-                  <div
-                    key={area.code}
-                    className={`group relative flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40 ${isOwnCenter ? "bg-primary/[0.03]" : ""}`}
-                  >
-                    {/* フォルダアイコン */}
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${isOwnCenter ? "bg-primary/15 group-hover:bg-primary/20" : "bg-primary/10 group-hover:bg-primary/15"}`}>
-                      <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
-                    </div>
-
-                    {/* フォルダ情報：中央で伸張 */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-foreground truncate">
-                          {area.folderName}
-                        </span>
-                        {area.isGuest && (
-                          <Badge
-                            variant="secondary"
-                            className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
-                          >
-                            ゲスト
-                          </Badge>
-                        )}
+                  <div key={area.code}>
+                    {/* 1行目：フォルダ情報 + 開く系ボタン */}
+                    <div className="group relative flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-muted/40">
+                      {/* フォルダアイコン */}
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${isOwnCenter ? "bg-primary/15 group-hover:bg-primary/20" : "bg-primary/10 group-hover:bg-primary/15"}`}>
+                        <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {area.label}
-                      </p>
+
+                      {/* フォルダ情報：中央で伸張 */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold text-foreground truncate">
+                            {area.folderName}
+                          </span>
+                          {area.isGuest && (
+                            <Badge
+                              variant="secondary"
+                              className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
+                            >
+                              ゲスト
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {area.label}
+                        </p>
+                      </div>
+
+                      {/* 開く系ボタン */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                              onClick={() =>
+                                openLink(
+                                  `https://app.box.com/folder/${area.boxFolderId}`
+                                )
+                              }
+                              aria-label="Box ブラウザ"
+                            >
+                              <BoxIcon
+                                className="h-4 w-4 aspect-square object-contain"
+                                aria-hidden
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Box ブラウザ</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                              onClick={() => openLink(area.jclUrl)}
+                              aria-label="Box Drive"
+                            >
+                              <FolderOpen className="h-4 w-4" aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Box Drive</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
 
-                    {/* 右端：全行共通の開く系ボタン */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      {/* 自部署のみ：管理系ボタン（アウトライン、色違い） */}
-                      {isOwnCenter && (
-                        <>
+                    {/* 2行目：管理系ボタン（自部署のみ） */}
+                    {isOwnCenter && (
+                      <div className="relative flex items-center gap-3 px-4 py-2 bg-primary/[0.02] border-t border-primary/10">
+                        {/* 左側スペーサー（アイコン分） */}
+                        <div className="h-9 w-9 shrink-0" />
+
+                        {/* 管理系ボタン */}
+                        <div className="flex items-center gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -146,48 +189,9 @@ const ShareArea2 = () => {
                               <TooltipContent>センターメンバー一覧</TooltipContent>
                             </Tooltip>
                           )}
-                          {/* 視覚的なギャップで管理系と開く系を分離 */}
-                          <span className="w-3" />
-                        </>
-                      )}
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                            onClick={() =>
-                              openLink(
-                                `https://app.box.com/folder/${area.boxFolderId}`
-                              )
-                            }
-                            aria-label="Box ブラウザ"
-                          >
-                            <BoxIcon
-                              className="h-4 w-4 aspect-square object-contain"
-                              aria-hidden
-                            />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Box ブラウザ</TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                            onClick={() => openLink(area.jclUrl)}
-                            aria-label="Box Drive"
-                          >
-                            <FolderOpen className="h-4 w-4" aria-hidden />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Box Drive</TooltipContent>
-                      </Tooltip>
-                    </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
