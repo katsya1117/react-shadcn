@@ -156,14 +156,14 @@ const ShareArea2 = () => {
 
                     {/* 2行目：管理系ボタン（自部署のみ、常に表示） */}
                     {isOwnCenter && (
-                      <div className="flex items-center gap-2 ml-10 mr-4 my-2 px-3 py-2 rounded-lg border border-primary/15 bg-primary/[0.02] shadow-xs transition-all hover:border-primary/25 hover:shadow-sm">
+                      <div className="flex items-center gap-2 ml-10 mr-4 my-1.5 px-3 py-1.5 border-l-2 border-primary/20 pl-4">
                         {/* 管理系ボタン */}
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                              variant="ghost"
+                              className="h-7 gap-1.5 rounded-full text-primary/70 hover:text-primary text-xs"
                               onClick={() =>
                                 navigate(
                                   generatePath(UrlPath.SS, {
@@ -183,8 +183,8 @@ const ShareArea2 = () => {
                             <TooltipTrigger asChild>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                                variant="ghost"
+                                className="h-7 gap-1.5 rounded-full text-primary/70 hover:text-primary text-xs"
                               >
                                 <Users className="h-3 w-3" aria-hidden />
                                 センターメンバー一覧
