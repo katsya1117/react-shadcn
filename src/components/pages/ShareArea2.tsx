@@ -156,51 +156,43 @@ const ShareArea2 = () => {
 
                     {/* 2行目：管理系ボタン（自部署のみ、常に表示） */}
                     {isOwnCenter && (
-                      <div className="relative flex items-center gap-3 pl-7 pr-4 py-2 bg-gradient-to-r from-primary/[0.05] to-transparent">
-                        {/* 左側のアクセントバー */}
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/70 via-primary/50 to-primary/30 rounded-r-sm" />
-
-                        {/* 左側スペーサー（アイコン分） */}
-                        <div className="h-9 w-9 shrink-0" />
-
+                      <div className="flex items-center gap-2 ml-10 mr-4 my-2 px-3 py-2 rounded-lg border border-primary/15 bg-primary/[0.02] shadow-xs transition-all hover:border-primary/25 hover:shadow-sm">
                         {/* 管理系ボタン */}
-                        <div className="flex items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
+                              onClick={() =>
+                                navigate(
+                                  generatePath(UrlPath.SS, {
+                                    rootFolderId: area.boxFolderId,
+                                  })
+                                )
+                              }
+                            >
+                              <Settings className="h-3 w-3" aria-hidden />
+                              コラボレーション設定
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>コラボレーション設定</TooltipContent>
+                        </Tooltip>
+                        {IS_ADMIN && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                                onClick={() =>
-                                  navigate(
-                                    generatePath(UrlPath.SS, {
-                                      rootFolderId: area.boxFolderId,
-                                    })
-                                  )
-                                }
                               >
-                                <Settings className="h-3 w-3" aria-hidden />
-                                コラボレーション設定
+                                <Users className="h-3 w-3" aria-hidden />
+                                センターメンバー一覧
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>コラボレーション設定</TooltipContent>
+                            <TooltipContent>センターメンバー一覧</TooltipContent>
                           </Tooltip>
-                          {IS_ADMIN && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 gap-1.5 rounded-full border-primary/30 text-primary/70 hover:border-primary hover:bg-primary/10 hover:text-primary text-xs"
-                                >
-                                  <Users className="h-3 w-3" aria-hidden />
-                                  センターメンバー一覧
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>センターメンバー一覧</TooltipContent>
-                            </Tooltip>
-                          )}
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
