@@ -36,7 +36,7 @@ const ShareArea = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {areas.map((area) => (
               <Card
                 key={area.code}
@@ -62,12 +62,13 @@ const ShareArea = () => {
                 </CardHeader>
 
                 <CardContent className="pt-0 pb-4">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="outline"
-                          className="h-10 gap-2 rounded-full px-4"
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             navigate(
                               generatePath(UrlPath.SS, {
@@ -78,7 +79,6 @@ const ShareArea = () => {
                           aria-label="共有領域管理"
                         >
                           <Settings className="h-4 w-4" aria-hidden />
-                          <span>共有領域管理</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>共有領域管理</TooltipContent>
@@ -88,7 +88,7 @@ const ShareArea = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-10 w-10 rounded-full hover:bg-muted"
+                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() => openLink(area.jclUrl)}
                           aria-label="JCLで開く"
                         >
@@ -100,9 +100,9 @@ const ShareArea = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 hover:bg-accent"
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             openLink(
                               `https://app.box.com/folder/${area.boxFolderId}`,
@@ -110,8 +110,7 @@ const ShareArea = () => {
                           }
                           aria-label="BOXで開く"
                         >
-                          <BoxIcon className="h-4 w-4" />
-                          <span className="hidden sm:inline text-xs font-medium">BOX</span>
+                          <BoxIcon className="h-4 w-4" aria-hidden />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>BOXで開く</TooltipContent>
