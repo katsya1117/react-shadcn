@@ -1,8 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/frame/Layout";
-import { Folder, Monitor, Settings } from "lucide-react";
+import { Folder, Settings, FolderOpen, Users } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
   Tooltip,
@@ -13,6 +13,9 @@ import {
 import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constant/UrlPath";
 import { SHARE_AREAS } from "./shareAreaConfig";
+
+/** モック用フラグ。将来的にはセッションのロールから取得する */
+const IS_ADMIN = true;
 
 const ShareArea = () => {
   const areas = SHARE_AREAS;
@@ -26,48 +29,82 @@ const ShareArea = () => {
     <TooltipProvider delayDuration={150}>
       <Layout>
         <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-primary/60 font-medium">
               Center Area
             </p>
-            <h1 className="text-2xl font-semibold">センター専用領域</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight">センター専用領域</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
               部署やプロジェクト単位で区切られた領域のうち、あなたがアクセスできるものを一覧表示しています。
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {areas.map((area) => (
               <Card
                 key={area.code}
-                className="relative overflow-hidden rounded-lg"
+                className="group relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 py-0 gap-0"
               >
-                <CardHeader className="flex flex-col gap-2 pt-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-foreground">
-                        <Folder className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-mono text-base font-semibold tracking-tight">
+                {/* サブトルなグラデーションオーバーレイ */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                
+                <CardContent className="relative p-4">
+                  {/* 右上：管理者専用ボタン */}
+                  {IS_ADMIN && (
+                    <div className="absolute top-3 right-3">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 rounded-full text-muted-foreground/60 opacity-0 transition-all duration-200 hover:bg-primary/10 hover:text-primary group-hover:opacity-100"
+                            aria-label="センターメンバー一覧"
+                          >
+                            <Users className="h-3.5 w-3.5" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>センターメンバー一覧</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  )}
+
+                  {/* メインコンテンツ */}
+                  <div className="flex items-start gap-3">
+                    {/* フォルダアイコン */}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 ring-1 ring-primary/10 transition-all duration-300 group-hover:from-primary/15 group-hover:to-primary/10 group-hover:ring-primary/20">
+                      <Folder className="h-5 w-5 text-primary/70 transition-colors duration-300 group-hover:text-primary" />
+                    </div>
+                    
+                    {/* テキスト情報 */}
+                    <div className="min-w-0 flex-1 space-y-1 pr-8">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-semibold tracking-tight text-foreground truncate">
                           {area.folderName}
                         </span>
                         {area.isGuest && (
-                          <Badge variant="outline">ゲスト</Badge>
+                          <Badge 
+                            variant="secondary" 
+                            className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
+                          >
+                            ゲスト
+                          </Badge>
                         )}
                       </div>
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                      <p className="text-xs text-muted-foreground/80 truncate">
                         {area.label}
-                      </CardTitle>
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
 
-                <CardContent className="pt-0 pb-4">
-                  <div className="flex justify-end gap-2">
+                  {/* アクションボタン */}
+                  <div className="mt-4 flex items-center justify-between">
+                    {/* 左：コラボレーション設定 */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="outline"
-                          className="h-10 gap-2 rounded-full px-4"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 rounded-full text-muted-foreground/70 transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:scale-105"
                           onClick={() =>
                             navigate(
                               generatePath(UrlPath.SS, {
@@ -75,47 +112,49 @@ const ShareArea = () => {
                               }),
                             )
                           }
-                          aria-label="共有領域管理"
+                          aria-label="コラボレーション設定"
                         >
                           <Settings className="h-4 w-4" aria-hidden />
-                          <span>共有領域管理</span>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>共有領域管理</TooltipContent>
+                      <TooltipContent>コラボレーション設定</TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-10 w-10 rounded-full hover:bg-muted"
-                          onClick={() => openLink(area.jclUrl)}
-                          aria-label="JCLで開く"
-                        >
-                          <Monitor className="h-4 w-4" aria-hidden />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>JCLで開く</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 hover:bg-accent"
-                          onClick={() =>
-                            openLink(
-                              `https://app.box.com/folder/${area.boxFolderId}`,
-                            )
-                          }
-                          aria-label="BOXで開く"
-                        >
-                          <BoxIcon className="h-4 w-4" />
-                          <span className="hidden sm:inline text-xs font-medium">BOX</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>BOXで開く</TooltipContent>
-                    </Tooltip>
+
+                    {/* 右：Box操作 */}
+                    <div className="flex items-center gap-1">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground/70 transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:scale-105"
+                            onClick={() =>
+                              openLink(
+                                `https://app.box.com/folder/${area.boxFolderId}`,
+                              )
+                            }
+                            aria-label="Box ブラウザ"
+                          >
+                            <BoxIcon className="h-4 w-4 aspect-square object-contain" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box ブラウザ</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 rounded-full text-muted-foreground/70 transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:scale-105"
+                            onClick={() => openLink(area.jclUrl)}
+                            aria-label="Box Drive"
+                          >
+                            <FolderOpen className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Box Drive</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -25,6 +25,7 @@ import { OAUsers } from "./components/pages/OAUsers";
 import { RoleManage } from "./components/pages/RoleManage";
 import { SS } from "./components/pages/SS";
 import { ShareArea } from "./components/pages/ShareArea";
+import { ShareArea2 } from "./components/pages/ShareArea2";
 import { System } from "./components/pages/System";
 import { Tool } from "./components/pages/Tool";
 import { UserCreate } from "./components/pages/UserCreate";
@@ -65,7 +66,9 @@ const App = () => (
       <Route path={UrlPath.Root} element={<RootPage />} />
       <Route path={UrlPath.MyPage} element={<MyPage />} />
       <Route path={UrlPath.JobSearch} element={<JobSearch />} />
-      <Route path={UrlPath.ShareArea} element={<ShareArea />} />
+      {/* ShareArea UI切り替え: ShareArea（カード形式）/ ShareArea2（リスト形式）*/}
+      <Route path={UrlPath.ShareArea} element={<ShareArea2 />} />
+      {/* <Route path={UrlPath.ShareArea} element={<ShareArea />} /> */}
       <Route path={UrlPath.LogSearch} element={<LogSearch />} />
       <Route path={UrlPath.JobCreate} element={<JobCreate />} />
       <Route path={UrlPath.Tool} element={<Tool />} />
