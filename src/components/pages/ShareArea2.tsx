@@ -115,13 +115,13 @@ const ShareArea2 = () => {
                     </div>
 
                     {/* 開く系ボタン（アイコンのみ） */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 rounded-lg p-1 border-border/40 text-muted-foreground hover:border-border/60 hover:bg-muted/40 hover:text-foreground"
                             onClick={() =>
                               openLink(
                                 `https://app.box.com/folder/${area.boxFolderId}`
@@ -138,9 +138,9 @@ const ShareArea2 = () => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 rounded-lg p-1 border-border/40 text-muted-foreground hover:border-border/60 hover:bg-muted/40 hover:text-foreground"
                             onClick={() => openLink(area.jclUrl)}
                             aria-label="Box Drive"
                           >
@@ -159,7 +159,7 @@ const ShareArea2 = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 gap-1.5 rounded-full text-xs border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
+                        className="h-7 gap-1.5 rounded-full text-xs border-border/30 text-muted-foreground hover:border-border/50 hover:text-foreground hover:bg-muted/20"
                         onClick={() =>
                           navigate(
                             generatePath(UrlPath.SS, {
@@ -177,9 +177,9 @@ const ShareArea2 = () => {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7 rounded-full text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 w-7 rounded-lg p-1 border-border/40 text-muted-foreground hover:border-border/60 hover:bg-muted/40 hover:text-foreground"
                               aria-label="センターメンバー一覧"
                             >
                               <Users className="h-3.5 w-3.5" aria-hidden />
