@@ -70,57 +70,21 @@ const ShareArea2 = () => {
 
           {/* リスト */}
           <div className="rounded-xl border border-border/60 bg-card/50 overflow-hidden">
-            {/* リストヘッダー（デスクトップのみ） */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_auto] gap-4 px-4 py-2 border-b border-border/40 bg-muted/30">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                領域名
-              </span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider w-32 text-right">
-                アクション
-              </span>
-            </div>
-
             {/* リストアイテム */}
             <div className="divide-y divide-border/40">
               {filteredAreas.map((area) => (
                 <div
                   key={area.code}
-                  className="group relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-3 transition-colors duration-150 hover:bg-muted/40"
+                  className="group relative flex items-center gap-2 px-3 py-2.5 transition-colors duration-150 hover:bg-muted/40"
                 >
-                  {/* 左側：フォルダ情報 */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors duration-150 group-hover:bg-primary/15">
-                      <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-foreground truncate">
-                          {area.folderName}
-                        </span>
-                        {area.isGuest && (
-                          <Badge
-                            variant="secondary"
-                            className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
-                          >
-                            ゲスト
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {area.label}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 右側：アクションボタン */}
-                  <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150 ml-12 sm:ml-0">
+                  {/* 管理系ボタン：左端 */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-7 w-7 rounded-full text-muted-foreground/50 hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             navigate(
                               generatePath(UrlPath.SS, {
@@ -130,7 +94,7 @@ const ShareArea2 = () => {
                           }
                           aria-label="コラボレーション設定"
                         >
-                          <Settings className="h-4 w-4" aria-hidden />
+                          <Settings className="h-3.5 w-3.5" aria-hidden />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>コラボレーション設定</TooltipContent>
@@ -142,24 +106,50 @@ const ShareArea2 = () => {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            className="h-7 w-7 rounded-full text-muted-foreground/50 hover:bg-primary/10 hover:text-primary"
                             aria-label="センターメンバー一覧"
                           >
-                            <Users className="h-4 w-4" aria-hidden />
+                            <Users className="h-3.5 w-3.5" aria-hidden />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>センターメンバー一覧</TooltipContent>
                       </Tooltip>
                     )}
+                  </div>
 
-                    <div className="w-px h-4 bg-border/60 mx-1" />
+                  {/* フォルダアイコン */}
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors duration-150 group-hover:bg-primary/15">
+                    <Folder className="h-4 w-4 text-primary/70 transition-colors duration-150 group-hover:text-primary" />
+                  </div>
 
+                  {/* フォルダ情報：中央で伸張 */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-foreground truncate">
+                        {area.folderName}
+                      </span>
+                      {area.isGuest && (
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 h-5 px-1.5 text-[10px] font-medium bg-amber-100/80 text-amber-700 border-0 dark:bg-amber-900/30 dark:text-amber-400"
+                        >
+                          ゲスト
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {area.label}
+                    </p>
+                  </div>
+
+                  {/* 開く系ボタン：右端 */}
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-7 w-7 rounded-full text-muted-foreground/50 hover:bg-primary/10 hover:text-primary"
                           onClick={() =>
                             openLink(
                               `https://app.box.com/folder/${area.boxFolderId}`
@@ -168,7 +158,7 @@ const ShareArea2 = () => {
                           aria-label="Box ブラウザ"
                         >
                           <BoxIcon
-                            className="h-4 w-4 aspect-square object-contain"
+                            className="h-3.5 w-3.5 aspect-square object-contain"
                             aria-hidden
                           />
                         </Button>
@@ -181,11 +171,11 @@ const ShareArea2 = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          className="h-7 w-7 rounded-full text-muted-foreground/50 hover:bg-primary/10 hover:text-primary"
                           onClick={() => openLink(area.jclUrl)}
                           aria-label="Box Drive"
                         >
-                          <FolderOpen className="h-4 w-4" aria-hidden />
+                          <FolderOpen className="h-3.5 w-3.5" aria-hidden />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>Box Drive</TooltipContent>
