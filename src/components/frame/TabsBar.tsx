@@ -16,24 +16,6 @@ import {
 import { Button } from "../ui/button";
 import { MoreHorizontal } from "lucide-react";
 
-/**
- * インデックスの変化から移動方向を計算するフック
- * 右に移動 → "right", 左に移動 → "left"
- */
-const useSlideDirection = (activeIndex: number) => {
-  const prevRef = useRef(activeIndex);
-  const [direction, setDirection] = useState<"left" | "right">("right");
-
-  useEffect(() => {
-    if (prevRef.current !== activeIndex) {
-      setDirection(activeIndex > prevRef.current ? "right" : "left");
-      prevRef.current = activeIndex;
-    }
-  }, [activeIndex]);
-
-  return direction;
-};
-
 const OA_TABS = [
   { to: UrlPath.OAUsers, label: "OAユーザ表示" },
   { to: UrlPath.OAOrders, label: "OA工番情報" },
@@ -59,6 +41,8 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
+  const prevIndexRef = useRef(-1);
+  const [direction, setDirection] = useState<"left" | "right">("right");
 
   const group = useMemo(() => {
     if (pathname.startsWith("/OA/")) return "OA";
@@ -81,7 +65,13 @@ export const TabsBar = ({ className }: { className?: string }) => {
     return items.findIndex((item) => item.to === matched.to);
   }, [matched, items]);
 
-  const direction = useSlideDirection(activeIndex);
+  // タブ移動の方向を計算: 前回と現在のインデックスを比較
+  useEffect(() => {
+    if (prevIndexRef.current !== -1 && activeIndex !== prevIndexRef.current) {
+      setDirection(activeIndex > prevIndexRef.current ? "right" : "left");
+    }
+    prevIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   useEffect(() => {
     if (!matched) return;
