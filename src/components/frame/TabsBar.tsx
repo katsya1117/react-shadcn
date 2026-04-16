@@ -16,6 +16,24 @@ import {
 import { Button } from "../ui/button";
 import { MoreHorizontal } from "lucide-react";
 
+/**
+ * インデックスの変化から移動方向を計算するフック
+ * 右に移動 → "right", 左に移動 → "left"
+ */
+const useSlideDirection = (activeIndex: number) => {
+  const prevRef = useRef(activeIndex);
+  const [direction, setDirection] = useState<"left" | "right">("right");
+
+  useEffect(() => {
+    if (prevRef.current !== activeIndex) {
+      setDirection(activeIndex > prevRef.current ? "right" : "left");
+      prevRef.current = activeIndex;
+    }
+  }, [activeIndex]);
+
+  return direction;
+};
+
 const OA_TABS = [
   { to: UrlPath.OAUsers, label: "OAユーザ表示" },
   { to: UrlPath.OAOrders, label: "OA工番情報" },
@@ -42,10 +60,6 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
 
-  // 方向を追跡するための state
-  const [prevActiveIndex, setPrevActiveIndex] = useState(-1);
-  const [direction, setDirection] = useState<"left" | "right">("right");
-
   const group = useMemo(() => {
     if (pathname.startsWith("/OA/")) return "OA";
     if (pathname.startsWith("/manage/")) return "manage";
@@ -67,22 +81,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
     return items.findIndex((item) => item.to === matched.to);
   }, [matched, items]);
 
-  // 方向を計算
-  useEffect(() => {
-    if (prevActiveIndex === -1) {
-      setPrevActiveIndex(activeIndex);
-      return;
-    }
-    if (activeIndex !== prevActiveIndex) {
-      setDirection(activeIndex > prevActiveIndex ? "right" : "left");
-      setPrevActiveIndex(activeIndex);
-    }
-  }, [activeIndex, prevActiveIndex]);
-
-  useEffect(() => {
-    console.log("TabsBar mounted");
-    return () => console.log("TabsBar unmounted");
-  }, []);
+  const direction = useSlideDirection(activeIndex);
 
   useEffect(() => {
     if (!matched) return;
@@ -195,12 +194,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     )}
                     asChild
                   >
-                    <RouterNavLink
-                      to={resolvedTo}
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: "instant" });
-                      }}
-                    >
+                    <RouterNavLink to={resolvedTo}>
                       {item.label}
                       {active === item.to && (
                         <div
