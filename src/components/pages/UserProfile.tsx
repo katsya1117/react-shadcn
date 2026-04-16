@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const UserProfile = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>ユーザープロファイル</CardTitle>
         <CardDescription>
@@ -20,7 +18,6 @@ const UserProfile = () => (
         プロフィール詳細や編集導線をここに配置してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default UserProfile;

@@ -5,7 +5,6 @@ import { getJobList, jobSelector } from "../../redux/slices/jobSlice";
 import { userSelector } from "../../redux/slices/userSlice";
 import type { AppDispatch } from "../../redux/store";
 import { toConditionString } from "../../utility/JobCondition";
-import { Layout } from "@/components/frame/Layout";
 import { Conditions } from "../parts/JobSearch/Conditions";
 import { SearchSet, SearchSetMode } from "../parts/JobSearch/SearchSet";
 // import { FolderLock, ShieldCheck } from "lucide-react";
@@ -64,8 +63,7 @@ const JobSearch = () => {
   };
 
   return (
-    <Layout>
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">ジョブ検索</h1>
@@ -188,20 +186,6 @@ const JobSearch = () => {
           </Card> */}
         {/* </div> */}
       </div>
-      {/* <div className="hidden">
-        <FolderLock size={0} />
-        <Badge>dummy</Badge>
-        <CustomPagination
-          page={list?.pagination?.page ?? 1}
-          perPage={list?.pagination?.per_page ?? 10}
-          total={list?.pagination?.total ?? 0}
-          onPageChange={() => {}}
-          onPerPageChange={() => {}}
-        />
-        {void 0}
-        {void (0 as unknown as JobSearchParams)}
-      </div> */}
-    </Layout>
   );
 };
 

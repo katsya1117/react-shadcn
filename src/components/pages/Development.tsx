@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -9,8 +8,7 @@ import {
 import { PaginationDemo } from "@/components/parts/Pagination/PaginationDemo";
 
 const Development = () => (
-  <Layout>
-    <div className="space-y-4">
+  <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Development</CardTitle>
@@ -23,7 +21,6 @@ const Development = () => (
 
       <PaginationDemo />
     </div>
-  </Layout>
 );
 
 export default Development;

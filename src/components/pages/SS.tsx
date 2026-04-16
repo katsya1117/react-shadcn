@@ -77,6 +77,9 @@ const toCollaborationListItem = (
 
 type SSContentProps = {
   rootFolderId: string;
+  // ShareArea で選択された領域の folderName（例: "JCLGD1SWDV"）
+  // Layout の subtitle として常に表示（Explorer で潜ったフォルダ名ではなく root 領域の folderName で固定）
+  areaFolderName: string;
 };
 
 const PathBarSkeleton = () => (
@@ -105,7 +108,7 @@ const ExplorerRestoreSkeleton = () => (
   </div>
 );
 
-const SSContent = ({ rootFolderId }: SSContentProps) => {
+const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -326,7 +329,7 @@ const SSContent = ({ rootFolderId }: SSContentProps) => {
 
   return (
     <TooltipProvider delayDuration={100}>
-      <Layout fluid subtitle={layoutSubtitle}>
+      <Layout fluid subtitle={areaFolderName}>
         <BoxManager />
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:h-full lg:overflow-hidden">
@@ -404,7 +407,12 @@ export const SS = () => {
     return <Navigate replace to={UrlPath.ShareArea} />;
   }
 
-  return <SSContent key={routeFolderId} rootFolderId={routeFolderId} />;
+  // SHARE_AREAS から対象領域を引いて folderName を渡す
+  // isShareAreaRouteFolderId で存在確認済みなので non-null assertion は安全
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const areaFolderName = SHARE_AREAS.find((a) => a.boxFolderId === routeFolderId)!.folderName;
+
+  return <SSContent key={routeFolderId} rootFolderId={routeFolderId} areaFolderName={areaFolderName} />;
 };
 
 export default SS;

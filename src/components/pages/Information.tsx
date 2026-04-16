@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const Information = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>お知らせ</CardTitle>
         <CardDescription>お知らせ一覧のモック画面です。</CardDescription>
@@ -18,7 +16,6 @@ const Information = () => (
         更新情報やメンテナンス告知をここに掲載してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default Information;

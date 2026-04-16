@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const MyPageEdit = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>MyPage編集</CardTitle>
         <CardDescription>
@@ -20,7 +18,6 @@ const MyPageEdit = () => (
         入力フォームを追加して保存処理を実装してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default MyPageEdit;

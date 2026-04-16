@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const Batch = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>バッチステータス</CardTitle>
         <CardDescription>バッチ実行状況のモック画面です。</CardDescription>
@@ -18,7 +16,6 @@ const Batch = () => (
         ここにバッチ一覧や実行ログを表示してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default Batch;

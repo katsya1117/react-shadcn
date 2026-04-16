@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layout } from "@/components/frame/Layout";
 import { Folder, FolderOpen, Users, Search, UserPlus } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
@@ -49,8 +48,7 @@ const ShareArea2 = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <Layout>
-        <div className="max-w-2xl space-y-8">
+      <div className="max-w-2xl space-y-8">
           {/* ヘッダー */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-1">
@@ -193,7 +191,6 @@ const ShareArea2 = () => {
             </div>
           )}
         </div>
-      </Layout>
     </TooltipProvider>
   );
 };
