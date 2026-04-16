@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const System = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>システム設定</CardTitle>
         <CardDescription>全体設定のモック画面です。</CardDescription>
@@ -18,7 +16,6 @@ const System = () => (
         各種設定フォームを追加してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default System;

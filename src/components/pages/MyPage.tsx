@@ -1,5 +1,4 @@
 import { UserRound } from "lucide-react";
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardContent,
@@ -9,8 +8,7 @@ import {
 } from "@/components/ui/card";
 
 const MyPage = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UserRound size={18} />
@@ -22,7 +20,6 @@ const MyPage = () => (
         プロファイル編集や通知設定をここに実装予定です。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default MyPage;

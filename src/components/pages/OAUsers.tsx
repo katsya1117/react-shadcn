@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const OAUsers = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>OAユーザー</CardTitle>
         <CardDescription>OA 連携ユーザー一覧のモック画面です。</CardDescription>
@@ -18,7 +16,6 @@ const OAUsers = () => (
         ユーザー検索や連携設定をここに配置してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default OAUsers;

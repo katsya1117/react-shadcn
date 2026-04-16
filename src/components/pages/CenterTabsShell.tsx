@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlPath } from "@/constant/UrlPath";
 import { useNavigate } from "react-router";

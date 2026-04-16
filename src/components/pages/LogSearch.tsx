@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardContent,
@@ -121,8 +120,7 @@ const LogSearch = () => {
   };
 
   return (
-    <Layout>
-      <Card>
+    <Card>
         <CardHeader>
           <CardTitle>LOG SEARCH</CardTitle>
           <CardDescription>操作ログを検索・参照する画面</CardDescription>
@@ -272,10 +270,9 @@ const LogSearch = () => {
                 />
               </div>
             </CardContent>
-          </Card>
-        </CardContent>
-      </Card>
-    </Layout>
+        </Card>
+      </CardContent>
+    </Card>
   );
 };
 

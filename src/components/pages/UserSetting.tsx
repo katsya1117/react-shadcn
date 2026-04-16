@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const UserSetting = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>ユーザー設定状況</CardTitle>
         <CardDescription>設定ステータス確認のモック画面です。</CardDescription>
@@ -18,7 +16,6 @@ const UserSetting = () => (
         各ユーザーの設定完了状況を表示するテーブルを追加してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default UserSetting;

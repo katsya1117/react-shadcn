@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -54,8 +53,7 @@ const CenterManage = () => {
   );
 
   return (
-    <Layout>
-      <CenterTabsShell active="edit">
+    <CenterTabsShell active="edit">
         <div className="max-w-6xl mx-auto">
           <Card>
             <CardHeader>
@@ -134,7 +132,6 @@ const CenterManage = () => {
           </Card>
         </div>
       </CenterTabsShell>
-    </Layout>
   );
 };
 

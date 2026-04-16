@@ -1,6 +1,7 @@
 import {
   BrowserRouter,
   Navigate,
+  Outlet,
   Route,
   Routes,
   generatePath,
@@ -9,6 +10,7 @@ import {
 
 import "./App.css";
 
+import { Layout } from "./components/frame/Layout";
 import { Batch } from "./components/pages/Batch";
 import { CenterCreate } from "./components/pages/CenterCreate";
 import { CenterEdit } from "./components/pages/CenterEdit";
@@ -61,43 +63,48 @@ const App = () => (
   <BrowserRouter>
     <ScrollReset />
     <Routes>
-      <Route path={UrlPath.Root} element={<RootPage />} />
-      <Route path={UrlPath.MyPage} element={<MyPage />} />
-      <Route path={UrlPath.JobSearch} element={<JobSearch />} />
-      {/* ShareArea UI切り替え: ShareArea（カード形式）/ ShareArea2（リスト形式）*/}
-      <Route path={UrlPath.ShareArea} element={<ShareArea2 />} />
-      {/* <Route path={UrlPath.ShareArea} element={<ShareArea />} /> */}
-      <Route path={UrlPath.LogSearch} element={<LogSearch />} />
-      <Route path={UrlPath.JobCreate} element={<JobCreate />} />
-      <Route path={UrlPath.Tool} element={<Tool />} />
+      {/* Layout でラップされたルート */}
+      <Route element={<Layout><Outlet /></Layout>}>
+        <Route path={UrlPath.Root} element={<RootPage />} />
+        <Route path={UrlPath.MyPage} element={<MyPage />} />
+        <Route path={UrlPath.JobSearch} element={<JobSearch />} />
+        {/* ShareArea UI切り替え: ShareArea（カード形式）/ ShareArea2（リスト形式）*/}
+        <Route path={UrlPath.ShareArea} element={<ShareArea2 />} />
+        {/* <Route path={UrlPath.ShareArea} element={<ShareArea />} /> */}
+        <Route path={UrlPath.LogSearch} element={<LogSearch />} />
+        <Route path={UrlPath.JobCreate} element={<JobCreate />} />
+        <Route path={UrlPath.Tool} element={<Tool />} />
 
-      <Route path={UrlPath.OAUsers} element={<OAUsers />} />
-      <Route path={UrlPath.OAOrders} element={<OAOrders />} />
-      <Route path={UrlPath.UserManage} element={<UserManage />} />
-      <Route path={UrlPath.UserCreate} element={<UserCreate />} />
-      <Route path={UrlPath.UserEdit} element={<UserEdit />} />
-      <Route path={UrlPath.CenterManage} element={<CenterManage />} />
-      <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
-      <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
+        <Route path={UrlPath.OAUsers} element={<OAUsers />} />
+        <Route path={UrlPath.OAOrders} element={<OAOrders />} />
+        <Route path={UrlPath.UserManage} element={<UserManage />} />
+        <Route path={UrlPath.UserCreate} element={<UserCreate />} />
+        <Route path={UrlPath.UserEdit} element={<UserEdit />} />
+        <Route path={UrlPath.CenterManage} element={<CenterManage />} />
+        <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
+        <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
 
-      <Route path={UrlPath.ManageRole} element={<RoleManage />} />
-      <Route path={UrlPath.Information} element={<Information />} />
-      <Route path={UrlPath.System} element={<System />} />
-      <Route path={UrlPath.UserSetting} element={<UserSetting />} />
-      <Route path={UrlPath.Batch} element={<Batch />} />
+        <Route path={UrlPath.ManageRole} element={<RoleManage />} />
+        <Route path={UrlPath.Information} element={<Information />} />
+        <Route path={UrlPath.System} element={<System />} />
+        <Route path={UrlPath.UserSetting} element={<UserSetting />} />
+        <Route path={UrlPath.Batch} element={<Batch />} />
 
-      <Route path={UrlPath.MyPageEdit} element={<MyPageEdit />} />
-      <Route path={UrlPath.UserProfile} element={<UserProfile />} />
+        <Route path={UrlPath.MyPageEdit} element={<MyPageEdit />} />
+        <Route path={UrlPath.UserProfile} element={<UserProfile />} />
+        <Route
+          path={UrlPath.SSManageLegacy}
+          element={<SSManageLegacyRedirect />}
+        />
+        <Route
+          path={UrlPath.SSLegacy}
+          element={<Navigate replace to={UrlPath.ShareArea} />}
+        />
+        <Route path={UrlPath.Development} element={<Development />} />
+      </Route>
+
+      {/* SS は独自の Layout props (fluid, subtitle) を使うためネスト外 */}
       <Route path={UrlPath.SS} element={<SS />} />
-      <Route
-        path={UrlPath.SSManageLegacy}
-        element={<SSManageLegacyRedirect />}
-      />
-      <Route
-        path={UrlPath.SSLegacy}
-        element={<Navigate replace to={UrlPath.ShareArea} />}
-      />
-      <Route path={UrlPath.Development} element={<Development />} />
 
       <Route path="*" element={<Navigate replace to={UrlPath.Root} />} />
     </Routes>

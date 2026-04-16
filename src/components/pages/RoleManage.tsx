@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -108,8 +107,7 @@ const RoleManage = () => {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold">アクセスユーザー設定</h1>
           <p className="text-sm text-muted-foreground">
@@ -210,7 +208,6 @@ const RoleManage = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
   );
 };
 

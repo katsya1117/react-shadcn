@@ -1,5 +1,4 @@
 import { FilePenLine } from "lucide-react";
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardContent,
@@ -9,8 +8,7 @@ import {
 } from "@/components/ui/card";
 
 const JobCreate = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FilePenLine size={18} />
@@ -22,7 +20,6 @@ const JobCreate = () => (
         ジョブ名、スケジュール、通知先などの入力項目を追加してください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default JobCreate;

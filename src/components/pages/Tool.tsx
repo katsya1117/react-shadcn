@@ -1,4 +1,3 @@
-import { Layout } from "@/components/frame/Layout";
 import {
   Card,
   CardHeader,
@@ -8,8 +7,7 @@ import {
 } from "@/components/ui/card";
 
 const Tool = () => (
-  <Layout>
-    <Card>
+  <Card>
       <CardHeader>
         <CardTitle>TOOL</CardTitle>
         <CardDescription>ツール集のプレースホルダーです。</CardDescription>
@@ -18,7 +16,6 @@ const Tool = () => (
         実装予定のツール一覧をここに並べてください。
       </CardContent>
     </Card>
-  </Layout>
 );
 
 export default Tool;

@@ -1,6 +1,5 @@
 import type { AutoCompleteData, UserSearchParams } from "@/api";
 import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import { Layout } from "@/components/frame/Layout";
 import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
 import { CustomPagination } from "@/components/parts/Pagination/Pagination";
 import { Button } from "@/components/ui/button";
@@ -91,8 +90,7 @@ const UserManage = () => {
   };
 
   return (
-    <Layout>
-      <UserTabsShell active="setting">
+    <UserTabsShell active="setting">
         <div className="flex flex-row gap-6 items-end">
           <h2 className="text-left text-base font-semibold">JCLユーザー検索</h2>
           <span className="text-muted-foreground text-sm">
@@ -253,7 +251,6 @@ const UserManage = () => {
           </CardContent>
         </Card>
       </UserTabsShell>
-    </Layout>
   );
 };
 
