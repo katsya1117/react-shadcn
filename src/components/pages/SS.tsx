@@ -77,9 +77,9 @@ const toCollaborationListItem = (
 
 type SSContentProps = {
   rootFolderId: string;
-  // ShareArea で選択された領域のラベル（例: "第1ソフトウェア開発センター"）
-  // Box からフォルダ名が返ってくるまでの subtitle フォールバックとして使用
-  areaLabel: string;
+  // ShareArea で選択された領域の folderName（例: "JCLGD1SWDV"）
+  // Layout の subtitle として常に表示（Explorer で潜ったフォルダ名ではなく root 領域の folderName で固定）
+  areaFolderName: string;
 };
 
 const PathBarSkeleton = () => (
@@ -108,7 +108,7 @@ const ExplorerRestoreSkeleton = () => (
   </div>
 );
 
-const SSContent = ({ rootFolderId, areaLabel }: SSContentProps) => {
+const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
@@ -329,7 +329,7 @@ const SSContent = ({ rootFolderId, areaLabel }: SSContentProps) => {
 
   return (
     <TooltipProvider delayDuration={100}>
-      <Layout fluid subtitle={layoutSubtitle ?? areaLabel}>
+      <Layout fluid subtitle={areaFolderName}>
         <BoxManager />
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:h-full lg:overflow-hidden">
@@ -407,12 +407,12 @@ export const SS = () => {
     return <Navigate replace to={UrlPath.ShareArea} />;
   }
 
-  // SHARE_AREAS から対象領域を引いて label を渡す
+  // SHARE_AREAS から対象領域を引いて folderName を渡す
   // isShareAreaRouteFolderId で存在確認済みなので non-null assertion は安全
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const areaLabel = SHARE_AREAS.find((a) => a.boxFolderId === routeFolderId)!.label;
+  const areaFolderName = SHARE_AREAS.find((a) => a.boxFolderId === routeFolderId)!.folderName;
 
-  return <SSContent key={routeFolderId} rootFolderId={routeFolderId} areaLabel={areaLabel} />;
+  return <SSContent key={routeFolderId} rootFolderId={routeFolderId} areaFolderName={areaFolderName} />;
 };
 
 export default SS;
