@@ -206,12 +206,15 @@ export const TabsBar = ({ className }: { className?: string }) => {
                         <div
                           key={`indicator-${item.to}`}
                           className={cn(
-                            "absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-[color:var(--brand)]",
-                            "animate-in fade-in duration-200",
+                            "absolute bottom-0 h-0.5 bg-[color:var(--brand)]",
+                            "animate-in fade-in duration-300",
                             direction === "right"
-                              ? "slide-in-from-left-4"
-                              : "slide-in-from-right-4",
+                              ? "origin-left slide-in-from-left-full"
+                              : "origin-right slide-in-from-right-full",
                           )}
+                          style={{
+                            width: "100%",
+                          }}
                         />
                       )}
                     </RouterNavLink>
