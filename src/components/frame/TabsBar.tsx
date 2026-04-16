@@ -41,7 +41,10 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
-  const [prevActiveIndex, setPrevActiveIndex] = useState(-1);
+
+  // 前回のタブインデックスを保持（再レンダリング不要なので ref を使用）
+  // ※ ref は DOM 参照だけでなく「レンダリング間で値を保持する」用途にも使える
+  const prevActiveIndexRef = useRef(-1);
   const [direction, setDirection] = useState<"left" | "right">("right");
 
   const group = useMemo(() => {
@@ -65,13 +68,16 @@ export const TabsBar = ({ className }: { className?: string }) => {
     return items.findIndex((item) => item.to === matched.to);
   }, [matched, items]);
 
-  // タブ移動の方向を計算: 前回と現在のインデックスを比較
+  // タブ移動の方向を計算
+  // 右のタブに移動 → "right"（インジケーターが左からスライドイン）
+  // 左のタブに移動 → "left"（インジケーターが右からスライドイン）
   useEffect(() => {
-    if (prevActiveIndex !== -1 && activeIndex !== prevActiveIndex) {
-      setDirection(activeIndex > prevActiveIndex ? "right" : "left");
+    const prevIndex = prevActiveIndexRef.current;
+    if (prevIndex !== -1 && activeIndex !== prevIndex) {
+      setDirection(activeIndex > prevIndex ? "right" : "left");
     }
-    setPrevActiveIndex(activeIndex);
-  }, [activeIndex, prevActiveIndex]);
+    prevActiveIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   useEffect(() => {
     if (!matched) return;
