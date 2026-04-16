@@ -7,7 +7,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 import type { AppDispatch } from "../../redux/store";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,8 +42,9 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
 
-  // タブをクリックしたときだけアニメーションするためのフラグ
-  const [animateTab, setAnimateTab] = useState(true);
+  // 方向を追跡するための state
+  const [prevActiveIndex, setPrevActiveIndex] = useState(-1);
+  const [direction, setDirection] = useState<"left" | "right">("right");
 
   const group = useMemo(() => {
     if (pathname.startsWith("/OA/")) return "OA";
@@ -61,6 +61,23 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const matched = items.find(
     (t) => pathname === t.to || pathname.startsWith(`${t.to}/`),
   );
+
+  const activeIndex = useMemo(() => {
+    if (!matched) return 0;
+    return items.findIndex((item) => item.to === matched.to);
+  }, [matched, items]);
+
+  // 方向を計算
+  useEffect(() => {
+    if (prevActiveIndex === -1) {
+      setPrevActiveIndex(activeIndex);
+      return;
+    }
+    if (activeIndex !== prevActiveIndex) {
+      setDirection(activeIndex > prevActiveIndex ? "right" : "left");
+      setPrevActiveIndex(activeIndex);
+    }
+  }, [activeIndex, prevActiveIndex]);
 
   useEffect(() => {
     console.log("TabsBar mounted");
@@ -178,29 +195,23 @@ export const TabsBar = ({ className }: { className?: string }) => {
                     )}
                     asChild
                   >
-                    {/* クリック時だけアニメーションしたいので、クリック時にAnimateTabフラグをtrueに */}
                     <RouterNavLink
                       to={resolvedTo}
                       onClick={() => {
                         window.scrollTo({ top: 0, behavior: "instant" });
-                        setAnimateTab(true);
                       }}
                     >
                       {item.label}
                       {active === item.to && (
-                        <motion.div
-                          layoutId={`activeLine-${group}`}
-                          className="absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-[color:var(--brand)]"
-                          transition={
-                            animateTab
-                              ? { type: "spring", stiffness: 250, damping: 32 }
-                              : { duration: 0 }
-                          }
-                          initial={false}
-                          onLayoutAnimationComplete={() => {
-                            setAnimateTab(false); // ← 終わったらフラグを下げる
-                            // window.scrollTo({ top: 0, behavior: "instant" });
-                          }}
+                        <div
+                          key={`indicator-${item.to}`}
+                          className={cn(
+                            "absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-[color:var(--brand)]",
+                            "animate-in fade-in duration-200",
+                            direction === "right"
+                              ? "slide-in-from-left-4"
+                              : "slide-in-from-right-4",
+                          )}
                         />
                       )}
                     </RouterNavLink>
