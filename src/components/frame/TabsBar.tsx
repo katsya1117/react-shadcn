@@ -41,7 +41,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
   const overflowTriggerMeasureRef = useRef<HTMLButtonElement | null>(null);
-  const prevIndexRef = useRef(-1);
+  const [prevActiveIndex, setPrevActiveIndex] = useState(-1);
   const [direction, setDirection] = useState<"left" | "right">("right");
 
   const group = useMemo(() => {
@@ -67,11 +67,11 @@ export const TabsBar = ({ className }: { className?: string }) => {
 
   // タブ移動の方向を計算: 前回と現在のインデックスを比較
   useEffect(() => {
-    if (prevIndexRef.current !== -1 && activeIndex !== prevIndexRef.current) {
-      setDirection(activeIndex > prevIndexRef.current ? "right" : "left");
+    if (prevActiveIndex !== -1 && activeIndex !== prevActiveIndex) {
+      setDirection(activeIndex > prevActiveIndex ? "right" : "left");
     }
-    prevIndexRef.current = activeIndex;
-  }, [activeIndex]);
+    setPrevActiveIndex(activeIndex);
+  }, [activeIndex, prevActiveIndex]);
 
   useEffect(() => {
     if (!matched) return;
