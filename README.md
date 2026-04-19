@@ -390,3 +390,35 @@ TabsBar.tsx
 が、このコミットの中心です。
 
 テストも追加・更新されています。特に ssSlice.test.ts が新規追加で、SS 用の復元 state を reducer レベルで確認するようになっています。
+
+# システムのプロキシ設定確認
+
+netsh winhttp show proxy
+
+# 環境変数も確認
+
+[System.Environment]::GetEnvironmentVariable("HTTP_PROXY", "Machine")
+[System.Environment]::GetEnvironmentVariable("HTTPS_PROXY", "Machine")
+
+Box SDK はサーバーサイドで動いていると思いますが、Node.jsはOSのプロキシ設定を自動で使いません。これが根本原因の可能性が高いです。
+
+対処法：https-proxy-agent を使う
+npm install https-proxy-agent
+
+import BoxSDK from "box-node-sdk";
+import { HttpsProxyAgent } from "https-proxy-agent";
+
+const proxyAgent = new HttpsProxyAgent("http://your-proxy-server:port");
+
+const sdk = new BoxSDK({
+clientID: "YOUR_CLIENT_ID",
+clientSecret: "YOUR_CLIENT_SECRET",
+request: {
+agent: proxyAgent, // ← ここでプロキシを明示
+},
+});
+
+切り分けの確認手順
+powershell# サーバー上でプロキシ経由でBox APIに届くか確認
+Invoke-WebRequest -Uri "https://api.box.com/2.0/users/me" `  -Headers @{Authorization="Bearer YOUR_TOKEN"}`
+-Proxy "http://your-proxy-server:port"
