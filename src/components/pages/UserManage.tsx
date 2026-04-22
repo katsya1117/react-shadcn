@@ -24,7 +24,7 @@ import { getUserList, userSelector } from "@/redux/slices/userSlice";
 import type { AppDispatch } from "@/store";
 import { toast } from "@/components/ui/sonner";
 import { useDispatch } from "react-redux";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import type { MultiValue } from "react-select";
@@ -62,6 +62,8 @@ const UserManage = () => {
     MultiValue<AutoCompleteData>
   >(searchCondition?.auto_complete ?? []);
 
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const state = location.state as UserManageLocationState | null;
     if (!state?.deletedUserCd) return;
@@ -72,6 +74,10 @@ const UserManage = () => {
       state: null,
     });
   }, [location.state, navigate]);
+
+  useEffect(() => {
+    tableContainerRef.current?.scrollTo({ top: 0 });
+  }, [list]);
 
   const onHandleSearch = () => {
     dispatch(
@@ -91,83 +97,88 @@ const UserManage = () => {
 
   return (
     <UserTabsShell active="setting">
-        <div className="flex flex-row gap-6 items-end">
-          <h2 className="text-left text-base font-semibold">JCLユーザー検索</h2>
-          <span className="text-muted-foreground text-sm">
-            設定を確認したいユーザーを検索
-          </span>
-        </div>
-        <Card className="shadow-sm">
-          <CardContent>
-            <div className="border-b space-y-5 pb-6">
-              <form>
-                <FieldGroup>
-                  <FieldSet>
-                    <h3 className="text-left font-semibold">検索条件</h3>
-                    <FieldGroup className="flex flex-wrap flex-row gap-4 w-full">
-                      <Field className="w-full lg:w-[calc(50%-0.5rem)]">
-                        <FieldLabel htmlFor="inputDisplayName">表示名</FieldLabel>
-                        <InputGroup>
-                          <InputGroupInput
-                            id="inputDisplayName"
-                            value={searchDispName}
-                            onChange={(e) => setSearchDispName(e.target.value)}
-                          />
-                          <InputGroupAddon align="inline-end">
-                            <InputGroupText>部分一致</InputGroupText>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </Field>
-                      <Field className="w-full lg:w-[calc(50%-0.5rem)]">
-                        <FieldLabel htmlFor="inputUserId">ユーザーID</FieldLabel>
-                        <InputGroup>
-                          <InputGroupInput
-                            id="inputUserId"
-                            value={searchUserId}
-                            onChange={(e) => setSearchUserId(e.target.value)}
-                          />
-                          <InputGroupAddon align="inline-end">
-                            <InputGroupText>部分一致</InputGroupText>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </Field>
-                      <Field className="w-full lg:w-[calc(50%-0.5rem)]">
-                        <FieldLabel htmlFor="inputMail">
-                          メールアドレス
-                        </FieldLabel>
-                        <InputGroup>
-                          <InputGroupInput
-                            id="inputMail"
-                            value={searchMailAddress}
-                            onChange={(e) => setSearchMailAddress(e.target.value)}
-                          />
-                          <InputGroupAddon align="inline-end">
-                            <InputGroupText>xxxxx.jp</InputGroupText>
-                            <InputGroupText>|</InputGroupText>
-                            <InputGroupText>前方一致</InputGroupText>
-                          </InputGroupAddon>
-                        </InputGroup>
-                      </Field>
-                      <Field className="w-full lg:w-[calc(50%-0.5rem)]">
-                        <FieldLabel htmlFor="inputCenter">センター</FieldLabel>
-                        <AutoCompleteMulti
-                          type="center"
-                          value={selectCenterList}
-                          onChange={(e) => {
-                            setSelectCenterList(e);
-                            setSearchCenterCds(e.map((v) => v.value).join(","));
-                          }}
-                          placeholder="センターを選択"
+      <div className="flex flex-row gap-6 items-end">
+        <h2 className="text-left text-base font-semibold">JCLユーザー検索</h2>
+        <span className="text-muted-foreground text-sm">
+          設定を確認したいユーザーを検索
+        </span>
+      </div>
+      <Card className="shadow-sm">
+        <CardContent>
+          <div className="border-b space-y-5 pb-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                onHandleSearch();
+              }}
+            >
+              <FieldGroup>
+                <FieldSet>
+                  <h3 className="text-left font-semibold">検索条件</h3>
+                  <FieldGroup className="flex flex-wrap flex-row gap-4 w-full">
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputDisplayName">表示名</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputDisplayName"
+                          value={searchDispName}
+                          onChange={(e) => setSearchDispName(e.target.value)}
                         />
-                      </Field>
-                    </FieldGroup>
-                  </FieldSet>
-                </FieldGroup>
-              </form>
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>部分一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputUserId">ユーザーID</FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputUserId"
+                          value={searchUserId}
+                          onChange={(e) => setSearchUserId(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>部分一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputMail">
+                        メールアドレス
+                      </FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput
+                          id="inputMail"
+                          value={searchMailAddress}
+                          onChange={(e) => setSearchMailAddress(e.target.value)}
+                        />
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupText>xxxxx.jp</InputGroupText>
+                          <InputGroupText>|</InputGroupText>
+                          <InputGroupText>前方一致</InputGroupText>
+                        </InputGroupAddon>
+                      </InputGroup>
+                    </Field>
+                    <Field className="w-full lg:w-[calc(50%-0.5rem)]">
+                      <FieldLabel htmlFor="inputCenter">センター</FieldLabel>
+                      <AutoCompleteMulti
+                        type="center"
+                        value={selectCenterList}
+                        onChange={(e) => {
+                          setSelectCenterList(e);
+                          setSearchCenterCds(e.map((v) => v.value).join(","));
+                        }}
+                        placeholder="センターを選択"
+                      />
+                    </Field>
+                  </FieldGroup>
+                </FieldSet>
+              </FieldGroup>
               <div className="flex items-center justify-end gap-2">
                 <Button
                   size="lg"
                   variant="outline"
+                  type="button"
                   onClick={() => {
                     setSearchDispName("");
                     setSearchUserId("");
@@ -178,79 +189,83 @@ const UserManage = () => {
                 >
                   クリア
                 </Button>
-                <Button size="lg" onClick={onHandleSearch}>
+                <Button size="lg" type="submit">
                   検索
                 </Button>
               </div>
-            </div>
-            {isSearched && list && (list?.items?.length ?? 0) > 0 ? (
-              <div className="space-y-5 pt-6">
-                <h3 className="text-base font-semibold">検索結果</h3>
-                <div className="w-full [&>div]:max-h-[420px] overflow-auto rounded border">
-                  <Table className="table-fixed">
-                    <TableHeader>
-                      <TableRow className="sticky top-0 bg-background hover:bg-muted [&>th]:py-3.5 *:whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:content-['']">
-                        <TableHead className="w-[20%] pl-4">ユーザーID</TableHead>
-                        <TableHead className="w-[25%]">表示名</TableHead>
-                        <TableHead className="w-[25%]">メール</TableHead>
-                        <TableHead className="w-[25%]">BOXアカウント</TableHead>
-                        <TableHead className="w-[10%] text-right pr-4">
-                          操作
-                        </TableHead>
+            </form>
+          </div>
+          {isSearched && list && (list?.items?.length ?? 0) > 0 ? (
+            <div className="space-y-5 pt-6">
+              <h3 className="text-base font-semibold">検索結果</h3>
+              <div
+                ref={tableContainerRef}
+                className="w-full [&>div]:max-h-[420px] overflow-auto rounded border"
+              >
+                <Table className="table-fixed">
+                  <TableHeader>
+                    <TableRow className="sticky top-0 bg-background hover:bg-muted [&>th]:py-3.5 *:whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:content-['']">
+                      <TableHead className="w-[20%] pl-4">ユーザーID</TableHead>
+                      <TableHead className="w-[25%]">表示名</TableHead>
+                      <TableHead className="w-[25%]">メール</TableHead>
+                      <TableHead className="w-[25%]">BOXアカウント</TableHead>
+                      <TableHead className="w-[10%] text-right pr-4">
+                        操作
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {list.items.map((item) => (
+                      <TableRow
+                        key={item.user_cd}
+                        className="*:whitespace-nowrap"
+                      >
+                        <TableCell className="pl-4 py-3 truncate">
+                          {item.user_cd}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.disp_name}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.email}
+                        </TableCell>
+                        <TableCell className="py-3 truncate">
+                          {item.box_user_id ? "&#x3007;" : ""}
+                        </TableCell>
+                        <TableCell className="py-3 text-right pr-4">
+                          <Button asChild size="sm" variant="secondary">
+                            <NavLink
+                              to={UrlPath.UserEdit.replace(
+                                ":user_cd",
+                                item.user_cd,
+                              )}
+                            >
+                              選択
+                            </NavLink>
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {list.items.map((item) => (
-                        <TableRow
-                          key={item.user_cd}
-                          className="*:whitespace-nowrap"
-                        >
-                          <TableCell className="pl-4 py-3 truncate">
-                            {item.user_cd}
-                          </TableCell>
-                          <TableCell className="py-3 truncate">
-                            {item.disp_name}
-                          </TableCell>
-                          <TableCell className="py-3 truncate">
-                            {item.email}
-                          </TableCell>
-                          <TableCell className="py-3 truncate">
-                            {item.box_user_id ? "&#x3007;" : ""}
-                          </TableCell>
-                          <TableCell className="py-3 text-right pr-4">
-                            <Button asChild size="sm" variant="secondary">
-                              <NavLink
-                                to={UrlPath.UserEdit.replace(
-                                  ":user_cd",
-                                  item.user_cd,
-                                )}
-                              >
-                                選択
-                              </NavLink>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <CustomPagination<UserSearchParams>
-                  pagination={list.pagination}
-                  onHandle={(t) => {
-                    dispatch(getUserList(t));
-                  }}
-                />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            ) : isSearched ? (
-              <div className="py-6 text-center text-muted-foreground">
-                該当するユーザーが見つかりませんでした。
-              </div>
-            ) : (
-              <></>
-            )}
-          </CardContent>
-        </Card>
-      </UserTabsShell>
+              <CustomPagination<UserSearchParams>
+                pagination={list.pagination}
+                onHandle={(t) => {
+                  dispatch(getUserList(t));
+                }}
+              />
+            </div>
+          ) : isSearched ? (
+            <div className="py-6 text-center text-muted-foreground">
+              該当するユーザーが見つかりませんでした。
+            </div>
+          ) : (
+            <></>
+          )}
+        </CardContent>
+      </Card>
+    </UserTabsShell>
   );
 };
 
