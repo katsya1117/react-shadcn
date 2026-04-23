@@ -73,7 +73,10 @@ const UserManage = () => {
       replace: true,
       state: null,
     });
-  }, [location.state, navigate]);
+    if (searchCondition) {
+      dispatch(getUserList(searchCondition));
+    }
+  }, [location.state, navigate, dispatch, searchCondition]);
 
   useEffect(() => {
     tableContainerRef.current?.scrollTo({ top: 0 });

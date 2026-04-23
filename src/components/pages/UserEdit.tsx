@@ -371,6 +371,7 @@ export const UserEdit = () => {
     const result = await dispatch(updateUserInfo({ userCd: user_cd, params }));
     if (updateUserInfo.fulfilled.match(result)) {
       toast.success("保存しました");
+      dispatch(getUserInfo(user_cd));
     } else {
       toast.error("保存に失敗しました");
     }

@@ -311,16 +311,9 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(updateUserInfo.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "データの更新に失敗しました。",
-            "invalid response",
-          );
-        }
+      .addCase(updateUserInfo.fulfilled, (state) => {
         state.isLoading = false;
+        state.error = initialSliceError;
       })
       .addCase(updateUserInfo.rejected, (state) => {
         state.isLoading = false;
@@ -333,16 +326,9 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(removeUser.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "削除に失敗しました",
-            "Failed to delete user",
-          );
-        }
+      .addCase(removeUser.fulfilled, (state) => {
         state.isLoading = false;
+        state.error = initialSliceError;
       })
       .addCase(removeUser.rejected, (state) => {
         state.isLoading = false;
@@ -376,16 +362,9 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(userCreation.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "ユーザーの作成に失敗しました。",
-            "invalid response",
-          );
-        }
+      .addCase(userCreation.fulfilled, (state) => {
         state.isLoading = false;
+        state.error = initialSliceError;
       })
       .addCase(userCreation.rejected, (state) => {
         state.isLoading = false;
