@@ -19,6 +19,7 @@ export const AutoCompleteMulti = (props: {
   value: MultiValue<AutoCompleteData>;
   type: "user" | "center" | "userGroup";
   placeholder?: string;
+  menuZIndex?: number;
   onChange: (newValue: MultiValue<AutoCompleteData>) => void;
 }) => {
   const dispatch: AppDispatch = useDispatch();
@@ -62,7 +63,7 @@ export const AutoCompleteMulti = (props: {
         backgroundColor: color.alpha(0.1).css(),
       };
     },
-    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menuPortal: (base) => ({ ...base, zIndex: props.menuZIndex ?? 9999 }),
   };
 
   const options =

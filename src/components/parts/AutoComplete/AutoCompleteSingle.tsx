@@ -24,6 +24,7 @@ export const AutoCompleteSingle = (props: {
   value: SingleValue<AutoCompleteData> | undefined;
   type: "user" | "center" | "userGroup";
   placeholder?: string;
+  menuZIndex?: number;
   onChange: (
     newValue: SingleValue<AutoCompleteData>,
     actionMeta: ActionMeta<AutoCompleteData>
@@ -72,7 +73,7 @@ export const AutoCompleteSingle = (props: {
           : "var(--border)",
       },
     }),
-    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    menuPortal: (base) => ({ ...base, zIndex: props.menuZIndex ?? 9999 }),
   };
 
   const options =
