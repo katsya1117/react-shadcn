@@ -1,6 +1,5 @@
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SectionTabsShell } from "@/components/frame/SectionTabsShell";
 import { UrlPath } from "@/constant/UrlPath";
-import { useNavigate } from "react-router";
 import type { ReactNode } from "react";
 
 type TabKey = "edit" | "new";
@@ -10,27 +9,15 @@ type Props = {
   children: ReactNode;
 };
 
-export const CenterTabsShell = ({ active, children }: Props) => {
-  const navigate = useNavigate();
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">センター設定</h1>
-      <Tabs
-        value={active}
-        onValueChange={(v) =>
-          navigate(v === "new" ? UrlPath.CenterCreate : UrlPath.CenterManage)
-        }
-      >
-        <div className="w-full border-b border-border/70">
-          <TabsList variant="line" className="w-auto justify-start gap-3 px-0">
-            <TabsTrigger value="edit">設定</TabsTrigger>
-            <TabsTrigger value="new">登録</TabsTrigger>
-          </TabsList>
-        </div>
-      </Tabs>
-      {children}
-    </div>
-  );
-};
+const TABS = [
+  { value: "edit", label: "設定", path: UrlPath.CenterManage },
+  { value: "new", label: "登録", path: UrlPath.CenterCreate },
+] as const;
+
+export const CenterTabsShell = ({ active, children }: Props) => (
+  <SectionTabsShell title="センター設定" tabs={TABS} active={active}>
+    {children}
+  </SectionTabsShell>
+);
 
 export type { TabKey as CenterTabKey };
