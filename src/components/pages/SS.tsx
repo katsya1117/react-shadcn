@@ -139,7 +139,6 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     handleOpenBox,
     handleOpenExplorer,
     isRestoringDeepFolder,
-    layoutSubtitle,
     sourcePathByFolderId,
   } = useBoxExplorer({
     rootFolderId,
@@ -186,11 +185,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
     const collaboratorType: CollaboratorType = groups.some(
       (group) => group.value === selectedCollaborator.value,
-    )
-      ? "department"
-      : users.some((user) => user.value === selectedCollaborator.value)
-        ? "user"
-        : "user";
+    ) ? "department" : "user";
     const nextCollaborator: Collaborator = {
       id: `${currentFolder.id}:${collaboratorType}:${selectedCollaborator.value}`,
       type: collaboratorType,
@@ -348,7 +343,6 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
             <PathBarSkeleton />
           ) : (
             <PathBar
-              folderName={currentFolderName}
               relativePath={currentFolderRelativePath}
               canGoBack={canGoBack}
               canGoForward={canGoForward}

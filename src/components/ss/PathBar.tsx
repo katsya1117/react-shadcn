@@ -21,7 +21,6 @@ const pathBarIconButtonClass =
   "rounded-full bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground";
 
 type PathBarProps = {
-  folderName: string;
   relativePath: string;
   canGoBack: boolean;
   canGoForward: boolean;
@@ -89,7 +88,6 @@ const FolderActionButtons = ({
 );
 
 export const PathBar = ({
-  folderName,
   relativePath,
   canGoBack,
   canGoForward,
@@ -162,16 +160,14 @@ export const PathBar = ({
                   {middlePathDisplay}
                 </span>
               ) : null}
-              <span className="shrink-0">
-                {currentPathDisplay}
-              </span>
+              <span className="shrink-0">{currentPathDisplay}</span>
             </div>
           ) : (
             <div
               className="truncate font-mono text-sm leading-6 text-foreground/90"
               title={displayPath}
             >
-              {displayPath || folderName}
+              {displayPath}
             </div>
           )}
         </div>
