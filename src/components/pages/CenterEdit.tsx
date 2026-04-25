@@ -13,9 +13,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, List } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, List, ShieldCheck } from "lucide-react";
 import { UrlPath } from "@/constant/UrlPath";
 import {
   Sheet,
@@ -27,17 +27,7 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+import { ConfirmButton } from "@/components/parts/Confirm/ConfirmButton";
 import { toast } from "@/components/ui/sonner";
 
 const centersMock = [
@@ -60,8 +50,16 @@ const CenterEdit = () => {
 
   const center = useMemo(() => centersMock.find((c) => c.code === center_cd), [center_cd]);
   const [members, setMembers] = useState<Member[]>([
-    { id: "u001", name: "佐藤 健", role: "標準", isAdmin: true, guestLabel: "所属" },
-    { id: "u099", name: "Guest User", role: "閲覧のみ", isAdmin: false, guestLabel: "ゲスト" },
+    { id: "u001", name: "佐藤 健",     role: "標準",   isAdmin: true,  guestLabel: "所属" },
+    { id: "u002", name: "田中 美咲",   role: "標準",   isAdmin: false, guestLabel: "所属" },
+    { id: "u003", name: "鈴木 大輔",   role: "標準",   isAdmin: false, guestLabel: "所属" },
+    { id: "u004", name: "山本 花子",   role: "閲覧のみ", isAdmin: false, guestLabel: "所属" },
+    { id: "u005", name: "中村 翔",     role: "標準",   isAdmin: false, guestLabel: "所属" },
+    { id: "u006", name: "伊藤 恵子",   role: "標準",   isAdmin: false, guestLabel: "所属" },
+    { id: "u099", name: "外部 太郎",   role: "閲覧のみ", isAdmin: false, guestLabel: "ゲスト" },
+    { id: "u100", name: "Guest A",     role: "閲覧のみ", isAdmin: false, guestLabel: "ゲスト" },
+    { id: "u101", name: "Guest B",     role: "閲覧のみ", isAdmin: false, guestLabel: "ゲスト" },
+    { id: "u102", name: "Guest C",     role: "閲覧のみ", isAdmin: false, guestLabel: "ゲスト" },
   ]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [newUserId, setNewUserId] = useState("");
@@ -167,12 +165,18 @@ const CenterEdit = () => {
           </CardContent>
         </Card>
 
-        {/* メンバー（即時反映） */}
+        {/* メンバー */}
         <Card>
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
               <CardTitle className="text-lg">メンバー</CardTitle>
-              <CardDescription>管理者切替・削除は即時反映します。</CardDescription>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span>
+                  管理者：
+                  {members.filter((m) => m.isAdmin).map((m) => m.guestLabel === "ゲスト" ? `${m.name}（ゲスト）` : m.name).join("、") || "未設定"}
+                </span>
+              </div>
             </div>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
@@ -231,70 +235,57 @@ const CenterEdit = () => {
               </SheetContent>
             </Sheet>
           </CardHeader>
+
           <CardContent className="space-y-3">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>管理者</TableHead>
-                  <TableHead>ゲスト</TableHead>
-                  <TableHead>センター</TableHead>
-                  <TableHead>ユーザーID</TableHead>
-                  <TableHead>ユーザー名</TableHead>
-                  <TableHead>権限</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
+                  <TableHead className="w-[18%]">ユーザーID</TableHead>
+                  <TableHead className="w-[38%]">ユーザー名</TableHead>
+                  <TableHead className="w-[16%]">権限</TableHead>
+                  <TableHead className="w-[14%]">管理者</TableHead>
+                  <TableHead className="w-[14%] text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {members.map((m) => (
                   <TableRow key={m.id}>
+                    <TableCell className="text-muted-foreground text-sm truncate">{m.id}</TableCell>
                     <TableCell>
-                      <Switch
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="truncate">{m.name}</span>
+                        {m.guestLabel === "ゲスト" && (
+                          <Badge variant="outline" className="text-xs shrink-0">ゲスト</Badge>
+                        )}
+                      </span>
+                    </TableCell>
+                    <TableCell>{m.role}</TableCell>
+                    <TableCell>
+                      <Checkbox
                         checked={m.isAdmin}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
+                        onCheckedChange={(checked) =>
                           setMembers((prev) =>
-                            prev.map((p) => (p.id === m.id ? { ...p, isAdmin: checked } : p))
-                          );
-                          toast(`${m.name} を${checked ? "管理者" : "一般"}にしました`);
-                        }}
+                            prev.map((p) => p.id === m.id ? { ...p, isAdmin: !!checked } : p)
+                          )
+                        }
                       />
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={m.guestLabel === "所属" ? "secondary" : "outline"}>
-                        {m.guestLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{center?.name ?? "-"}</TableCell>
-                    <TableCell>{m.id}</TableCell>
-                    <TableCell>{m.name}</TableCell>
-                    <TableCell>{m.role}</TableCell>
                     <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost">
-                            削除
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>削除しますか？</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {m.name} をこのセンターから削除します。この操作は元に戻せません。
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => {
-                                setMembers((prev) => prev.filter((p) => p.id !== m.id));
-                                toast(`${m.name} を削除しました`);
-                              }}
-                            >
-                              削除する
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      {m.guestLabel === "ゲスト" && (
+                        <ConfirmButton
+                          size="sm"
+                          variant="ghost"
+                          buttonLabel="削除"
+                          dialogTitle="削除しますか？"
+                          dialogBody={
+                            <>{m.name} をこのセンターから削除します。この操作は元に戻せません。</>
+                          }
+                          onHandle={async () => {
+                            setMembers((prev) => prev.filter((p) => p.id !== m.id));
+                            toast(`${m.name} を削除しました`);
+                          }}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -310,30 +301,18 @@ const CenterEdit = () => {
             <CardDescription>このセンターを削除すると元に戻せません。</CardDescription>
           </CardHeader>
           <CardContent>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">削除する</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>本当に削除しますか？</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {center?.name ?? "このセンター"} を削除します。この操作は取り消せません。
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      toast(`${center?.name ?? "センター"} を削除しました`);
-                      navigate(UrlPath.CenterManage);
-                    }}
-                  >
-                    削除する
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmButton
+              variant="destructive"
+              buttonLabel="削除する"
+              dialogTitle="本当に削除しますか？"
+              dialogBody={
+                <>{center?.name ?? "このセンター"} を削除します。この操作は取り消せません。</>
+              }
+              onHandle={async () => {
+                toast(`${center?.name ?? "センター"} を削除しました`);
+                navigate(UrlPath.CenterManage);
+              }}
+            />
           </CardContent>
         </Card>
       </div>
