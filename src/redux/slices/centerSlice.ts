@@ -10,17 +10,17 @@ import {
   type CenterInfo,
   type CenterSearchParams,
   type PaginationResultCenterListItem,
-} from "../../api";
+} from "@/api";
 
-import Config from "../../config/apiConfig";
+import Config from "@/config/apiConfig";
 import {
   initialSliceError,
   rejectedMessage,
   setSliceError,
   type SliceError,
-} from "../common/error";
+} from "@/redux/common/error";
 
-import type { AppRootState } from "../store";
+import type { AppRootState } from "@/redux/store";
 
 const sliceName = "center";
 

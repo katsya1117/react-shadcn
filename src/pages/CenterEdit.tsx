@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { CenterTabsShell } from "@/components/pages/CenterTabsShell";
+import { CenterTabsShell } from "@/pages/CenterTabsShell";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, List, ShieldCheck } from "lucide-react";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import {
   Sheet,
   SheetContent,
@@ -27,7 +27,7 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
-import { ConfirmButton } from "@/components/parts/Confirm/ConfirmButton";
+import { ConfirmButton } from "@/components/common/Confirm/ConfirmButton";
 import { toast } from "@/components/ui/sonner";
 
 const centersMock = [

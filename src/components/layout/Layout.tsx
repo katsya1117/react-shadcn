@@ -12,7 +12,7 @@ import {
   mainAreaFluid,
 } from "./LayoutStyle.css";
 import { cn } from "@/lib/utils";
-import type { AppDispatch } from "../../redux/store";
+import type { AppDispatch } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";
 import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 

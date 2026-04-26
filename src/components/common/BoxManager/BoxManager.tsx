@@ -5,8 +5,8 @@ import {
   getBoxAccessToken,
   getBoxAccountId,
   userSelector,
-} from "../../../redux/slices/userSlice";
-import type { AppDispatch } from "../../../redux/store";
+} from "@/redux/slices/userSlice";
+import type { AppDispatch } from "@/redux/store";
 
 const MONITOR_MIN = 5;
 export const BoxManager = () => {

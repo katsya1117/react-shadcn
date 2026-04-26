@@ -1,6 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 
-import { Layout } from "@/components/frame/Layout";
+import { Layout } from "@/components/layout/Layout";
 import {
   Card,
   CardContent,

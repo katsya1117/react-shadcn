@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { generatePath, useNavigate } from "react-router";
-import { UrlPath } from "@/constant/UrlPath";
-import { SHARE_AREAS } from "./shareAreaConfig";
+import { UrlPath } from "@/constants/UrlPath";
+import { SHARE_AREAS } from "@/config/shareAreaConfig";
 import { useState, useMemo } from "react";
 
 /** モック: 自分が所属するセンターコード。将来はセッションから取得 */

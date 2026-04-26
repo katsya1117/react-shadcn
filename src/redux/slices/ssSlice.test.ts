@@ -1,4 +1,4 @@
-import type { FolderInfo } from "@/components/ss/types";
+import type { FolderInfo } from "@/types/ss";
 
 import { ssActions, ssSelector, ssSliceReducer } from "./ssSlice";
 

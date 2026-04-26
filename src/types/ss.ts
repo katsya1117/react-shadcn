@@ -1,4 +1,4 @@
-import type { BoxFolder } from "@/@types/BoxUiElements";
+import type { BoxFolder } from "@/types/BoxUiElements";
 
 export type ContentExplorerInstance = {
   show: (folderId: string, token: string, opts: unknown) => void;

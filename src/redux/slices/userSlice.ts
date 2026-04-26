@@ -19,19 +19,19 @@ import {
   type UserUpdateParams,
   type AdUserSearchParams,
   type UserCreationParams,
-} from "../../api";
+} from "@/api";
 
-import Config from "../../config/apiConfig";
+import Config from "@/config/apiConfig";
 import {
   initialSliceError,
   rejectedMessage,
   setSliceError,
   type SliceError,
-} from "../common/error";
+} from "@/redux/common/error";
 
-import type { AppRootState } from "../store";
+import type { AppRootState } from "@/redux/store";
 import type { MultiValue } from "react-select";
-import type { AutoCompleteData } from "../../api";
+import type { AutoCompleteData } from "@/api";
 
 /**
  * UserSlice
@@ -311,9 +311,16 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(updateUserInfo.fulfilled, (state) => {
+      .addCase(updateUserInfo.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.error = initialSliceError;
+        } else {
+          state.error = setSliceError(
+            "データの更新に失敗しました。",
+            "invalid response",
+          );
+        }
         state.isLoading = false;
-        state.error = initialSliceError;
       })
       .addCase(updateUserInfo.rejected, (state) => {
         state.isLoading = false;
@@ -326,9 +333,16 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(removeUser.fulfilled, (state) => {
+      .addCase(removeUser.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.error = initialSliceError;
+        } else {
+          state.error = setSliceError(
+            "削除に失敗しました",
+            "Failed to delete user",
+          );
+        }
         state.isLoading = false;
-        state.error = initialSliceError;
       })
       .addCase(removeUser.rejected, (state) => {
         state.isLoading = false;
@@ -362,9 +376,16 @@ const userSlice = createSlice({
         state.isLoading = true;
         state.error = initialSliceError;
       })
-      .addCase(userCreation.fulfilled, (state) => {
+      .addCase(userCreation.fulfilled, (state, action) => {
+        if (action.payload !== null) {
+          state.error = initialSliceError;
+        } else {
+          state.error = setSliceError(
+            "ユーザーの作成に失敗しました。",
+            "invalid response",
+          );
+        }
         state.isLoading = false;
-        state.error = initialSliceError;
       })
       .addCase(userCreation.rejected, (state) => {
         state.isLoading = false;

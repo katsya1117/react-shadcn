@@ -4,8 +4,8 @@ import type {
   UserUpdateParams,
 } from "@/api";
 import { SearchSetApi } from "@/api";
-import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
+import { UserTabsShell } from "@/pages/UserTabsShell";
+import { AutoCompleteSingle } from "@/components/common/AutoComplete/AutoCompleteSingle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +14,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { ConfirmButton } from "@/components/parts/Confirm/ConfirmButton";
+import { ConfirmButton } from "@/components/common/Confirm/ConfirmButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,7 +24,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
 import {
   getPermissionList,
@@ -36,7 +36,7 @@ import {
   updateUserInfo,
   userSelector,
 } from "@/redux/slices/userSlice";
-import type { AppDispatch } from "@/store";
+import type { AppDispatch } from "@/redux/store";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";

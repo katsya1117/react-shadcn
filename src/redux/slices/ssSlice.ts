@@ -5,21 +5,21 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 
-import type { AppRootState } from "../store";
-import type { FolderInfo } from "@/components/ss/types";
+import type { AppRootState } from "@/redux/store";
+import type { FolderInfo } from "@/types/ss";
 import { BoxApi } from "@/api";
 import Config from "@/config/apiConfig";
 import type {
   GetFolderCollaborationsResponse,
   CreateCollaborationsParams,
   UpdateCollaborationParams,
-} from "../../api/";
-import type { SliceError } from "../common/error";
+} from "@/api";
+import type { SliceError } from "@/redux/common/error";
 import {
   initialSliceError,
   setSliceError,
   rejectedMessage,
-} from "../common/error";
+} from "@/redux/common/error";
 
 const sliceName = "ss";
 

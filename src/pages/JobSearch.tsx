@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { JobSearchParams, SearchSetConditionItem } from "../../api";
-import { getJobList, jobSelector } from "../../redux/slices/jobSlice";
-import { userSelector } from "../../redux/slices/userSlice";
-import type { AppDispatch } from "../../redux/store";
-import { toConditionString } from "../../utility/JobCondition";
+import { getJobList, jobSelector } from "@/redux/slices/jobSearchSlice";
+import { userSelector } from "@/redux/slices/userSlice";
+import type { AppDispatch } from "@/redux/store";
+import { toConditionString } from "@/utility/JobCondition";
 import { Conditions } from "../parts/JobSearch/Conditions";
 import { SearchSet, SearchSetMode } from "../parts/JobSearch/SearchSet";
 // import { FolderLock, ShieldCheck } from "lucide-react";

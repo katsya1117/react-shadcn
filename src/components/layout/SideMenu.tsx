@@ -12,12 +12,12 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { cn } from "@/lib/utils";
 import { useDispatch, useSelector } from "react-redux";
 import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
 import type { LucideIcon } from "lucide-react";
-import type { AppDispatch } from "../../redux/store";
+import type { AppDispatch } from "@/redux/store";
 
 type Props = {
   collapsed: boolean;

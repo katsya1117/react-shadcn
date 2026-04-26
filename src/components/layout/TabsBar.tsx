@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, NavLink as RouterNavLink } from "react-router";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { TabsBarStyle } from "./TabsBar.css.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { uiActions, uiSelector } from "@/redux/slices/uiSlice";
-import type { AppDispatch } from "../../redux/store";
+import type { AppDispatch } from "@/redux/store";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,

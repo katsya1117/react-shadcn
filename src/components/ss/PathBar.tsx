@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-import { DISPLAY_PATH_ROOT } from "./constants";
+import { DISPLAY_PATH_ROOT } from "@/constants/ssConstants";
 
 const pathBarIconButtonClass =
   "rounded-full bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground";

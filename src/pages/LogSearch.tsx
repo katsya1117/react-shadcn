@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { CustomPagination } from "../parts/Pagination/Pagination";
-import { usePagination } from "@/utility/usePagination";
+import { usePagination } from "@/hooks/usePagination";
 import { AutoCompleteMulti } from "../parts/AutoComplete/AutoCompleteMulti";
 import type { MultiValue } from "react-select";
 import type { Pagination, AutoCompleteData } from "@/api";

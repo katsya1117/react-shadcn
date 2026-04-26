@@ -1,7 +1,7 @@
 import type { AutoCompleteData, UserSearchParams } from "@/api";
-import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import { AutoCompleteMulti } from "@/components/parts/AutoComplete/AutoCompleteMulti";
-import { CustomPagination } from "@/components/parts/Pagination/Pagination";
+import { UserTabsShell } from "@/pages/UserTabsShell";
+import { AutoCompleteMulti } from "@/components/common/AutoComplete/AutoCompleteMulti";
+import { CustomPagination } from "@/components/common/Pagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
@@ -19,9 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { getUserList, userSelector } from "@/redux/slices/userSlice";
-import type { AppDispatch } from "@/store";
+import type { AppDispatch } from "@/redux/store";
 import { toast } from "@/components/ui/sonner";
 import { useDispatch } from "react-redux";
 import { useEffect, useState, useRef } from "react";

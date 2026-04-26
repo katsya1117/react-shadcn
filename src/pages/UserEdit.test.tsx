@@ -40,14 +40,14 @@ jest.mock("@/components/ui/sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 
-jest.mock("@/components/pages/UserTabsShell", () => ({
+jest.mock("@/pages/UserTabsShell", () => ({
   __esModule: true,
   UserTabsShell: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="tabs-shell">{children}</div>
   ),
 }));
 
-jest.mock("@/components/parts/AutoComplete/AutoCompleteSingle", () => ({
+jest.mock("@/components/common/AutoComplete/AutoCompleteSingle", () => ({
   __esModule: true,
   AutoCompleteSingle: ({ value, onChange }: any) => (
     <select
@@ -81,7 +81,7 @@ jest.mock("@/components/ui/select", () => ({
   ),
 }));
 
-jest.mock("@/components/parts/Confirm/ConfirmButton", () => ({
+jest.mock("@/components/common/Confirm/ConfirmButton", () => ({
   __esModule: true,
   ConfirmButton: ({ onHandle, buttonLabel }: any) => (
     <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>

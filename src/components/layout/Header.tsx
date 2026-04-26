@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { cn } from "@/lib/utils";
 import { NavLink as RouterNavLink, useLocation } from "react-router";
 import { ChevronUp, ChevronDown, UserRound } from "lucide-react";

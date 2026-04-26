@@ -4,16 +4,16 @@ import {
   createSlice,
 } from "@reduxjs/toolkit";
 
-// import Config from "../../config/apiConfig";
-// import { AutoCompleteApi } from "../../api";
-import type { AutoCompleteData } from "../../api";
+// import Config from "@/config/apiConfig";
+// import { AutoCompleteApi } from "@/api";
+import type { AutoCompleteData } from "@/api";
 import {
   initialSliceError,
   rejectedMessage,
   setSliceError,
   type SliceError,
-} from "../common/error";
-import type { AppRootState } from "../store";
+} from "@/redux/common/error";
+import type { AppRootState } from "@/redux/store";
 
 // モックデータ
 const users: AutoCompleteData[] = [

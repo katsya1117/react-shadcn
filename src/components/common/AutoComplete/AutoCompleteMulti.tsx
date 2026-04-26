@@ -7,8 +7,8 @@ import type { AutoCompleteData } from "../../../api";
 import {
   autoCompleteSelector,
   getAutoComplete,
-} from "../../../redux/slices/autoCompleteSlice";
-import type { AppDispatch } from "../../../redux/store";
+} from "@/redux/slices/autoCompleteSlice";
+import type { AppDispatch } from "@/redux/store";
 
 /**
  * ユーザー名、センター名によるオートコンプリートコンポーネント

@@ -7,7 +7,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { TabsBar } from "./TabsBar";
 import { setup } from "@test-utils";
 import { uiActions, uiSliceReducer } from "@/redux/slices/uiSlice";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 
 jest.mock("./TabsBar.css.ts", () => ({
   TabsBarStyle: {

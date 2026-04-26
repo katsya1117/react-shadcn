@@ -5,7 +5,7 @@ import {
   CardContent,
   CardDescription,
 } from "@/components/ui/card";
-import { PaginationDemo } from "@/components/parts/Pagination/PaginationDemo";
+import { PaginationDemo } from "@/components/common/Pagination/PaginationDemo";
 
 const Development = () => (
   <div className="space-y-4">

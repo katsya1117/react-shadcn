@@ -20,8 +20,19 @@ const config: Config = {
     "<rootDir>/src/api/",
     "<rootDir>/src/components/ui/",
   ],
+  extensionsToTreatAsEsm: [".ts", ".tsx"],
   transform: {
-    "^.+\\.tsx?$": "ts-jest",
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        useESM: true,
+        tsconfig: {
+          module: "ESNext",
+          moduleResolution: "bundler",
+          types: ["jest", "node"],
+        },
+      },
+    ],
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",

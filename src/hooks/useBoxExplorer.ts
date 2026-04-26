@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { generatePath, useLocation, useNavigate } from "react-router";
 
-import type { BoxFolder } from "@/@types/BoxUiElements";
-import { UrlPath } from "@/constant/UrlPath";
+import type { BoxFolder } from "@/types/BoxUiElements";
+import { UrlPath } from "@/constants/UrlPath";
 import { ssActions, ssSelector } from "@/redux/slices/ssSlice";
 import { boxSelector } from "@/redux/slices/userSlice";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch } from "@/redux/hooks";
 import { toast } from "@/components/ui/sonner";
-import type { ContentExplorerInstance, FolderInfo } from "./types";
+import type { ContentExplorerInstance, FolderInfo } from "@/types/ss";
 
 const ROOT_SHARE_PATH = "\\share";
 const BOX_CONTENT_EXPLORER_CONTAINER_ID = "box-content-explorer";

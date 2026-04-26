@@ -36,7 +36,7 @@ const buildUserState = (overrides: Partial<UserState> = {}) => {
 
 let radioOnValueChange: ((value: string) => void) | undefined;
 
-jest.mock("@/components/parts/Confirm/ConfirmButton", () => ({
+jest.mock("@/components/common/Confirm/ConfirmButton", () => ({
   __esModule: true,
   default: ({ onHandle, buttonLabel }: any) => (
     <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>

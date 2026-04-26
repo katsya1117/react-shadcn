@@ -3,7 +3,7 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import type { AppRootState } from "../store";
+import type { AppRootState } from "@/redux/store";
 
 const sliceName = "ui";
 

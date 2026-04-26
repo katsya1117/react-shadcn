@@ -6,14 +6,14 @@ import { configureStore } from "@reduxjs/toolkit";
 import { Header } from "./Header";
 import { setup } from "@test-utils";
 import { userSliceReducer } from "@/redux/slices/userSlice";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import type { UserInfo } from "@/api";
 
-jest.mock("@/components/parts/Information/Information", () => ({
+jest.mock("@/components/common/Information/Information", () => ({
   Information: () => <div data-testid="information" />,
 }));
 
-jest.mock("@/components/parts/Version/VersionInfo", () => ({
+jest.mock("@/components/common/Version/VersionInfo", () => ({
   VersionInfo: () => <div data-testid="version" />,
 }));
 

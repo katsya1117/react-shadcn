@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layout } from "@/components/frame/Layout";
+import { Layout } from "@/components/layout/Layout";
 import { Folder, Settings, FolderOpen, Users } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
@@ -11,8 +11,8 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { generatePath, useNavigate } from "react-router";
-import { UrlPath } from "@/constant/UrlPath";
-import { SHARE_AREAS } from "./shareAreaConfig";
+import { UrlPath } from "@/constants/UrlPath";
+import { SHARE_AREAS } from "@/config/shareAreaConfig";
 
 /** モック用フラグ。将来的にはセッションのロールから取得する */
 const IS_ADMIN = true;

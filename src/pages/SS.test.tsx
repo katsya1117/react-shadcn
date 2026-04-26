@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { setup } from "@test-utils";
 import { SS } from "./SS";
 

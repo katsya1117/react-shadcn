@@ -1,5 +1,5 @@
-import { SectionTabsShell } from "@/components/frame/SectionTabsShell";
-import { UrlPath } from "@/constant/UrlPath";
+import { SectionTabsShell } from "@/components/layout/SectionTabsShell";
+import { UrlPath } from "@/constants/UrlPath";
 import type { ReactNode } from "react";
 
 type TabKey = "add" | "setting";

@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { CenterTabsShell } from "@/components/pages/CenterTabsShell";
+import { CenterTabsShell } from "@/pages/CenterTabsShell";
 
 const CenterCreate = () => (
   <CenterTabsShell active="new">

@@ -18,9 +18,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CenterTabsShell } from "@/components/pages/CenterTabsShell";
+import { CenterTabsShell } from "@/pages/CenterTabsShell";
 import { useNavigate } from "react-router";
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 
 type Center = {
   code: string;

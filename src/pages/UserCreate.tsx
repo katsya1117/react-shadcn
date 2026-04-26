@@ -1,6 +1,6 @@
 import type { AdUserList, UserCreationParams, UserSearchParams } from "@/api";
-import { UserTabsShell } from "@/components/pages/UserTabsShell";
-import { CustomPagination } from "@/components/parts/Pagination/Pagination";
+import { UserTabsShell } from "@/pages/UserTabsShell";
+import { CustomPagination } from "@/components/common/Pagination/Pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field";
@@ -22,13 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import ConfirmButton from "@/components/parts/Confirm/ConfirmButton";
+import ConfirmButton from "@/components/common/Confirm/ConfirmButton";
 import {
   getAdUserList,
   userCreation,
   userSelector,
 } from "@/redux/slices/userSlice";
-import type { AppDispatch } from "@/store";
+import type { AppDispatch } from "@/redux/store";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 

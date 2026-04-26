@@ -1,4 +1,4 @@
-import { UrlPath } from "@/constant/UrlPath";
+import { UrlPath } from "@/constants/UrlPath";
 import { screen } from "@testing-library/react";
 import { setup } from "@test-utils";
 import { MemoryRouter } from "react-router";

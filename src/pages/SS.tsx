@@ -5,8 +5,8 @@ import type { SingleValue } from "react-select";
 import { ArrowLeft } from "lucide-react";
 
 import type { AutoCompleteData, GetFolderCollaborationsResponse } from "@/api";
-import { Layout } from "@/components/frame/Layout";
-import { BoxManager } from "@/components/parts/BoxManager/BoxManager";
+import { Layout } from "@/components/layout/Layout";
+import { BoxManager } from "@/components/common/BoxManager/BoxManager";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,18 +22,18 @@ import {
   updateCollaborations,
 } from "@/redux/slices/ssSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
-import { DEFAULT_ROLE } from "@/components/ss/constants";
+import { DEFAULT_ROLE } from "@/constants/ssConstants";
 import { PathBar } from "@/components/ss/PathBar";
-import { useBoxExplorer } from "@/components/ss/useBoxExplorer";
+import { useBoxExplorer } from "@/hooks/useBoxExplorer";
 import type {
   CollaborationListItem,
   Collaborator,
   CollaboratorType,
   RoleType,
-} from "@/components/ss/types";
-import { UrlPath } from "@/constant/UrlPath";
-import { useAppDispatch } from "@/store/hooks";
-import { SHARE_AREAS } from "./shareAreaConfig";
+} from "@/types/ss";
+import { UrlPath } from "@/constants/UrlPath";
+import { useAppDispatch } from "@/redux/hooks";
+import { SHARE_AREAS } from "@/config/shareAreaConfig";
 
 // SS は ShareArea から遷移した公開対象フォルダだけを root として扱う。
 // URL 直打ちで任意の folderId を渡されても、この集合にないものは画面を開かせない。

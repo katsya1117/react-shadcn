@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import type { AutoCompleteData } from "@/api";
-import { AutoCompleteSingle } from "@/components/parts/AutoComplete/AutoCompleteSingle";
+import { AutoCompleteSingle } from "@/components/common/AutoComplete/AutoCompleteSingle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -30,8 +30,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useConfirmState } from "@/hooks/useConfirmState";
 
-import { ROLE_OPTIONS } from "./constants";
-import type { CollaborationListItem, Collaborator, RoleType } from "./types";
+import { ROLE_OPTIONS } from "@/constants/ssConstants";
+import type { CollaborationListItem, Collaborator, RoleType } from "@/types/ss";
 import { ConfirmButton } from "../parts/Confirm/ConfirmButton";
 import { ConfirmDialog } from "../parts/Confirm/ConfirmDialog";
 
