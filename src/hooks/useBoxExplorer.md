@@ -1,26 +1,35 @@
 # useBoxExplorer
 
-Box Content Explorer SDK をアプリに組み込むためのカスタムフック。
+Box Content Explorer の **フォルダ移動状態** だけを管理するカスタムフック。
 
-フォルダのナビゲーション履歴・現在位置の記憶・UNCパスの生成といった、
-Box SDK 単体では提供されない機能をまとめて管理する。
+このフックは「現在地・履歴・戻る/進む」を扱う頭脳役で、
+**Box SDK 自体の生成・表示・トークン管理はコンポーネント側の責務**。
 
 ---
 
-## 何をするフックか
+## 設計の前提
 
-Box の Content Explorer（ファイルブラウザUI）を React アプリ上で動かすとき、
-SDK は「表示する」「移動する」程度の機能しか持たない。
-このフックはその上に以下の機能を乗せている。
+`SS.tsx` を例に、責務分担はこうなっている。
 
-| 機能 | 説明 |
-|------|------|
-| フォルダ履歴 | 「戻る / 進む」ボタンのための履歴スタック管理 |
-| 位置の記憶 | Redux に現在フォルダを保存し、再訪時に同じ場所から再開 |
-| 深いフォルダへの復元 | ルート以外のフォルダで離脱した場合、SDK の制約を回避して元の位置へ戻す |
-| UNC パス生成 | Box フォルダID の階層から `\share\センター名\サブフォルダ` 形式のパスを組み立てる |
-| クリップボードコピー | 現在フォルダのパスをコピー |
-| エクスプローラーで開く | UNC パスを `file://` に変換してローカルで開く |
+```
+SS.tsx                           useBoxExplorer
+─────────────────────────────────────────────────
+Box SDK インスタンス生成     →
+SDK の show() 呼び出し（表示） →
+navigate イベントの登録      → → handleNavigate を呼ぶ
+                                ┌──────────────────────────┐
+                                │ ・現在フォルダの記憶      │
+                                │ ・履歴の積み上げ          │
+                                │ ・戻る/進むの実行         │
+                                │ ・ルート以外への復元      │
+                                │ ・Redux への永続化         │
+                                └──────────────────────────┘
+                              ← explorerRef を介して navigateTo を逆呼び出し
+```
+
+コンポーネントが SDK を作って `explorerRef` に差し込み、
+SDK の `navigate` イベントを `handleNavigate` に流し込めば、
+あとは hook 内で履歴の管理・戻る進むの提供をしてくれる。
 
 ---
 
@@ -28,132 +37,210 @@ SDK は「表示する」「移動する」程度の機能しか持たない。
 
 ```tsx
 const {
-  accessToken,
-  containerId,
-  currentFolderName,
-  currentFolderPath,
+  explorerRef,        // SDK インスタンスを差し込む先
+  currentFolder,
+  isRestoring,
   canGoBack,
   canGoForward,
-  handleGoBack,
-  handleGoForward,
-  handleCopyPath,
-  handleOpenBox,
-  handleOpenExplorer,
-  isRestoringDeepFolder,
-  layoutSubtitle,
-} = useBoxExplorer({ rootFolderId });
+  handleNavigate,     // SDK の navigate イベントに繋ぐハンドラ
+  handleGoBack,       // 戻るボタン
+  handleGoForward,    // 進むボタン
+} = useBoxExplorer({
+  rootFolderId,
+  initialFolder,
+  savedHistory,
+  savedIndex,
+  restoreTargetId,    // ルート以外のフォルダから復帰する場合
+});
 
-// Box SDK のコンテナ要素に containerId を渡す
-<div id={containerId} />
+// コンポーネント側で SDK を作って ref に差し込む
+useEffect(() => {
+  const explorer = new window.Box.ContentExplorer();
+  explorerRef.current = explorer;
+  setExplorerInstance(explorer);
+}, []);
+
+// navigate イベントを hook に流す
+useEffect(() => {
+  if (!explorerInstance) return;
+  explorerInstance.addListener?.('navigate', handleNavigate);
+  return () => explorerInstance.removeAllListeners?.();
+}, [explorerInstance, handleNavigate]);
 ```
 
-### オプション
+### 引数
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
 | `rootFolderId` | `string` | このビューのルートとなる Box フォルダ ID |
-| `onCurrentFolderChange` | `(folder: FolderInfo) => void` | フォルダ移動時に呼ばれるコールバック（省略可） |
+| `initialFolder` | `FolderInfo` | 初期表示するフォルダ。Redux から復元 or ルート相当の空オブジェクト |
+| `savedHistory` | `string[]` | 復元する履歴配列 |
+| `savedIndex` | `number` | 復元する履歴インデックス |
+| `restoreTargetId` | `string \| undefined` | ルート以外で離脱していた場合の復元先フォルダID |
 
 ### 戻り値
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
-| `accessToken` | `string \| undefined` | Box API のアクセストークン |
-| `containerId` | `string` | SDK をマウントする DOM 要素の id |
-| `currentFolder` | `FolderInfo` | 現在表示中のフォルダ情報 |
-| `currentFolderName` | `string` | 現在フォルダの表示名 |
-| `currentFolderPath` | `string` | 現在フォルダの UNC フルパス（`\share\...`） |
-| `currentFolderRelativePath` | `string` | `\share\` を除いた相対パス |
-| `canGoBack` | `boolean` | 「戻る」が可能かどうか |
-| `canGoForward` | `boolean` | 「進む」が可能かどうか |
-| `handleGoBack` | `() => void` | 履歴を1つ前に戻す |
-| `handleGoForward` | `() => void` | 履歴を1つ先に進む |
-| `handleCopyPath` | `() => Promise<void>` | UNC パスをクリップボードにコピー |
-| `handleOpenBox` | `() => void` | Box Web UI でフォルダを開く |
-| `handleOpenExplorer` | `() => void` | ローカルのエクスプローラーで開く |
-| `isRestoringDeepFolder` | `boolean` | 深いフォルダへの復元が進行中かどうか（ローディング表示に使う） |
-| `layoutSubtitle` | `string \| undefined` | ヘッダーに表示するルートフォルダ名 |
-| `sourcePathByFolderId` | `Record<string, string>` | パンくずの各フォルダID → UNC パスの対応表 |
+| `explorerRef` | `MutableRefObject<ContentExplorerInstance>` | コンポーネント側で SDK を差し込む ref |
+| `currentFolder` | `FolderInfo` | 現在表示中のフォルダ |
+| `folderHistory` | `string[]` | 履歴配列 |
+| `historyIndex` | `number` | 履歴の現在位置 |
+| `isRestoring` | `boolean` | 深いフォルダへの復元処理中かどうか（スケルトン表示に使う） |
+| `canGoBack` | `boolean` | 「戻る」が可能か |
+| `canGoForward` | `boolean` | 「進む」が可能か |
+| `handleNavigate` | `(item: BoxFolder) => void` | SDK の navigate イベントに繋ぐハンドラ |
+| `handleGoBack` | `() => void` | 戻る |
+| `handleGoForward` | `() => void` | 進む |
 
 ---
 
-## なぜ ref が多いのか
+## ロジックの全体像
 
-このフックには `useRef` が 7 つある。それぞれに理由がある。
+### 1. 履歴の仕組み
 
-### `explorerRef` — Box SDK インスタンス
-
-Box の ContentExplorer は React が管理するオブジェクトではない。
-state に入れると再描画のたびに作り直されてしまうため、ref に保持する。
-
-### `onCurrentFolderChangeRef` — 外から渡されるコールバック
-
-呼び出し元が毎描画で新しい関数を渡してくる場合でも、
-Explorer の初期化処理を再実行させないためにrefに入れて最新版を追いかける。
-
-### `folderHistoryRef` / `historyIndexRef` — 履歴・インデックスの二重管理
-
-`handleGoBack` / `handleGoForward` は履歴の特定インデックスを直接読む必要がある。
-`setFolderHistory(prev => ...)` では解決できないケースがあるため、
-state と並行して ref にも同じ値を入れておく。
-
-### `isNavigatingRef` — 「ボタン操作か、ユーザー操作か」の区別フラグ
-
-戻る/進むボタンを押すと SDK の `navigateTo()` を呼び出す。
-SDK はその直後に `navigate` イベントを発火するが、
-このイベントをユーザーが自分でクリックしたものと混同すると履歴が二重更新される。
-ボタン操作中であることを即座に読み書きできるよう ref を使う。
-
-### `isRestoringDeepFolderRef` / `restoreTargetFolderIdRef` — 復元処理の状態フラグ
-
-深いフォルダへの復元は `navigate` イベントを複数回またいで進む。
-state だと次のイベントが届いた時点で更新がまだ反映されていないため ref を使う。
-
-### `handleNavigateRef` — SDK イベントリスナーの最新化
-
-SDK には `addListener` を一度だけ登録したい（再登録は SDK の再起動を意味する）。
-しかし `handleNavigate` は依存する値が変わるたびに新しい関数として作り直される。
-「ref の中の関数を呼ぶだけ」のラッパーをリスナーとして登録し、
-ref には常に最新の `handleNavigate` をセットすることで両立させている。
-
----
-
-## フォルダ履歴の仕組み
-
-ブラウザの「戻る / 進む」と同じスタック構造で管理する。
+ブラウザの戻る/進むと同じスタック構造。
 
 ```
-履歴:  [root, A, B, C]
-index:              ^
+履歴:    [root, A, B, C]
+index:                ^
 ```
 
-- ユーザーが新しいフォルダ Dへ移動 → index より後ろを切り捨てて D を追加
-- 「戻る」 → index を -1 し、SDK で対象フォルダへ移動
-- 「進む」 → index を +1 し、SDK で対象フォルダへ移動
+- 新しいフォルダ `D` へ移動 → index より後ろを切り捨てて `D` を追加
+- 「戻る」 → index を `-1` し、SDK で対象フォルダへ navigate
+- 「進む」 → index を `+1` し、SDK で対象フォルダへ navigate
 - 同じフォルダがすでに履歴にある場合 → 新規追加せずインデックスだけ動かす
 
-パンくずでルートを押すとインデックスが 0 に戻り、それより先に進めなくなる。
-ブラウザとは異なる挙動だが、ファイルエクスプローラーのパンくずとして妥当な動作として設計している。
+パンくずでルートを押すと index が 0 に戻り、それより先に進めなくなる。
+ブラウザとは異なる挙動だが、ファイルエクスプローラーのパンくず UX として妥当な動作。
+
+### 2. 深いフォルダへの復元
+
+Box SDK の `show()` に渡せる初期フォルダはルートだけ。
+ルートより深い位置に復帰したい場合は以下の流れ：
+
+1. SDK 起動時にルートで初期化
+2. `navigate` イベントでルート到達を検知
+3. `navigateTo(復元先のID)` を呼んでジャンプ
+4. 復元先到達を検知して復元完了
+
+`isRestoring` がこの間 `true` になるため、UI 側でスケルトンを出せる。
+
+### 3. handleNavigate の3パターン
+
+`navigate` イベントがどの経路で発火したかを判別して、それぞれ違う処理をする。
+
+| パターン | フラグ | 処理 |
+|---------|-------|------|
+| 復元処理中 | `isRestoringRef` | 履歴は触らず、navigateTo で誘導するだけ |
+| 戻る/進むボタン経由 | `isNavigatingRef` | 履歴は handleGoBack/Forward で更新済みなのでスキップ |
+| ユーザー操作（クリック等） | （フラグなし） | 履歴に積む or インデックスを動かす |
 
 ---
 
-## 深いフォルダへの復元
+## なぜ ref がたくさんあるのか
 
-Box SDK の制約上、`show()` に渡せる初期フォルダはルートフォルダのみ。
-ルートより深い位置に復元したい場合は以下のフローを経る。
+このフックには `useRef` が5つある。それぞれ理由がある。
 
-1. SDK 起動時はルートフォルダで初期化する
-2. `navigate` イベントでルートへの到達を検知
-3. `navigateTo(復元先のフォルダID)` で強制移動
-4. 復元先への到達を検知して復元完了とする
+「常に最新の値を読みたいが、変化しても再描画は不要」という性質のものは ref で持つ。
+state にすると、setState の直後（イベントハンドラ内など）から最新値が読めない。
 
-`isRestoringDeepFolder` がこの間 `true` になるため、UI 側でローディングを出せる。
+| ref | 用途 |
+|----|------|
+| `isNavigatingRef` | 戻る/進むボタン経由かを判定するフラグ。SDK の navigate イベントとの競合を防ぐため即座読みが必要 |
+| `isRestoringRef` | 深いフォルダへの復元中かを判定。navigate イベントを複数回経るので state では遅い |
+| `restoreTargetIdRef` | 復元先のフォルダID。初期化以後は変わらない値だが、handleNavigate の中で参照する |
+| `historyIndexRef` | 履歴の現在位置。`handleGoBack/Forward` で「いまの位置 ±1」を即座に読むのに使う |
+| `folderHistoryRef` | 履歴配列の最新値。state の更新がイベント間で遅延するのを ref で補う |
+
+特に `historyIndexRef` と `folderHistoryRef` は **state とペアで持っている**。
+これは `canGoBack` の計算など UI 反映に state が必要だが、
+イベントハンドラ内では同期的に最新値を読みたいため。
+
+→ この「state と ref を同時に持つ」二重管理を安全に行うのが `syncHistory` ヘルパー。
+
+### syncHistory の役割
+
+```ts
+const syncHistory = (nextIndex, nextHistory) => {
+  historyIndexRef.current = nextIndex;
+  folderHistoryRef.current = nextHistory;
+  setHistoryIndex(nextIndex);
+  setFolderHistory(nextHistory);
+  dispatch(ssActions.setFolderHistory({...}));
+};
+```
+
+履歴を更新するときは **必ず** `syncHistory` を経由する。
+こうすることで「ref と state がずれる」事故を一箇所で防げる。
 
 ---
 
-## アクセストークン
+## なぜ「戻る/進む」が ref ベースなのか
 
-通常はサーバーが発行したトークンを Redux 経由で受け取る。
+`handleGoBack` の中身は単純に見える：
 
-開発時は URL クエリ `?devToken=xxx` または `localStorage.box_dev_token` に
-トークンを仕込むと、サーバーなしで動作確認できる。
+```ts
+const handleGoBack = () => {
+  if (!canGoBack) return;
+  const nextIndex = historyIndexRef.current - 1;
+  const folderId = folderHistoryRef.current[nextIndex];
+  isNavigatingRef.current = true;
+  syncHistory(nextIndex, folderHistoryRef.current);
+  explorerRef.current?.navigateTo?.(folderId);
+};
+```
+
+ここで `historyIndex - 1`（state）ではなく `historyIndexRef.current - 1`（ref）を使うのが大事。
+
+理由：連続でボタンが押されたとき、state の更新は次の描画まで反映されない。
+ボタン2回押しのうち2回目の `handleGoBack` が実行された時点で、
+`historyIndex` はまだ古い値のまま。ref なら `syncHistory` の中で同期更新済み。
+
+---
+
+## SDK との連携で気をつけること
+
+### イベントリスナーは付け替えに注意
+
+`handleNavigate` は依存値が変わるたびに新しい関数として作り直される。
+そのため SDK のリスナー登録/解除は `handleNavigate` の変化に追従させる必要がある。
+
+```tsx
+useEffect(() => {
+  if (!explorerInstance) return;
+  const listener = (item) => handleNavigate(item);
+  explorerInstance.removeAllListeners?.();   // 古いリスナーを掃除
+  explorerInstance.addListener?.('navigate', listener);
+  return () => explorerInstance.removeAllListeners?.();
+}, [explorerInstance, handleNavigate]);
+```
+
+### navigateTo の直後に navigate イベントが来る
+
+戻る/進むボタンや復元処理で `explorer.navigateTo(id)` を呼ぶと、
+SDK はその直後に `navigate` イベントを発火する。
+
+これをユーザー操作と区別するために `isNavigatingRef` / `isRestoringRef` フラグがある。
+**フラグを立ててから navigateTo を呼ぶ**順序を必ず守ること。
+
+---
+
+## ありがちな落とし穴
+
+### Q. 戻る/進むボタンを押したら履歴が二重に積まれる
+
+→ `isNavigatingRef` のセット忘れ。`navigateTo` の前に必ず `true` を立てる。
+
+### Q. 連続でボタンを押すと変な位置に飛ぶ
+
+→ `historyIndex`（state）を読んでいる可能性。`historyIndexRef.current` を使う。
+
+### Q. 復元中なのにフォルダが切り替わる
+
+→ `isRestoringRef.current` のチェックが先頭にないか、`return` 漏れ。
+
+### Q. SDK のリスナーが多重登録される
+
+→ `removeAllListeners` を呼ばずに `addListener` だけ呼んでいる。
+useEffect で必ず古いものを掃除してから追加する。

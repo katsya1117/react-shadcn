@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CustomPagination } from "../parts/Pagination/Pagination";
+import { CustomPagination } from "@/components/common/Pagination/Pagination";
 import { usePagination } from "@/hooks/usePagination";
-import { AutoCompleteMulti } from "../parts/AutoComplete/AutoCompleteMulti";
+import { AutoCompleteMulti } from "@/components/common/AutoComplete/AutoCompleteMulti";
 import type { MultiValue } from "react-select";
 import type { Pagination, AutoCompleteData } from "@/api";
 

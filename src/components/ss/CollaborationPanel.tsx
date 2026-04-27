@@ -32,8 +32,8 @@ import { useConfirmState } from "@/hooks/useConfirmState";
 
 import { ROLE_OPTIONS } from "@/constants/ssConstants";
 import type { CollaborationListItem, Collaborator, RoleType } from "@/types/ss";
-import { ConfirmButton } from "../parts/Confirm/ConfirmButton";
-import { ConfirmDialog } from "../parts/Confirm/ConfirmDialog";
+import { ConfirmButton } from "../common/Confirm/ConfirmButton";
+import { ConfirmDialog } from "../common/Confirm/ConfirmDialog";
 
 const getRoleLabel = (role: RoleType) =>
   ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
@@ -173,7 +173,7 @@ const CollaboratorRow = ({
               </Select>
               <ConfirmDialog
                 open={isOpen}
-                onOpenChange={(nextOpen) => {
+                onOpenChange={(nextOpen: boolean) => {
                   handleOpenChange(nextOpen);
                   if (!nextOpen) setPendingRole(collaborator.role);
                 }}

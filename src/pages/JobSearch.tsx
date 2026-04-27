@@ -5,8 +5,8 @@ import { getJobList, jobSelector } from "@/redux/slices/jobSearchSlice";
 import { userSelector } from "@/redux/slices/userSlice";
 import type { AppDispatch } from "@/redux/store";
 import { toConditionString } from "@/utility/JobCondition";
-import { Conditions } from "../parts/JobSearch/Conditions";
-import { SearchSet, SearchSetMode } from "../parts/JobSearch/SearchSet";
+import { Conditions } from "@/components/common/JobSearch/Conditions";
+import { SearchSet, SearchSetMode } from "@/components/common/JobSearch/SearchSet";
 // import { FolderLock, ShieldCheck } from "lucide-react";
 // import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CustomPagination } from "../parts/Pagination/Pagination";
+import { CustomPagination } from "@/components/common/Pagination/Pagination";
 
 const JobSearch = () => {
   const dispatch: AppDispatch = useDispatch();

@@ -43,9 +43,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate, useParams } from "react-router";
 import type { SingleValue } from "react-select";
 import { z } from "zod";
-import Config from "../../config/apiConfig";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import { Skeleton } from "../ui/skeleton";
+import Config from "@/config/apiConfig";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PermBase = Omit<
   DefaultSelection36PermissionPayload,

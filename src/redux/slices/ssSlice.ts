@@ -195,12 +195,19 @@ const ssSlice = createSlice({
 
 export const ssActions = ssSlice.actions;
 
+// Singular-name aliases for ss2.tsx compatibility
+export const createCollaboration = createCollaborations;
+export const deleteCollaboration = deleteCollaborations;
+export const updateCollaboration = updateCollaborations;
+
 const ssRootSelector = (state: AppRootState) => state.ss;
 
 export const ssSelector = {
   isLoadingSelector: () =>
     createSelector(ssRootSelector, (state) => state.isLoading),
   byFolderIdSelector: () =>
+    createSelector(ssRootSelector, (state) => state.byFolderId),
+  collaborationByFolderIdSelector: () =>
     createSelector(ssRootSelector, (state) => state.byFolderId),
   collaborationStatusSelector: (folderId: string) =>
     createSelector(
