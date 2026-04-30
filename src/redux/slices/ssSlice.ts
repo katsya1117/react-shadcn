@@ -85,6 +85,7 @@ interface SSState {
   folderHistoryByRootId: Record<string, string[]>;
   historyIndexByRootId: Record<string, number>;
   isLoading: boolean;
+  isMutating: boolean;
   error: SliceError;
 }
 
@@ -95,6 +96,7 @@ const initialState: SSState = {
   folderHistoryByRootId: {},
   historyIndexByRootId: {},
   isLoading: false,
+  isMutating: false,
   error: initialSliceError,
 };
 
@@ -156,38 +158,38 @@ const ssSlice = createSlice({
       });
     builder
       .addCase(createCollaborations.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(createCollaborations.fulfilled, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(createCollaborations.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
     builder
       .addCase(deleteCollaborations.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(deleteCollaborations.fulfilled, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(deleteCollaborations.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
     builder
       .addCase(updateCollaborations.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(updateCollaborations.fulfilled, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(updateCollaborations.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
   },
@@ -205,6 +207,8 @@ const ssRootSelector = (state: AppRootState) => state.ss;
 export const ssSelector = {
   isLoadingSelector: () =>
     createSelector(ssRootSelector, (state) => state.isLoading),
+  isMutatingSelector: () =>
+    createSelector(ssRootSelector, (state) => state.isMutating),
   byFolderIdSelector: () =>
     createSelector(ssRootSelector, (state) => state.byFolderId),
   collaborationByFolderIdSelector: () =>

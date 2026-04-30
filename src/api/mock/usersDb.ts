@@ -499,7 +499,7 @@ export const mockUserDb = {
       const list = Array.isArray(center_cd_list)
         ? center_cd_list
         : [center_cd_list];
-      rows = rows.filter((u) => list.includes(u.center ?? ""));
+      rows = rows.filter((u) => list.includes(u.center_cd ?? ""));
     }
 
     const total = rows.length;

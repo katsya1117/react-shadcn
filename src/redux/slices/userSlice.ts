@@ -158,6 +158,7 @@ export interface UserSearchParamsExt extends UserSearchParams {
 interface UserState {
   isLogin: boolean;
   isLoading: boolean;
+  isMutating: boolean;
   error: SliceError;
 
   loginUserCd: string;
@@ -191,6 +192,7 @@ interface UserState {
 export const initialState: UserState = {
   isLogin: false,
   isLoading: false,
+  isMutating: false,
   error: initialSliceError,
   loginUserCd: "",
   loginUserInfo: undefined,
@@ -308,7 +310,7 @@ const userSlice = createSlice({
       });
     builder
       .addCase(updateUserInfo.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(updateUserInfo.fulfilled, (state, action) => {
@@ -320,17 +322,17 @@ const userSlice = createSlice({
             "invalid response",
           );
         }
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(updateUserInfo.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
 
     builder
       // removeUser
       .addCase(removeUser.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(removeUser.fulfilled, (state, action) => {
@@ -342,10 +344,10 @@ const userSlice = createSlice({
             "Failed to delete user",
           );
         }
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(removeUser.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
     builder
@@ -373,7 +375,7 @@ const userSlice = createSlice({
     builder
       // userCreation
       .addCase(userCreation.pending, (state) => {
-        state.isLoading = true;
+        state.isMutating = true;
         state.error = initialSliceError;
       })
       .addCase(userCreation.fulfilled, (state, action) => {
@@ -385,10 +387,10 @@ const userSlice = createSlice({
             "invalid response",
           );
         }
-        state.isLoading = false;
+        state.isMutating = false;
       })
       .addCase(userCreation.rejected, (state) => {
-        state.isLoading = false;
+        state.isMutating = false;
         state.error = setSliceError(rejectedMessage);
       });
 
@@ -453,6 +455,11 @@ export const userSelector = {
   isLoadingSelector: () =>
     createSelector(userRootSelector, (state) => {
       return state.isLoading;
+    }),
+
+  isMutatingSelector: () =>
+    createSelector(userRootSelector, (state) => {
+      return state.isMutating;
     }),
 
   isLoginSelector: () =>

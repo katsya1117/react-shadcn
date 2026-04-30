@@ -262,57 +262,20 @@ export class UsersApi {
       per_page: per = per_page,
     } = param ?? {};
 
-    const { userManageMock } = await import("./mock/userManageList");
+    const { mockUserDb } = await import("./mock/usersDb");
 
-    const centers =
+    const centerFilter =
       centerList ??
       (auto_complete ? auto_complete.map((c) => c.value) : undefined);
 
-    let rows = userManageMock;
-    if (user_name) {
-      const q = user_name.toLowerCase();
-      rows = rows.filter((u) => (u.disp_name ?? "").toLowerCase().includes(q));
-    }
-    if (account) {
-      const q = account.toLowerCase();
-      rows = rows.filter((u) => u.user_cd.toLowerCase().includes(q));
-    }
-    if (userEmail) {
-      const q = userEmail.toLowerCase();
-      rows = rows.filter((u) => (u.email ?? "").toLowerCase().includes(q));
-    }
-    if (centers && (Array.isArray(centers) ? centers.length : true)) {
-      const list = Array.isArray(centers)
-        ? centers
-        : String(centers).split(",");
-      rows = rows.filter((u) =>
-        u.center?.some((c) => list.includes(c.center_cd ?? "")),
-      );
-    }
-
-    const total = rows.length;
-    const start = (p - 1) * per;
-    const items = rows.slice(start, start + per);
-    const last_page = Math.max(1, Math.ceil(total / per));
-    const pagination: Pagination = {
-      current_page: p,
-      last_page,
+    const data = mockUserDb.list({
+      user_name,
+      user_account: account,
+      user_email: userEmail,
+      center_cd_list: centerFilter,
+      page: p,
       per_page: per,
-      from: total === 0 ? 0 : start + 1,
-      to: Math.min(total, start + per),
-      total,
-      first_page_url: `/api/users?page=1&per_page=${per}`,
-      prev_page_url: p > 1 ? `/api/users?page=${p - 1}&per_page=${per}` : null,
-      next_page_url:
-        start + per < total ? `/api/users?page=${p + 1}&per_page=${per}` : null,
-      last_page_url: `/api/users?page=${last_page}&per_page=${per}`,
-    };
-
-    const data: PaginationResultMUser = {
-      data: items,
-      items,
-      pagination,
-    };
+    });
     return { data };
   }
 
@@ -540,16 +503,8 @@ export class AutoCompleteApi {
   constructor(public config?: unknown) {}
 
   async getList() {
-    const users = [
-      { label: "sre-user", value: "sre-user", color: "#2563eb" },
-      { label: "ops-admin", value: "ops-admin", color: "#10b981" },
-      { label: "dev-lead", value: "dev-lead", color: "#f59e0b" },
-    ];
-    const groups = [
-      { label: "東京センター", value: "tokyo", color: "#6366f1" },
-      { label: "大阪DR", value: "osaka-dr", color: "#ef4444" },
-    ];
-    return { data: { users, groups } };
+    const { mockUsers, mockGroups } = await import("./mock/autoCompleteDb");
+    return { data: { users: mockUsers, groups: mockGroups } };
   }
 }
 

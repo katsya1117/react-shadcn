@@ -26,6 +26,7 @@ import {
 import { boxSelector, userSelector } from "@/redux/slices/userSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { PathBar } from "@/components/ss/PathBar";
+import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
 import { useAppDispatch } from "@/redux/hooks";
 import { DEFAULT_ROLE, DISPLAY_PATH_ROOT } from "@/constants/ssConstants";
@@ -190,7 +191,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     token?.accessToken ?? localStorage.getItem("box_dev_token") ?? undefined;
   const groups = useSelector(autoCompleteSelector.groupsSelector());
   const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
-  const isSavingCollaborator = useSelector(ssSelector.isLoadingSelector());
+  const isMutating = useSelector(ssSelector.isMutatingSelector());
   const rememberedCurrentFolder = useSelector(
     ssSelector.currentFolderSelector(rootFolderId),
   );
@@ -545,7 +546,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
               </Card>
             </div>
 
-            <div className="flex max-h-[72dvh] flex-col overflow-hidden lg:h-full lg:min-h-0 lg:w-96 lg:shrink-0 lg:self-stretch">
+            <div className="relative flex max-h-[72dvh] flex-col overflow-hidden lg:h-full lg:min-h-0 lg:w-96 lg:shrink-0 lg:self-stretch">
+              {isMutating && <LoadingOverlay />}
               {isRestoring ? (
                 <CollaborationPanelSkeleton />
               ) : (
@@ -554,7 +556,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
                   folderName={currentFolderName}
                   collaborators={collaborators}
                   isListLoading={isCollaboratorsListLoading}
-                  isBusy={isSavingCollaborator}
+                  isBusy={isMutating}
                   selectedCollaborator={selectedCollaborator}
                   selectedRole={selectedRole}
                   onSelectedCollaboratorChange={setSelectedCollaborator}

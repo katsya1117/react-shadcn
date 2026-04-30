@@ -38,6 +38,7 @@ import {
 } from "@/redux/slices/userSlice";
 import type { AppDispatch } from "@/redux/store";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { NavLink, useNavigate, useParams } from "react-router";
@@ -230,6 +231,7 @@ export const UserEdit = () => {
     useState<SingleValue<AutoCompleteData>>(null);
   const [lang, setLang] = useState<"ja" | "en" | "undefined">();
   const [permission, setPermission] = useState("");
+  const isMutating = useSelector(userSelector.isMutatingSelector());
 
   useEffect(() => {
     if (!user_cd) return;
@@ -443,7 +445,8 @@ export const UserEdit = () => {
               </div>
             </NavLink>
           </Button>
-          <Card>
+          <Card className="relative">
+            {isMutating && <LoadingOverlay />}
             <CardHeader className="flex gap-6 items-end">
               <p className="font-semibold">ユーザー情報</p>
               <span className="text-muted-foreground text-sm">

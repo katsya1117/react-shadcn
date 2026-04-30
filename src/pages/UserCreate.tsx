@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import ConfirmButton from "@/components/common/Confirm/ConfirmButton";
+import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import {
   getAdUserList,
   userCreation,
@@ -99,6 +100,7 @@ export const UserCreate = () => {
   const [adLastUpdatedAt, setAdLastUpdatedAt] = useState<Date | undefined>(
     undefined,
   );
+  const isMutating = useSelector(userSelector.isMutatingSelector());
 
   const onHandleSearch = () => {
     dispatch(
@@ -165,6 +167,8 @@ export const UserCreate = () => {
           per_page: undefined,
         }),
       );
+    } else {
+      toast.error("ユーザーの登録に失敗しました");
     }
     console.log(
       "[" + user.mail_addr.split("@")[0] + "]の登録処理が完了しました。結果:",
@@ -205,7 +209,8 @@ export const UserCreate = () => {
           </p>
         </div>
       </div>
-      <Card className="shadow-sm">
+      <Card className="relative shadow-sm">
+        {isMutating && <LoadingOverlay />}
         <CardContent>
           <div className="border-b space-y-5 pb-6">
             <form>
