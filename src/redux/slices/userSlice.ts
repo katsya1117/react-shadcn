@@ -26,6 +26,7 @@ import {
   initialSliceError,
   rejectedMessage,
   setSliceError,
+  parseApiError,
   type SliceError,
 } from "@/redux/common/error";
 
@@ -86,13 +87,20 @@ export const getUserInfo = createAsyncThunk(
 
 export const updateUserInfo = createAsyncThunk(
   `${sliceName}/updateUserInfo`,
-  async (param: { userCd: string; params: UserUpdateParams }) => {
-    const response = userApi.updateUser(
-      param.userCd,
-      param.params,
-      Config.apiOption,
-    );
-    return (await response).data;
+  async (
+    param: { userCd: string; params: UserUpdateParams },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await userApi.updateUser(
+        param.userCd,
+        param.params,
+        Config.apiOption,
+      );
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
@@ -117,18 +125,26 @@ export const getAdUserList = createAsyncThunk(
 
 export const userCreation = createAsyncThunk(
   `${sliceName}/userCreation`,
-  async (param: UserCreationParams) => {
-    const response = userApi.createUser(param, Config.apiOption);
-    return (await response).data;
+  async (param: UserCreationParams, { rejectWithValue }) => {
+    try {
+      const response = await userApi.createUser(param, Config.apiOption);
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
 /** ユーザー削除 Action */
 export const removeUser = createAsyncThunk(
   `${sliceName}/removeUser`,
-  async (userCd: string) => {
-    const response = userApi.removeUser(userCd, Config.apiOption);
-    return (await response).data;
+  async (userCd: string, { rejectWithValue }) => {
+    try {
+      const response = await userApi.removeUser(userCd, Config.apiOption);
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
@@ -158,7 +174,6 @@ export interface UserSearchParamsExt extends UserSearchParams {
 interface UserState {
   isLogin: boolean;
   isLoading: boolean;
-  isMutating: boolean;
   error: SliceError;
 
   loginUserCd: string;
@@ -192,7 +207,6 @@ interface UserState {
 export const initialState: UserState = {
   isLogin: false,
   isLoading: false,
-  isMutating: false,
   error: initialSliceError,
   loginUserCd: "",
   loginUserInfo: undefined,
@@ -309,46 +323,38 @@ const userSlice = createSlice({
         state.error = setSliceError(rejectedMessage);
       });
     builder
-      .addCase(updateUserInfo.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(updateUserInfo.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(updateUserInfo.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "データの更新に失敗しました。",
-            "invalid response",
-          );
-        }
-        state.isMutating = false;
+      .addCase(updateUserInfo.fulfilled, () => {
+        // if (action.payload !== null) {
+        //   state.error = initialSliceError;
+        // } else {
+        //   state.error = setSliceError("データの更新に失敗しました。", "invalid response");
+        // }
       })
-      .addCase(updateUserInfo.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(updateUserInfo.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
 
     builder
       // removeUser
-      .addCase(removeUser.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(removeUser.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(removeUser.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "削除に失敗しました",
-            "Failed to delete user",
-          );
-        }
-        state.isMutating = false;
+      .addCase(removeUser.fulfilled, () => {
+        // if (action.payload !== null) {
+        //   state.error = initialSliceError;
+        // } else {
+        //   state.error = setSliceError("削除に失敗しました", "Failed to delete user");
+        // }
       })
-      .addCase(removeUser.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(removeUser.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
     builder
       .addCase(getAdUserList.pending, (state, action) => {
@@ -374,24 +380,20 @@ const userSlice = createSlice({
       });
     builder
       // userCreation
-      .addCase(userCreation.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(userCreation.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(userCreation.fulfilled, (state, action) => {
-        if (action.payload !== null) {
-          state.error = initialSliceError;
-        } else {
-          state.error = setSliceError(
-            "ユーザーの作成に失敗しました。",
-            "invalid response",
-          );
-        }
-        state.isMutating = false;
+      .addCase(userCreation.fulfilled, () => {
+        // if (action.payload !== null) {
+        //   state.error = initialSliceError;
+        // } else {
+        //   state.error = setSliceError("ユーザーの作成に失敗しました。", "invalid response");
+        // }
       })
-      .addCase(userCreation.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(userCreation.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
 
     builder
@@ -455,11 +457,6 @@ export const userSelector = {
   isLoadingSelector: () =>
     createSelector(userRootSelector, (state) => {
       return state.isLoading;
-    }),
-
-  isMutatingSelector: () =>
-    createSelector(userRootSelector, (state) => {
-      return state.isMutating;
     }),
 
   isLoginSelector: () =>

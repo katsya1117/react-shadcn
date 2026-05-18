@@ -100,7 +100,7 @@ export const UserCreate = () => {
   const [adLastUpdatedAt, setAdLastUpdatedAt] = useState<Date | undefined>(
     undefined,
   );
-  const isMutating = useSelector(userSelector.isMutatingSelector());
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const onHandleSearch = () => {
     dispatch(
@@ -148,8 +148,9 @@ export const UserCreate = () => {
       language_code: 0,
     };
     console.log("実際に送信するデータ:", params);
-    const result = await dispatch(userCreation(params));
-    if (userCreation.fulfilled.match(result)) {
+    setIsRegistering(true);
+    try {
+      await dispatch(userCreation(params)).unwrap();
       toast.success("ユーザーを登録しました", {
         description: `${user.disp_name} (${user.account_name}) を登録しました。`,
       });
@@ -167,13 +168,13 @@ export const UserCreate = () => {
           per_page: undefined,
         }),
       );
-    } else {
-      toast.error("ユーザーの登録に失敗しました");
+    } catch (error) {
+      toast.error(
+        typeof error === "string" ? error : "ユーザーの登録に失敗しました",
+      );
+    } finally {
+      setIsRegistering(false);
     }
-    console.log(
-      "[" + user.mail_addr.split("@")[0] + "]の登録処理が完了しました。結果:",
-      result,
-    );
   };
 
   const handleRefreshAD = () => {
@@ -210,7 +211,7 @@ export const UserCreate = () => {
         </div>
       </div>
       <Card className="relative shadow-sm">
-        {isMutating && <LoadingOverlay />}
+        {isRegistering && <LoadingOverlay />}
         <CardContent>
           <div className="border-b space-y-5 pb-6">
             <form>

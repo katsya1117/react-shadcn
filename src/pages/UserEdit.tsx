@@ -231,7 +231,9 @@ export const UserEdit = () => {
     useState<SingleValue<AutoCompleteData>>(null);
   const [lang, setLang] = useState<"ja" | "en" | "undefined">();
   const [permission, setPermission] = useState("");
-  const isMutating = useSelector(userSelector.isMutatingSelector());
+  const [isSavingUser, setIsSavingUser] = useState(false);
+  const [isResettingSearch, setIsResettingSearch] = useState(false);
+  const [isRemovingUser, setIsRemovingUser] = useState(false);
 
   useEffect(() => {
     if (!user_cd) return;
@@ -370,31 +372,38 @@ export const UserEdit = () => {
       center_cd: belonging?.value ?? "",
       perm_cd: permission,
     };
-    const result = await dispatch(updateUserInfo({ userCd: user_cd, params }));
-    if (updateUserInfo.fulfilled.match(result)) {
+    setIsSavingUser(true);
+    try {
+      await dispatch(updateUserInfo({ userCd: user_cd, params })).unwrap();
       toast.success("保存しました");
       dispatch(getUserInfo(user_cd));
-    } else {
-      toast.error("保存に失敗しました");
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "保存に失敗しました");
+    } finally {
+      setIsSavingUser(false);
     }
   };
 
   const handleUserRemove = async () => {
     if (!user_cd) return;
-    const result = await dispatch(removeUser(user_cd));
-    if (removeUser.fulfilled.match(result)) {
+    setIsRemovingUser(true);
+    try {
+      await dispatch(removeUser(user_cd)).unwrap();
       navigate(UrlPath.UserManage, {
         replace: true,
         state: { deletedUserCd: user_cd },
       });
-    } else {
-      toast.error("削除に失敗しました");
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "削除に失敗しました");
+    } finally {
+      setIsRemovingUser(false);
     }
   };
 
   const handleResetSearchCondition = async () => {
     if (!user_cd) return;
     const api = new SearchSetApi(Config.apiConfig);
+    setIsResettingSearch(true);
     try {
       const response = await api.clearSearchSet(user_cd, Config.apiOption);
       if (!response?.data) {
@@ -407,6 +416,8 @@ export const UserEdit = () => {
       toast.error("検索条件のリセットに失敗しました", {
         description: errorMessage,
       });
+    } finally {
+      setIsResettingSearch(false);
     }
   };
 
@@ -446,7 +457,7 @@ export const UserEdit = () => {
             </NavLink>
           </Button>
           <Card className="relative">
-            {isMutating && <LoadingOverlay />}
+            {isSavingUser && <LoadingOverlay />}
             <CardHeader className="flex gap-6 items-end">
               <p className="font-semibold">ユーザー情報</p>
               <span className="text-muted-foreground text-sm">
@@ -614,7 +625,8 @@ export const UserEdit = () => {
               </Button>
             </CardFooter>
           </Card>
-          <Card>
+          <Card className="relative">
+            {isResettingSearch && <LoadingOverlay />}
             <CardHeader>
               <div className="flex flex-col gap-6 items-start">
                 <p className="font-semibold">MyPage検索条件リセット</p>
@@ -636,7 +648,8 @@ export const UserEdit = () => {
               />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="relative">
+            {isRemovingUser && <LoadingOverlay />}
             <CardHeader>
               <div className="flex flex-col gap-6 items-start">
                 <p className="font-semibold">ユーザー削除</p>

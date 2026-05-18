@@ -191,7 +191,6 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     token?.accessToken ?? localStorage.getItem("box_dev_token") ?? undefined;
   const groups = useSelector(autoCompleteSelector.groupsSelector());
   const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
-  const isMutating = useSelector(ssSelector.isMutatingSelector());
   const rememberedCurrentFolder = useSelector(
     ssSelector.currentFolderSelector(rootFolderId),
   );
@@ -244,6 +243,14 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     savedIndex: savedHistoryIndex,
     restoreTargetId,
   });
+
+  // ----- ローカル mutation 状態 -----
+  const [isAddingCollaborator, setIsAddingCollaborator] = useState(false);
+  const [isRemovingCollaborator, setIsRemovingCollaborator] = useState(false);
+  const [isUpdatingCollaborator, setIsUpdatingCollaborator] = useState(false);
+
+  const isMutating =
+    isAddingCollaborator || isRemovingCollaborator || isUpdatingCollaborator;
 
   // ----- フォーム状態（コラボ追加） -----
   const [selectedCollaborator, setSelectedCollaborator] =
@@ -430,6 +437,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       can_view_path: true,
     };
 
+    setIsAddingCollaborator(true);
     try {
       // mutation thunk は API 1 回だけを責務にしている。
       await dispatch(createCollaborations(params)).unwrap();
@@ -437,6 +445,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       toast.error(
         typeof error === "string" ? error : "コラボレーターの追加に失敗しました",
       );
+      setIsAddingCollaborator(false);
       return;
     }
 
@@ -447,6 +456,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       resetForm();
     } catch {
       toast.error("追加は完了しましたが一覧の更新に失敗しました");
+    } finally {
+      setIsAddingCollaborator(false);
     }
   }, [
     collaborationsByFolderId,
@@ -461,6 +472,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
   const handleRemoveCollaborator = useCallback(
     async (collaborator: Collaborator) => {
+      setIsRemovingCollaborator(true);
       try {
         // collaborator.id は collaboration レコードの ID（user/group ID ではない）。
         await dispatch(
@@ -468,6 +480,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         ).unwrap();
       } catch {
         toast.error("コラボレーターの削除に失敗しました");
+        setIsRemovingCollaborator(false);
         return;
       }
 
@@ -476,6 +489,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         toast.success(`${collaborator.name} を削除しました`);
       } catch {
         toast.error("削除は完了しましたが一覧の更新に失敗しました");
+      } finally {
+        setIsRemovingCollaborator(false);
       }
     },
     [dispatch, refreshCollaborations],
@@ -483,6 +498,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
   const handleUpdateCollaboratorRole = useCallback(
     async (collaborator: Collaborator, role: RoleType) => {
+      setIsUpdatingCollaborator(true);
       try {
         await dispatch(
           updateCollaborations({
@@ -496,6 +512,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
             ? error
             : "コラボレーターのロール更新に失敗しました",
         );
+        setIsUpdatingCollaborator(false);
         return;
       }
 
@@ -504,6 +521,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         toast.success(`${collaborator.name} のロールを更新しました`);
       } catch {
         toast.error("更新は完了しましたが一覧の更新に失敗しました");
+      } finally {
+        setIsUpdatingCollaborator(false);
       }
     },
     [dispatch, refreshCollaborations],

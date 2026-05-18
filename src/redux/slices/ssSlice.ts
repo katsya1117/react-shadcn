@@ -19,6 +19,7 @@ import {
   initialSliceError,
   setSliceError,
   rejectedMessage,
+  parseApiError,
 } from "@/redux/common/error";
 
 const sliceName = "ss";
@@ -40,36 +41,41 @@ export const getFolderCollaborations = createAsyncThunk(
 
 export const createCollaborations = createAsyncThunk(
   sliceName + "/createCollaborations",
-  async (param: CreateCollaborationsParams) => {
-    // mutation thunk は API 呼び出しだけを責務にする。
-    // 一覧再取得と toast 制御は component 側で unwrap + try/catch して扱う。
-    await api.createCollaborations(param, Config.apiOption);
+  async (param: CreateCollaborationsParams, { rejectWithValue }) => {
+    try {
+      await api.createCollaborations(param, Config.apiOption);
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
 export const deleteCollaborations = createAsyncThunk(
   sliceName + "/deleteCollaborations",
-  async (param: { collaborationId: string }) => {
-    // Box API の削除対象は collaborator 本体ではなく collaboration レコード ID。
-    await api.deleteCollaborations(param.collaborationId, Config.apiOption);
+  async (param: { collaborationId: string }, { rejectWithValue }) => {
+    try {
+      await api.deleteCollaborations(param.collaborationId, Config.apiOption);
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
 export const updateCollaborations = createAsyncThunk(
   sliceName + "/updateCollaborations",
   async (
-    param: {
-      collaborationId: string;
-      params: UpdateCollaborationParams;
-    },
+    param: { collaborationId: string; params: UpdateCollaborationParams },
+    { rejectWithValue },
   ) => {
-    // ロール更新も collaborationId 単位。
-    // inherited 行を触る場合は、継承元にある collaboration レコードを更新することになる。
-    await api.updateCollaboration(
-      param.collaborationId,
-      param.params,
-      Config.apiOption,
-    );
+    try {
+      await api.updateCollaboration(
+        param.collaborationId,
+        param.params,
+        Config.apiOption,
+      );
+    } catch (e) {
+      return rejectWithValue(parseApiError(e));
+    }
   },
 );
 
@@ -85,7 +91,6 @@ interface SSState {
   folderHistoryByRootId: Record<string, string[]>;
   historyIndexByRootId: Record<string, number>;
   isLoading: boolean;
-  isMutating: boolean;
   error: SliceError;
 }
 
@@ -96,7 +101,6 @@ const initialState: SSState = {
   folderHistoryByRootId: {},
   historyIndexByRootId: {},
   isLoading: false,
-  isMutating: false,
   error: initialSliceError,
 };
 
@@ -157,40 +161,34 @@ const ssSlice = createSlice({
         state.collaborationStatusByFolderId[action.meta.arg] = "failed";
       });
     builder
-      .addCase(createCollaborations.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(createCollaborations.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(createCollaborations.fulfilled, (state) => {
-        state.isMutating = false;
-      })
-      .addCase(createCollaborations.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(createCollaborations.fulfilled, () => {})
+      .addCase(createCollaborations.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
     builder
-      .addCase(deleteCollaborations.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(deleteCollaborations.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(deleteCollaborations.fulfilled, (state) => {
-        state.isMutating = false;
-      })
-      .addCase(deleteCollaborations.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(deleteCollaborations.fulfilled, () => {})
+      .addCase(deleteCollaborations.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
     builder
-      .addCase(updateCollaborations.pending, (state) => {
-        state.isMutating = true;
-        state.error = initialSliceError;
+      .addCase(updateCollaborations.pending, () => {
+        // state.error = initialSliceError;
       })
-      .addCase(updateCollaborations.fulfilled, (state) => {
-        state.isMutating = false;
-      })
-      .addCase(updateCollaborations.rejected, (state) => {
-        state.isMutating = false;
-        state.error = setSliceError(rejectedMessage);
+      .addCase(updateCollaborations.fulfilled, () => {})
+      .addCase(updateCollaborations.rejected, () => {
+        // state.error = setSliceError(
+        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
+        // );
       });
   },
 });
@@ -207,8 +205,6 @@ const ssRootSelector = (state: AppRootState) => state.ss;
 export const ssSelector = {
   isLoadingSelector: () =>
     createSelector(ssRootSelector, (state) => state.isLoading),
-  isMutatingSelector: () =>
-    createSelector(ssRootSelector, (state) => state.isMutating),
   byFolderIdSelector: () =>
     createSelector(ssRootSelector, (state) => state.byFolderId),
   collaborationByFolderIdSelector: () =>
