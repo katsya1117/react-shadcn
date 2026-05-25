@@ -1,5 +1,12 @@
+import { jest } from "@jest/globals";
 import { screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
+
+jest.mock("@/components/layout/Layout", () => ({
+  Layout: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="layout-mock">{children}</div>
+  ),
+}));
 
 import { UrlPath } from "@/constants/UrlPath";
 import { setup } from "@test-utils";

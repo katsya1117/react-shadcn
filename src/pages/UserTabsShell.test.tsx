@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { UrlPath } from "@/constants/UrlPath";
 import { screen } from "@testing-library/react";
 import { setup } from "@test-utils";

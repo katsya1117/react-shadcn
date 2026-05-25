@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import type { ReactNode } from "react";
 import { screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";

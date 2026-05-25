@@ -1,9 +1,8 @@
-const actual = jest.requireActual("react-router");
+import { jest } from "@jest/globals";
+
 const mockNavigate = jest.fn();
 
 (globalThis as any).mockNavigate = mockNavigate;
 
-module.exports = {
-  ...actual,
-  useNavigate: () => mockNavigate,
-};
+export * from "react-router";
+export const useNavigate = () => mockNavigate;

@@ -1,11 +1,8 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "moduleResolution": "node16",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "verbatimModuleSyntax": false,
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "erasableSyntaxOnly": false,
     "baseUrl": ".",
     "paths": {

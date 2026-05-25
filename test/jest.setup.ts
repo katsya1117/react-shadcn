@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom";
+import { jest } from "@jest/globals";
 import { TextDecoder, TextEncoder } from "util";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -7,7 +8,6 @@ import { TextDecoder, TextEncoder } from "util";
 
 jest.mock("react-router");
 jest.mock("@/components/ui/tabs");
-jest.mock("@/components/frame/Layout");
-jest.mock("@/components/parts/AutoComplete/AutoCompleteMulti");
-jest.mock("@/components/parts/Pagination/Pagination");
+jest.mock("@/components/common/AutoComplete/AutoCompleteMulti");
+jest.mock("@/components/common/Pagination/Pagination");
 /* eslint-enable @typescript-eslint/no-explicit-any */
