@@ -10,7 +10,7 @@ import {
   mainArea,
   layoutBodyStandalone,
   mainAreaFluid,
-} from "./LayoutStyle.css";
+} from "./LayoutStyle.css.ts";
 import { cn } from "@/lib/utils";
 import type { AppDispatch } from "@/redux/store";
 import { useDispatch, useSelector } from "react-redux";

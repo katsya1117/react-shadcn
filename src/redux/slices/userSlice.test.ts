@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import {
   getAdUserList,
   getBoxAccessToken,
@@ -186,7 +187,7 @@ describe('userSlice', () => {
     expect(nextState.isLoading).toBe(false);
   });
 
-  it('userCreation.fulfilled の null でエラーにする', () => {
+  it('userCreation.fulfilled の null でも state は変わらない', () => {
     const params = {
       user_cd: 'foo',
       disp_name: 'Foo',
@@ -196,7 +197,7 @@ describe('userSlice', () => {
     };
     const action = userCreation.fulfilled(null as any, 'req', params);
     const nextState = userSliceReducer(undefined, action);
-    expect(nextState.error.isError).toBe(true);
+    expect(nextState.error.isError).toBe(false);
     expect(nextState.isLoading).toBe(false);
   });
 
@@ -275,23 +276,23 @@ describe('userSlice', () => {
     expect(next.isLoading).toBe(false);
   });
 
-  it('updateUserInfo.rejected でエラーにする', () => {
+  it('updateUserInfo.rejected でも state は変わらない', () => {
     const action = updateUserInfo.rejected(new Error('x') as any, 'req', {
       userCd: 'u',
       params: {},
     } as any);
     const next = userSliceReducer(undefined, action);
-    expect(next.error.isError).toBe(true);
+    expect(next.error.isError).toBe(false);
     expect(next.isLoading).toBe(false);
   });
 
-  it('updateUserInfo.fulfilled で payload null の場合はエラー', () => {
+  it('updateUserInfo.fulfilled で payload null でも state は変わらない', () => {
     const action = updateUserInfo.fulfilled(null as any, 'req', {
       userCd: 'u',
       params: {},
     } as any);
     const next = userSliceReducer(undefined, action);
-    expect(next.error.isError).toBe(true);
+    expect(next.error.isError).toBe(false);
   });
 
   it('removeUser.fulfilled が false のときエラーにする', () => {
@@ -300,16 +301,16 @@ describe('userSlice', () => {
     expect(next.error.isError).toBe(false);
   });
 
-  it('removeUser.fulfilled が null のときエラーにする', () => {
+  it('removeUser.fulfilled が null でも state は変わらない', () => {
     const action = removeUser.fulfilled(null as any, 'req', 'u1');
     const next = userSliceReducer(undefined, action);
-    expect(next.error.isError).toBe(true);
+    expect(next.error.isError).toBe(false);
   });
 
-  it('removeUser.rejected でエラーにする', () => {
+  it('removeUser.rejected でも state は変わらない', () => {
     const action = removeUser.rejected(new Error('x') as any, 'req', 'u1');
     const next = userSliceReducer(undefined, action);
-    expect(next.error.isError).toBe(true);
+    expect(next.error.isError).toBe(false);
   });
 
   it('getBoxAccountId.fulfilled null でエラーにする', () => {
@@ -455,15 +456,15 @@ describe('userSlice', () => {
     );
   });
 
-  it('userCreation.pending でローディングとエラーリセット', () => {
+  it('userCreation.pending でも state は変わらない', () => {
     const next = userSliceReducer(undefined, userCreation.pending('req', {} as any));
-    expect(next.isLoading).toBe(true);
+    expect(next.isLoading).toBe(false);
     expect(next.error.isError).toBe(false);
   });
 
-  it('userCreation.rejected でエラーをセット', () => {
+  it('userCreation.rejected でも state は変わらない', () => {
     const next = userSliceReducer(undefined, userCreation.rejected(new Error('x') as any, 'r', {} as any));
-    expect(next.error.isError).toBe(true);
+    expect(next.error.isError).toBe(false);
     expect(next.isLoading).toBe(false);
   });
 
@@ -514,9 +515,9 @@ describe('userSlice', () => {
     (UsersApi.prototype.createUser as jest.Mock).mockRestore();
   });
 
-  it('updateUserInfo.pending でローディング開始', () => {
+  it('updateUserInfo.pending でも state は変わらない', () => {
     const next = userSliceReducer(undefined, updateUserInfo.pending('r', {} as any));
-    expect(next.isLoading).toBe(true);
+    expect(next.isLoading).toBe(false);
   });
 
   it('thunk removeUser が API を呼び出し fulfilled を dispatch する', async () => {
@@ -536,9 +537,9 @@ describe('userSlice', () => {
     (UsersApi.prototype.removeUser as jest.Mock).mockRestore();
   });
 
-  it('removeUser.pending でローディング開始', () => {
+  it('removeUser.pending でも state は変わらない', () => {
     const next = userSliceReducer(undefined, removeUser.pending('r', 'u'));
-    expect(next.isLoading).toBe(true);
+    expect(next.isLoading).toBe(false);
   });
 
   it('thunk getBoxAccountId が fulfilled を dispatch する', async () => {

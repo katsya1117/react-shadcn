@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { toast } from "@/components/ui/sonner";
 import { getPermissionList } from "@/redux/slices/permissionSlice";
 import {
@@ -276,9 +277,14 @@ describe("UserEdit", () => {
     };
     useSelectorMock.mockImplementation((selector: any) => selector(state));
 
+    const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
     mockDispatch
       .mockResolvedValueOnce({}) // getUserInfo
-      .mockResolvedValueOnce({ type: "user/updateUserInfo/fulfilled" }); // updateUserInfo
+      .mockReturnValueOnce(
+        Object.assign(Promise.resolve(updateResult), {
+          unwrap: () => Promise.resolve(updateResult.payload),
+        }),
+      ); // updateUserInfo
 
     const { user } = setup(
       <MemoryRouter>
@@ -321,7 +327,12 @@ describe("UserEdit", () => {
     useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
       selector(state),
     );
-    mockDispatch.mockResolvedValue({ type: "user/removeUser/fulfilled" });
+    const removeResult = { type: "user/removeUser/fulfilled", payload: true };
+    mockDispatch.mockReturnValue(
+      Object.assign(Promise.resolve(removeResult), {
+        unwrap: () => Promise.resolve(removeResult.payload),
+      }),
+    );
 
     const { user } = setup(
       <MemoryRouter>

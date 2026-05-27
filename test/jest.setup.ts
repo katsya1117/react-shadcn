@@ -6,7 +6,27 @@ import { TextDecoder, TextEncoder } from "util";
 (global as any).TextEncoder = TextEncoder;
 (global as any).TextDecoder = TextDecoder;
 
+// jsdom does not implement scrollTo
+Element.prototype.scrollTo = jest.fn() as unknown as typeof Element.prototype.scrollTo;
+
+// jsdom does not implement ResizeObserver
+(global as any).ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
+jest.mock("@vanilla-extract/css", () => ({
+  style: () => "",
+  styleVariants: () => ({}),
+  globalStyle: () => {},
+  createVar: () => "",
+  fallbackVar: (...args: string[]) => args[args.length - 1],
+  assignVars: () => ({}),
+}));
+
 jest.mock("react-router");
+
 jest.mock("@/components/ui/tabs");
 jest.mock("@/components/common/AutoComplete/AutoCompleteMulti");
 jest.mock("@/components/common/Pagination/Pagination");

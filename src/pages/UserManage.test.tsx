@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import type { UserInfo } from "@/api";
 import { toast } from "@/components/ui/sonner";
 import { autoCompleteSliceReducer } from "@/redux/slices/autoCompleteSlice";
