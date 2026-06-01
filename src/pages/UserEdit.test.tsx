@@ -1,52 +1,19 @@
 import { jest } from "@jest/globals";
 import { toast } from "@/components/ui/sonner";
-import { getPermissionList } from "@/redux/slices/permissionSlice";
+import { getPermissionList, permissionReducer } from "@/redux/slices/permissionSlice";
 import {
   getUserInfo,
   removeUser,
   updateUserInfo,
   userSliceReducer,
 } from "@/redux/slices/userSlice";
+import { autoCompleteReducer } from "@/redux/slices/autoCompleteSlice";
 import { screen, waitFor } from "@testing-library/react";
-import { setup } from "@test-utils";
+import { setupWithStore } from "@test-utils";
 import React from "react";
-import { MemoryRouter } from "react-router";
-import { useSelector } from "react-redux";
 import { UserEdit } from "./UserEdit";
 
-// ----- mocks ----- //
-const mockDispatch = jest.fn();
-const mockNavigate = jest.fn();
-
-jest.mock("react-redux", () => {
-  const actual = jest.requireActual("react-redux");
-  return {
-    ...actual,
-    useDispatch: () => mockDispatch,
-    useSelector: jest.fn(),
-  };
-});
-
-jest.mock("react-router", () => {
-  const actual = jest.requireActual("react-router");
-  return {
-    ...actual,
-    useParams: () => ({ user_cd: "u123" }),
-    useNavigate: () => mockNavigate,
-    NavLink: ({ to, children }: any) => <a href={to}>{children}</a>,
-  };
-});
-
-jest.mock("@/components/ui/sonner", () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
-}));
-
-jest.mock("@/pages/UserTabsShell", () => ({
-  __esModule: true,
-  UserTabsShell: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="tabs-shell">{children}</div>
-  ),
-}));
+// Mocks handled via moduleNameMapper: react-router, userSlice, permissionSlice, sonner, ConfirmButton
 
 jest.mock("@/components/common/AutoComplete/AutoCompleteSingle", () => ({
   __esModule: true,
@@ -82,13 +49,6 @@ jest.mock("@/components/ui/select", () => ({
   ),
 }));
 
-jest.mock("@/components/common/Confirm/ConfirmButton", () => ({
-  __esModule: true,
-  ConfirmButton: ({ onHandle, buttonLabel }: any) => (
-    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
-  ),
-}));
-
 jest.mock("@/components/ui/radio-group", () => ({
   __esModule: true,
   RadioGroup: ({ value, onValueChange, children }: any) => (
@@ -112,87 +72,54 @@ jest.mock("@/components/ui/radio-group", () => ({
   ),
 }));
 
-jest.mock("@/redux/slices/userSlice", () => {
-  const actual = jest.requireActual("@/redux/slices/userSlice");
-  const mockGetUserInfo = jest.fn((arg) => ({
-    type: "getUserInfo",
-    payload: arg,
-  }));
-  const mockUpdateUserInfo = jest.fn((arg) => ({
-    type: "updateUserInfo",
-    payload: arg,
-  }));
-  (mockUpdateUserInfo as any).fulfilled = {
-    match: (action: any) => action.type === "user/updateUserInfo/fulfilled",
-  };
-  const mockRemoveUser = jest.fn((arg) => ({
-    type: "removeUser",
-    payload: arg,
-  }));
-  (mockRemoveUser as any).fulfilled = {
-    match: (action: any) => action.type === "user/removeUser/fulfilled",
-  };
-  return {
-    ...actual,
-    getUserInfo: mockGetUserInfo,
-    updateUserInfo: mockUpdateUserInfo,
-    removeUser: mockRemoveUser,
-  };
-});
-
-jest.mock("@/redux/slices/permissionSlice", () => {
-  const actual = jest.requireActual("@/redux/slices/permissionSlice");
-  const mockGetPermissionList = jest.fn(() => ({ type: "getPermissionList" }));
-  return { ...actual, getPermissionList: mockGetPermissionList };
-});
-
 // ----- helpers ----- //
-const useSelectorMock = useSelector as jest.Mock;
-
 const buildUserState = (
   overrides: Partial<ReturnType<typeof userSliceReducer>> = {},
 ) => {
   const base = userSliceReducer(undefined, { type: "@@INIT" });
-  return { user: { ...base, ...overrides } } as any;
+  return { ...base, ...overrides };
 };
 
-const basePermissionState = { permission: { permissionList: null } } as any;
-const baseAutoCompleteState = {
-  autoComplete: {
-    isLoading: false,
-    error: { code: 0, message: "" },
-    users: [],
-    groups: [],
-  },
-} as any;
+const makeStore = (overrides: {
+  user?: Partial<ReturnType<typeof userSliceReducer>>;
+  permissionList?: any;
+  groups?: any[];
+} = {}) =>
+  setupWithStore(<UserEdit />, {
+    reducers: {
+      user: userSliceReducer,
+      permission: permissionReducer,
+      autoComplete: autoCompleteReducer,
+    } as any,
+    preloadedState: {
+      user: buildUserState(overrides.user ?? {}) as any,
+      permission: { permissionList: overrides.permissionList ?? null } as any,
+      autoComplete: {
+        isLoading: false,
+        error: { code: 0, message: "" },
+        users: [],
+        groups: overrides.groups ?? [],
+      } as any,
+    },
+  });
 
 // ----- tests ----- //
 describe("UserEdit", () => {
+  beforeEach(() => {
+    (globalThis as any).mockParams = { user_cd: "u123" };
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
-    useSelectorMock.mockReset();
-    mockNavigate.mockReset();
+    (globalThis as any).mockParams = {};
   });
 
   it("初期表示で getUserInfo と getPermissionList を dispatch する", async () => {
-    const state = {
-      ...buildUserState(),
-      ...basePermissionState,
-      ...baseAutoCompleteState,
-    };
-    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector(state),
-    );
-
-    setup(
-      <MemoryRouter>
-        <UserEdit />
-      </MemoryRouter>,
-    );
+    const { dispatchSpy } = makeStore();
 
     await waitFor(() => {
       expect(getUserInfo).toHaveBeenCalledWith("u123");
-      expect(mockDispatch).toHaveBeenCalledWith(
+      expect(dispatchSpy).toHaveBeenCalledWith(
         expect.objectContaining({ type: "getUserInfo" }),
       );
       expect(getPermissionList).toHaveBeenCalled();
@@ -200,20 +127,7 @@ describe("UserEdit", () => {
   });
 
   it("バリデーションエラーで保存せず toast.error を出す", async () => {
-    const state = {
-      ...buildUserState(),
-      ...basePermissionState,
-      ...baseAutoCompleteState,
-    };
-    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector(state),
-    );
-
-    const { user } = setup(
-      <MemoryRouter>
-        <UserEdit />
-      </MemoryRouter>,
-    );
+    const { user } = makeStore();
 
     const inputs = screen.getAllByRole("textbox");
     // 0: user_cd (readonly), 1: 表示名, 2: アカウント, 3: メール
@@ -250,55 +164,40 @@ describe("UserEdit", () => {
       },
     ];
 
+    // Set desired values directly in preloaded state — useEffect populates the form from this
     const target = {
       user: {
         user_cd: "u123",
-        user_name: "Name",
-        user_account: "acc",
-        email: "mail",
+        user_name: "New Name",
+        user_account: "newacc",
+        email: "new@example.com",
         perm_cd: "perm1",
         language_code: 0,
       },
       center: [{ center_cd: "c1", belonging_flg: 0 }],
     };
 
-    const state = {
-      ...buildUserState({
+    const { user, dispatchSpy } = makeStore({
+      user: {
         adList: { searchCondition: undefined, data: target as any },
         isLoading: false,
-      }),
-      permission: { permissionList },
-      autoComplete: {
-        isLoading: false,
-        error: { code: 0, message: "" },
-        users: [],
-        groups: [{ value: "c1", label: "c1" }],
       },
-    };
-    useSelectorMock.mockImplementation((selector: any) => selector(state));
+      permissionList,
+      groups: [{ value: "c1", label: "c1" }],
+    });
 
     const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
-    mockDispatch
-      .mockResolvedValueOnce({}) // getUserInfo
-      .mockReturnValueOnce(
-        Object.assign(Promise.resolve(updateResult), {
+    dispatchSpy.mockImplementation(((action: any) => {
+      if (action?.type === "getUserInfo") {
+        return Promise.resolve({});
+      }
+      if (action?.type === "updateUserInfo") {
+        return Object.assign(Promise.resolve(updateResult), {
           unwrap: () => Promise.resolve(updateResult.payload),
-        }),
-      ); // updateUserInfo
-
-    const { user } = setup(
-      <MemoryRouter>
-        <UserEdit />
-      </MemoryRouter>,
-    );
-
-    const inputs = screen.getAllByRole("textbox");
-    await user.clear(inputs[1]);
-    await user.type(inputs[1], "New Name");
-    await user.clear(inputs[2]);
-    await user.type(inputs[2], "newacc");
-    await user.clear(inputs[3]);
-    await user.type(inputs[3], "new@example.com");
+        });
+      }
+      return Promise.resolve(action);
+    }) as any);
 
     await user.click(screen.getByText("保存"));
 
@@ -319,26 +218,18 @@ describe("UserEdit", () => {
   });
 
   it("削除成功後はユーザー検索へ戻し、遷移先でtoastを出すstateを渡す", async () => {
-    const state = {
-      ...buildUserState(),
-      ...basePermissionState,
-      ...baseAutoCompleteState,
-    };
-    useSelectorMock.mockImplementation((selector: (state: unknown) => unknown) =>
-      selector(state),
-    );
-    const removeResult = { type: "user/removeUser/fulfilled", payload: true };
-    mockDispatch.mockReturnValue(
-      Object.assign(Promise.resolve(removeResult), {
-        unwrap: () => Promise.resolve(removeResult.payload),
-      }),
-    );
+    const mockNavigate = (globalThis as any).mockNavigate as jest.Mock;
+    const { user, dispatchSpy } = makeStore();
 
-    const { user } = setup(
-      <MemoryRouter>
-        <UserEdit />
-      </MemoryRouter>,
-    );
+    const removeResult = { type: "user/removeUser/fulfilled", payload: true };
+    dispatchSpy.mockImplementation(((action: any) => {
+      if (action?.type === "removeUser") {
+        return Object.assign(Promise.resolve(removeResult), {
+          unwrap: () => Promise.resolve(removeResult.payload),
+        });
+      }
+      return Promise.resolve(action);
+    }) as any);
 
     await user.click(screen.getByText("削除する"));
 

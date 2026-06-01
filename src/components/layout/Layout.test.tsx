@@ -1,31 +1,39 @@
-import { jest } from "@jest/globals";
 import { screen } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { userSliceReducer } from "@/redux/slices/userSlice";
 import { uiSliceReducer, uiActions } from "@/redux/slices/uiSlice";
-
-jest.mock("./SideMenu", () => ({
-  SideMenu: ({ onHandle }: { onHandle: () => void }) => (
-    <button data-testid="side-menu" onClick={onHandle}>
-      side-menu
-    </button>
-  ),
-}));
-
-jest.mock("./Header", () => ({
-  Header: () => <div data-testid="header" />,
-}));
-
-jest.mock("./TabsBar", () => ({
-  TabsBar: () => <div data-testid="tabs-bar" />,
-}));
-
 import { Layout } from "./Layout";
+
+// SideMenu, Header, TabsBar render as real components:
+// - SideMenu has data-testid="side-menu" on its root element
+// - Header has data-testid="header" on its <header> element
+// - TabsBar has data-testid="tabs-bar" on its root div (only when path matches /manage/ or /OA/)
 
 describe("Layout", () => {
   const baseUserState = userSliceReducer(undefined, { type: "@@INIT" });
   const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
   const reducers = { user: userSliceReducer, ui: uiSliceReducer };
+
+  beforeEach(() => {
+    // Set path to /manage/User so TabsBar renders
+    (globalThis as any).mockLocation = {
+      pathname: "/manage/User",
+      search: "",
+      hash: "",
+      state: null,
+      key: "default",
+    };
+  });
+
+  afterEach(() => {
+    (globalThis as any).mockLocation = {
+      pathname: "/",
+      search: "",
+      hash: "",
+      state: null,
+      key: "default",
+    };
+  });
 
   it("デフォルトで SideMenu/Header/TabsBar/children を表示する", () => {
     setupWithStore(
@@ -107,7 +115,7 @@ describe("Layout", () => {
       },
     );
 
-    await user.click(screen.getByTestId("side-menu"));
+    await user.click(screen.getByRole("button", { name: "Collapse menu" }));
 
     expect(dispatchSpy).toHaveBeenCalledWith(uiActions.toggleSideMenu());
   });

@@ -25,9 +25,5 @@ jest.mock("@vanilla-extract/css", () => ({
   assignVars: () => ({}),
 }));
 
-jest.mock("react-router");
-
-jest.mock("@/components/ui/tabs");
-jest.mock("@/components/common/AutoComplete/AutoCompleteMulti");
-jest.mock("@/components/common/Pagination/Pagination");
+// NOTE: react-router, tabs, sonner, AutoCompleteMulti, Pagination are mocked via moduleNameMapper in jest.config.ts
 /* eslint-enable @typescript-eslint/no-explicit-any */

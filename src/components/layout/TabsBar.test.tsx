@@ -10,47 +10,8 @@ import { setup } from "@test-utils";
 import { uiActions, uiSliceReducer } from "@/redux/slices/uiSlice";
 import { UrlPath } from "@/constants/UrlPath";
 
-jest.mock("./TabsBar.css.ts", () => ({
-  TabsBarStyle: {
-    container: "tabsbar-container",
-    inner: "tabsbar-inner",
-  },
-}));
-
-jest.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  TabsTrigger: ({
-    value,
-    className,
-    children,
-  }: {
-    value: string;
-    className?: string;
-    children: React.ReactNode;
-  }) => (
-    <button type="button" data-value={value} className={className}>
-      {children}
-    </button>
-  ),
-}));
-
-jest.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
+// TabsBar.css.ts and @/components/ui/dropdown-menu are mocked via moduleNameMapper in jest.config.ts
+// @/components/ui/tabs is mocked via moduleNameMapper in jest.config.ts
 
 jest.mock("../ui/button", () => ({
   Button: ({ children }: { children: React.ReactNode }) => (

@@ -18,37 +18,7 @@ jest.mock("@/components/common/Version/VersionInfo", () => ({
   VersionInfo: () => <div data-testid="version" />,
 }));
 
-jest.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({
-    children,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (next: boolean) => void;
-  }) => (
-    <div>
-      <button
-        type="button"
-        data-testid="dropdown-toggle"
-        onClick={() => onOpenChange?.(!open)}
-      >
-        toggle
-      </button>
-      {children}
-    </div>
-  ),
-  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  DropdownMenuItem: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
+// @/components/ui/dropdown-menu is mocked via moduleNameMapper in jest.config.ts
 
 jest.mock("lucide-react", () => ({
   ChevronUp: () => <span data-testid="chevron-up" />,

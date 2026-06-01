@@ -93,7 +93,8 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
   // ページ遷移後に現在パスを記録（直接URL遷移でも更新される）
   useEffect(() => {
     const rememberTarget = navItems.find(
-      (item) => item.shouldRemember && item.prefix && pathname.startsWith(item.prefix),
+      (item) =>
+        item.shouldRemember && item.prefix && pathname.startsWith(item.prefix),
     );
 
     if (rememberTarget?.prefix) {
@@ -110,6 +111,7 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
 
   return (
     <aside
+      data-testid="side-menu"
       className={cn(
         "border-r border-sidebar-border bg-sidebar flex flex-col h-screen text-[15px] transition-all duration-200 ease-out",
         collapsed ? "w-20 min-w-20" : "w-60 min-w-60",
@@ -118,25 +120,64 @@ export const SideMenu = ({ collapsed, onHandle, className }: Props) => {
     >
       <nav className="p-3 pb-16 space-y-1 text-[15px] flex-1 min-h-0 overflow-auto">
         {/* ロゴ/タイトルエリア - ブランドカラーでアクセント */}
-        <div className="flex items-center justify-between px-3 py-4 mb-3">
-          <div className="flex items-center gap-2.5">
-            {!collapsed && (
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">O</span>
+        <div className="group/header relative flex items-center justify-between px-3 py-4 mb-3">
+          {!collapsed && (
+            <>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+                  <span className="text-primary-foreground font-bold text-sm">
+                    O
+                  </span>
+                </div>
+                <span className="text-base font-semibold text-foreground tracking-tight">
+                  Ops Console
+                </span>
               </div>
-            )}
-            <span className="text-base font-semibold text-foreground tracking-tight">
-              {collapsed ? "" : "Ops Console"}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onHandle}
-            aria-label={collapsed ? "Expand menu" : "Collapse menu"}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
+              <button
+                type="button"
+                onClick={onHandle}
+                aria-label="Collapse menu"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            </>
+          )}
+          {collapsed && (
+            <button
+              type="button"
+              onClick={onHandle}
+              aria-label="Expand menu"
+              className="group/toggle relative w-8 h-8 mx-auto overflow-hidden"
+            >
+              {/* face-primary: ロゴ（通常表示、ホバーで右へ退場） */}
+              <div
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center",
+                  "transition-transform duration-200 ease-in-out",
+                  "group-hover/toggle:translate-x-full",
+                )}
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-sm">
+                    O
+                  </span>
+                </div>
+              </div>
+
+              {/* face-secondary: ChevronRight（左から登場） */}
+              <div
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center",
+                  "transition-transform duration-200 ease-in-out",
+                  "-translate-x-full",
+                  "group-hover/toggle:translate-x-0",
+                )}
+              >
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </div>
+            </button>
+          )}
         </div>
         {navItems.map((item) => {
           const {

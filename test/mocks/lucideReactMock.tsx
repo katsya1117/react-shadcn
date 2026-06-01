@@ -1,0 +1,68 @@
+import React from "react";
+
+const makeIcon = (name: string) => {
+  const Icon = (props: any) =>
+    React.createElement("span", { "data-testid": name, ...props });
+  Icon.displayName = name;
+  return Icon;
+};
+
+export const ArrowLeft = makeIcon("arrow-left");
+export const Bell = makeIcon("bell");
+export const Check = makeIcon("check");
+export const CheckIcon = makeIcon("check-icon");
+export const ChevronDown = makeIcon("chevron-down");
+export const ChevronDownIcon = makeIcon("chevron-down-icon");
+export const ChevronLeft = makeIcon("chevron-left");
+export const ChevronRight = makeIcon("chevron-right");
+export const ChevronRightIcon = makeIcon("chevron-right-icon");
+export const ChevronsLeft = makeIcon("chevrons-left");
+export const ChevronsRight = makeIcon("chevrons-right");
+export const ChevronUp = makeIcon("chevron-up");
+export const ChevronUpIcon = makeIcon("chevron-up-icon");
+export const ChevronUpDown = makeIcon("chevron-up-down");
+export const CircleHelp = makeIcon("circle-help");
+export const CircleIcon = makeIcon("circle-icon");
+export const Cloud = makeIcon("cloud");
+export const CornerDownRight = makeIcon("corner-down-right");
+export const Database = makeIcon("database");
+export const FileSearch = makeIcon("file-search");
+export const FilePlus2 = makeIcon("file-plus-2");
+export const FilePenLine = makeIcon("file-pen-line");
+export const Folder = makeIcon("folder");
+export const FolderLock = makeIcon("folder-lock");
+export const FolderOpen = makeIcon("folder-open");
+export const Info = makeIcon("info");
+export const Link2 = makeIcon("link2");
+export const List = makeIcon("list");
+export const LoaderCircle = makeIcon("loader-circle");
+export const MoreHorizontal = makeIcon("more-horizontal");
+export const Search = makeIcon("search");
+export const Settings = makeIcon("settings");
+export const ShieldCheck = makeIcon("shield-check");
+export const Tag = makeIcon("tag");
+export const UserPlus = makeIcon("user-plus");
+export const UserRound = makeIcon("user-round");
+export const Users = makeIcon("users");
+export const Wrench = makeIcon("wrench");
+export const X = makeIcon("x");
+export const XIcon = makeIcon("x-icon");
+export const Home = makeIcon("home");
+export const Menu = makeIcon("menu");
+export const LogOut = makeIcon("log-out");
+export const User = makeIcon("user");
+export const Building = makeIcon("building");
+export const Building2 = makeIcon("building2");
+export const Copy = makeIcon("copy");
+export const ExternalLink = makeIcon("external-link");
+export const Eye = makeIcon("eye");
+export const EyeOff = makeIcon("eye-off");
+export const Lock = makeIcon("lock");
+export const GripVertical = makeIcon("grip-vertical");
+export const PanelLeft = makeIcon("panel-left");
+export const PanelLeftOpen = makeIcon("panel-left-open");
+export const PanelLeftClose = makeIcon("panel-left-close");
+export const ChevronsUpDown = makeIcon("chevrons-up-down");
+export const Dot = makeIcon("dot");
+
+export type LucideIcon = React.ComponentType<any>;

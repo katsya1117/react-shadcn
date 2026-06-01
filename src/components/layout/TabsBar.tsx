@@ -144,6 +144,7 @@ export const TabsBar = ({ className }: { className?: string }) => {
 
   return (
     <div
+      data-testid="tabs-bar"
       className={cn(
         TabsBarStyle.container,
         "sticky top-14 z-30 bg-background",
