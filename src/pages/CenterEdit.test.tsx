@@ -80,6 +80,47 @@ describe("CenterEdit", () => {
     expect(mockNavigate).toHaveBeenCalledWith(UrlPath.CenterManage);
   });
 
+  it("center_cd が無いときは '-' を表示する", () => {
+    (globalThis as any).mockParams = {};
+    setup(
+      <MemoryRouter>
+        <CenterEdit />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("センターコード: -")).toBeInTheDocument();
+  });
+
+  it("ゲストメンバーを管理者にすると名前に（ゲスト）が付く", async () => {
+    const { user } = setup(
+      <MemoryRouter>
+        <CenterEdit />
+      </MemoryRouter>,
+    );
+
+    // u099 外部 太郎 は guestLabel="ゲスト"、index 6 (7番目メンバー)
+    const checkboxes = screen.getAllByRole("checkbox");
+    await user.click(checkboxes[6]);
+
+    expect(screen.getByText(/外部 太郎（ゲスト）/)).toBeInTheDocument();
+  });
+
+  it("center が無いときのセンター削除で 'センター' フォールバックを使う", async () => {
+    const { toast } = await import("@/components/ui/sonner");
+    (globalThis as any).mockParams = { center_cd: "x999" };
+    const { user } = setup(
+      <MemoryRouter>
+        <CenterEdit />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByText("削除する"));
+
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledWith("センター を削除しました");
+    });
+  });
+
   it("管理者チェックボックスをトグルできる", async () => {
     const { user } = setup(
       <MemoryRouter>

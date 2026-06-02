@@ -40,7 +40,29 @@ export const Link = ({
   [key: string]: any;
 }) => React.createElement("a", { href: to, ...rest }, children);
 
-export const NavLink = Link;
+export const NavLink = ({
+  children,
+  to,
+  end,
+  className,
+  ...rest
+}: {
+  children?: React.ReactNode;
+  to: string;
+  end?: boolean;
+  className?: string | ((props: { isActive: boolean; isPending: boolean }) => string);
+  [key: string]: any;
+}) => {
+  const location = (globalThis as any).mockLocation ?? { pathname: "/" };
+  const isActive = end
+    ? location.pathname === to
+    : location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const resolvedClass =
+    typeof className === "function"
+      ? className({ isActive, isPending: false })
+      : className;
+  return React.createElement("a", { href: to, className: resolvedClass, ...rest }, children);
+};
 
 // Simple path matching — converts route pattern to regex
 function matchPath(pattern: string, pathname: string): boolean {

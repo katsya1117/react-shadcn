@@ -101,6 +101,20 @@ describe("Layout", () => {
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
+  it("fluid=true のとき children を表示する", () => {
+    setupWithStore(
+      <Layout fluid>
+        <div data-testid="child" />
+      </Layout>,
+      {
+        reducers,
+        preloadedState: { user: baseUserState, ui: baseUiState },
+      },
+    );
+
+    expect(screen.getByTestId("child")).toBeInTheDocument();
+  });
+
   it("サイドメニューのトグル操作で dispatch される", async () => {
     const { user, dispatchSpy } = setupWithStore(
       <Layout>

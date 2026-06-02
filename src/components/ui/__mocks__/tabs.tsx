@@ -15,8 +15,8 @@ export const Tabs = ({ children, onValueChange }: any) => (
 
 export const TabsList = ({ children }: any) => <div>{children}</div>;
 
-export const TabsTrigger = ({ value, children }: any) => (
-  <button data-value={value} type="button">
+export const TabsTrigger = ({ value, children, asChild: _asChild, ...rest }: any) => (
+  <button data-value={value} type="button" {...rest}>
     {children}
   </button>
 );

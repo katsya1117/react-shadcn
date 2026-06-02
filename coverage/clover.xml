@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1779923452208" clover="3.2.0">
-  <project timestamp="1779923452208" name="All files">
-    <metrics statements="434" coveredstatements="415" conditionals="185" coveredconditionals="163" methods="129" coveredmethods="125" elements="748" coveredelements="703" complexity="0" loc="434" ncloc="434" packages="3" files="9" classes="9"/>
+<coverage generated="1780442428717" clover="3.2.0">
+  <project timestamp="1780442428717" name="All files">
+    <metrics statements="516" coveredstatements="503" conditionals="222" coveredconditionals="209" methods="158" coveredmethods="153" elements="896" coveredelements="865" complexity="0" loc="516" ncloc="516" packages="3" files="13" classes="13"/>
     <package name="components.layout">
-      <metrics statements="140" coveredstatements="127" conditionals="105" coveredconditionals="86" methods="28" coveredmethods="24"/>
+      <metrics statements="140" coveredstatements="127" conditionals="101" coveredconditionals="89" methods="28" coveredmethods="23"/>
       <file name="Header.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/components/layout/Header.tsx">
-        <metrics statements="19" coveredstatements="19" conditionals="12" coveredconditionals="9" methods="2" coveredmethods="2"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="2" count="1" type="stmt"/>
-        <line num="3" count="1" type="stmt"/>
-        <line num="4" count="1" type="stmt"/>
-        <line num="5" count="1" type="stmt"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="12" count="1" type="stmt"/>
-        <line num="13" count="1" type="stmt"/>
-        <line num="14" count="1" type="stmt"/>
-        <line num="15" count="1" type="stmt"/>
-        <line num="16" count="1" type="stmt"/>
-        <line num="26" count="1" type="stmt"/>
-        <line num="27" count="6" type="stmt"/>
-        <line num="28" count="6" type="stmt"/>
-        <line num="29" count="6" type="stmt"/>
-        <line num="32" count="6" type="cond" truecount="2" falsecount="0"/>
-        <line num="42" count="19" type="stmt"/>
-        <line num="44" count="6" type="cond" truecount="2" falsecount="0"/>
-        <line num="48" count="6" type="stmt"/>
+        <metrics statements="19" coveredstatements="19" conditionals="12" coveredconditionals="12" methods="2" coveredmethods="2"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="4" count="2" type="stmt"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="12" count="2" type="stmt"/>
+        <line num="13" count="2" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="26" count="2" type="stmt"/>
+        <line num="27" count="15" type="stmt"/>
+        <line num="28" count="15" type="stmt"/>
+        <line num="29" count="15" type="stmt"/>
+        <line num="32" count="15" type="cond" truecount="2" falsecount="0"/>
+        <line num="42" count="37" type="stmt"/>
+        <line num="44" count="15" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="15" type="stmt"/>
       </file>
       <file name="Layout.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/components/layout/Layout.tsx">
-        <metrics statements="12" coveredstatements="12" conditionals="12" coveredconditionals="11" methods="2" coveredmethods="2"/>
+        <metrics statements="12" coveredstatements="12" conditionals="12" coveredconditionals="12" methods="2" coveredmethods="2"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -36,98 +36,98 @@
         <line num="16" count="1" type="stmt"/>
         <line num="17" count="1" type="stmt"/>
         <line num="32" count="1" type="stmt"/>
-        <line num="41" count="6" type="stmt"/>
-        <line num="42" count="6" type="stmt"/>
-        <line num="55" count="6" type="stmt"/>
+        <line num="41" count="7" type="stmt"/>
+        <line num="42" count="7" type="stmt"/>
+        <line num="55" count="7" type="stmt"/>
         <line num="62" count="1" type="stmt"/>
       </file>
       <file name="SideMenu.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/components/layout/SideMenu.tsx">
-        <metrics statements="24" coveredstatements="24" conditionals="29" coveredconditionals="29" methods="5" coveredmethods="5"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="2" count="1" type="stmt"/>
-        <line num="3" count="1" type="stmt"/>
-        <line num="15" count="1" type="stmt"/>
-        <line num="16" count="1" type="stmt"/>
-        <line num="17" count="1" type="stmt"/>
-        <line num="18" count="1" type="stmt"/>
-        <line num="38" count="1" type="stmt"/>
-        <line num="88" count="1" type="stmt"/>
-        <line num="89" count="12" type="stmt"/>
-        <line num="90" count="12" type="stmt"/>
-        <line num="91" count="12" type="stmt"/>
-        <line num="94" count="12" type="stmt"/>
-        <line num="95" count="12" type="stmt"/>
-        <line num="96" count="94" type="cond" truecount="3" falsecount="0"/>
-        <line num="99" count="12" type="cond" truecount="2" falsecount="0"/>
-        <line num="100" count="11" type="stmt"/>
-        <line num="101" count="11" type="cond" truecount="2" falsecount="0"/>
-        <line num="102" count="5" type="stmt"/>
-        <line num="111" count="12" type="stmt"/>
-        <line num="150" count="96" type="stmt"/>
-        <line num="152" count="96" type="cond" truecount="4" falsecount="0"/>
-        <line num="154" count="96" type="stmt"/>
-        <line num="160" count="96" type="stmt"/>
+        <metrics statements="24" coveredstatements="23" conditionals="25" coveredconditionals="23" methods="5" coveredmethods="4"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="17" count="2" type="stmt"/>
+        <line num="18" count="2" type="stmt"/>
+        <line num="38" count="2" type="stmt"/>
+        <line num="88" count="2" type="stmt"/>
+        <line num="89" count="23" type="stmt"/>
+        <line num="90" count="23" type="stmt"/>
+        <line num="91" count="23" type="stmt"/>
+        <line num="94" count="23" type="stmt"/>
+        <line num="95" count="22" type="stmt"/>
+        <line num="97" count="174" type="cond" truecount="3" falsecount="0"/>
+        <line num="100" count="22" type="cond" truecount="2" falsecount="0"/>
+        <line num="101" count="21" type="stmt"/>
+        <line num="102" count="21" type="cond" truecount="2" falsecount="0"/>
+        <line num="103" count="10" type="stmt"/>
+        <line num="112" count="23" type="stmt"/>
+        <line num="191" count="184" type="stmt"/>
+        <line num="193" count="184" type="cond" truecount="4" falsecount="0"/>
+        <line num="195" count="184" type="stmt"/>
+        <line num="201" count="0" type="stmt"/>
       </file>
       <file name="TabsBar.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/components/layout/TabsBar.tsx">
-        <metrics statements="85" coveredstatements="72" conditionals="52" coveredconditionals="37" methods="19" coveredmethods="15"/>
-        <line num="1" count="1" type="stmt"/>
-        <line num="2" count="1" type="stmt"/>
-        <line num="3" count="1" type="stmt"/>
-        <line num="4" count="1" type="stmt"/>
-        <line num="5" count="1" type="stmt"/>
-        <line num="6" count="1" type="stmt"/>
-        <line num="7" count="1" type="stmt"/>
-        <line num="9" count="1" type="stmt"/>
-        <line num="10" count="1" type="stmt"/>
-        <line num="16" count="1" type="stmt"/>
-        <line num="17" count="1" type="stmt"/>
-        <line num="19" count="1" type="stmt"/>
-        <line num="24" count="1" type="stmt"/>
-        <line num="34" count="1" type="stmt"/>
-        <line num="35" count="14" type="stmt"/>
-        <line num="36" count="14" type="stmt"/>
-        <line num="37" count="14" type="stmt"/>
-        <line num="38" count="14" type="stmt"/>
-        <line num="39" count="14" type="stmt"/>
-        <line num="41" count="14" type="stmt"/>
-        <line num="42" count="14" type="stmt"/>
-        <line num="43" count="14" type="stmt"/>
-        <line num="47" count="14" type="stmt"/>
-        <line num="48" count="14" type="stmt"/>
-        <line num="50" count="14" type="stmt"/>
-        <line num="51" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="52" count="7" type="cond" truecount="2" falsecount="0"/>
+        <metrics statements="85" coveredstatements="73" conditionals="52" coveredconditionals="42" methods="19" coveredmethods="15"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="2" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="4" count="2" type="stmt"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="6" count="2" type="stmt"/>
+        <line num="7" count="2" type="stmt"/>
+        <line num="9" count="2" type="stmt"/>
+        <line num="10" count="2" type="stmt"/>
+        <line num="16" count="2" type="stmt"/>
+        <line num="17" count="2" type="stmt"/>
+        <line num="19" count="2" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="34" count="2" type="stmt"/>
+        <line num="35" count="40" type="stmt"/>
+        <line num="36" count="40" type="stmt"/>
+        <line num="37" count="40" type="stmt"/>
+        <line num="38" count="40" type="stmt"/>
+        <line num="39" count="40" type="stmt"/>
+        <line num="41" count="40" type="stmt"/>
+        <line num="42" count="40" type="stmt"/>
+        <line num="43" count="40" type="stmt"/>
+        <line num="47" count="40" type="stmt"/>
+        <line num="48" count="40" type="stmt"/>
+        <line num="50" count="40" type="stmt"/>
+        <line num="51" count="19" type="cond" truecount="2" falsecount="0"/>
+        <line num="52" count="18" type="cond" truecount="2" falsecount="0"/>
         <line num="53" count="1" type="stmt"/>
-        <line num="56" count="14" type="stmt"/>
-        <line num="57" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="58" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="56" count="40" type="stmt"/>
+        <line num="57" count="17" type="cond" truecount="2" falsecount="0"/>
+        <line num="58" count="16" type="cond" truecount="2" falsecount="0"/>
         <line num="59" count="1" type="stmt"/>
-        <line num="62" count="14" type="stmt"/>
-        <line num="63" count="19" type="cond" truecount="2" falsecount="0"/>
-        <line num="66" count="14" type="stmt"/>
-        <line num="67" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="68" count="6" type="stmt"/>
-        <line num="74" count="14" type="stmt"/>
-        <line num="75" count="8" type="stmt"/>
-        <line num="76" count="8" type="cond" truecount="2" falsecount="2"/>
-        <line num="77" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="79" count="8" type="stmt"/>
-        <line num="82" count="14" type="stmt"/>
-        <line num="83" count="13" type="cond" truecount="2" falsecount="0"/>
-        <line num="84" count="11" type="stmt"/>
-        <line num="85" count="11" type="cond" truecount="2" falsecount="0"/>
-        <line num="86" count="5" type="stmt"/>
-        <line num="91" count="14" type="stmt"/>
-        <line num="93" count="14" type="stmt"/>
-        <line num="94" count="8" type="stmt"/>
-        <line num="95" count="10" type="cond" truecount="4" falsecount="0"/>
-        <line num="97" count="9" type="stmt"/>
-        <line num="99" count="9" type="stmt"/>
-        <line num="100" count="9" type="stmt"/>
-        <line num="101" count="9" type="stmt"/>
-        <line num="103" count="9" type="cond" truecount="1" falsecount="1"/>
-        <line num="104" count="9" type="stmt"/>
-        <line num="105" count="9" type="stmt"/>
+        <line num="62" count="40" type="stmt"/>
+        <line num="63" count="85" type="cond" truecount="2" falsecount="0"/>
+        <line num="66" count="40" type="stmt"/>
+        <line num="67" count="19" type="cond" truecount="2" falsecount="0"/>
+        <line num="68" count="33" type="stmt"/>
+        <line num="74" count="40" type="stmt"/>
+        <line num="75" count="19" type="stmt"/>
+        <line num="76" count="19" type="cond" truecount="4" falsecount="0"/>
+        <line num="77" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="79" count="19" type="stmt"/>
+        <line num="82" count="40" type="stmt"/>
+        <line num="83" count="33" type="cond" truecount="2" falsecount="0"/>
+        <line num="84" count="31" type="stmt"/>
+        <line num="85" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="86" count="14" type="stmt"/>
+        <line num="91" count="40" type="stmt"/>
+        <line num="93" count="40" type="stmt"/>
+        <line num="94" count="18" type="stmt"/>
+        <line num="95" count="22" type="cond" truecount="4" falsecount="0"/>
+        <line num="97" count="21" type="stmt"/>
+        <line num="99" count="21" type="stmt"/>
+        <line num="100" count="21" type="stmt"/>
+        <line num="101" count="21" type="stmt"/>
+        <line num="103" count="21" type="cond" truecount="1" falsecount="1"/>
+        <line num="104" count="21" type="stmt"/>
+        <line num="105" count="21" type="stmt"/>
         <line num="109" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="110" count="0" type="stmt"/>
         <line num="112" count="0" type="stmt"/>
@@ -137,30 +137,124 @@
         <line num="116" count="0" type="stmt"/>
         <line num="117" count="0" type="stmt"/>
         <line num="120" count="0" type="stmt"/>
-        <line num="123" count="8" type="stmt"/>
-        <line num="124" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="125" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="127" count="8" type="stmt"/>
-        <line num="129" count="8" type="stmt"/>
-        <line num="132" count="14" type="stmt"/>
-        <line num="133" count="8" type="stmt"/>
-        <line num="136" count="14" type="stmt"/>
-        <line num="137" count="8" type="stmt"/>
-        <line num="141" count="14" type="cond" truecount="2" falsecount="0"/>
-        <line num="143" count="13" type="cond" truecount="2" falsecount="0"/>
-        <line num="145" count="13" type="stmt"/>
-        <line num="162" count="81" type="stmt"/>
-        <line num="182" count="81" type="cond" truecount="2" falsecount="0"/>
-        <line num="183" count="81" type="stmt"/>
-        <line num="225" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="234" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="235" count="0" type="stmt"/>
+        <line num="123" count="18" type="stmt"/>
+        <line num="124" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="125" count="18" type="cond" truecount="2" falsecount="0"/>
+        <line num="127" count="18" type="stmt"/>
+        <line num="129" count="18" type="stmt"/>
+        <line num="132" count="40" type="stmt"/>
+        <line num="133" count="17" type="stmt"/>
+        <line num="136" count="40" type="stmt"/>
+        <line num="137" count="17" type="stmt"/>
+        <line num="141" count="40" type="cond" truecount="2" falsecount="0"/>
+        <line num="143" count="39" type="cond" truecount="2" falsecount="0"/>
+        <line num="145" count="39" type="stmt"/>
+        <line num="163" count="263" type="stmt"/>
+        <line num="183" count="263" type="cond" truecount="2" falsecount="0"/>
+        <line num="184" count="263" type="stmt"/>
+        <line num="226" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="235" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="236" count="0" type="stmt"/>
       </file>
     </package>
     <package name="pages">
-      <metrics statements="133" coveredstatements="130" conditionals="64" coveredconditionals="61" methods="27" coveredmethods="27"/>
+      <metrics statements="215" coveredstatements="215" conditionals="105" coveredconditionals="104" methods="56" coveredmethods="56"/>
+      <file name="CenterCreate.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/CenterCreate.tsx">
+        <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+      </file>
+      <file name="CenterEdit.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/CenterEdit.tsx">
+        <metrics statements="46" coveredstatements="46" conditionals="34" coveredconditionals="34" methods="20" coveredmethods="20"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="7" count="1" type="stmt"/>
+        <line num="15" count="1" type="stmt"/>
+        <line num="16" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="31" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="47" count="1" type="stmt"/>
+        <line num="48" count="28" type="stmt"/>
+        <line num="49" count="28" type="stmt"/>
+        <line num="51" count="28" type="stmt"/>
+        <line num="52" count="28" type="stmt"/>
+        <line num="64" count="28" type="stmt"/>
+        <line num="65" count="28" type="stmt"/>
+        <line num="66" count="28" type="stmt"/>
+        <line num="67" count="28" type="stmt"/>
+        <line num="69" count="28" type="stmt"/>
+        <line num="79" count="1" type="stmt"/>
+        <line num="93" count="1" type="stmt"/>
+        <line num="155" count="140" type="stmt"/>
+        <line num="177" count="280" type="cond" truecount="4" falsecount="0"/>
+        <line num="197" count="4" type="stmt"/>
+        <line num="205" count="8" type="stmt"/>
+        <line num="215" count="1" type="stmt"/>
+        <line num="225" count="1" type="stmt"/>
+        <line num="226" count="1" type="stmt"/>
+        <line num="227" count="1" type="stmt"/>
+        <line num="228" count="1" type="stmt"/>
+        <line num="252" count="280" type="stmt"/>
+        <line num="267" count="2" type="stmt"/>
+        <line num="268" count="20" type="cond" truecount="2" falsecount="0"/>
+        <line num="284" count="10" type="stmt"/>
+        <line num="285" count="1" type="stmt"/>
+        <line num="312" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="313" count="2" type="stmt"/>
+        <line num="323" count="1" type="stmt"/>
+        <line num="324" count="1" type="stmt"/>
+      </file>
+      <file name="CenterManage.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/CenterManage.tsx">
+        <metrics statements="25" coveredstatements="25" conditionals="7" coveredconditionals="7" methods="7" coveredmethods="7"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="11" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="20" count="1" type="stmt"/>
+        <line num="21" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="33" count="1" type="stmt"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="40" count="16" type="stmt"/>
+        <line num="41" count="16" type="stmt"/>
+        <line num="42" count="16" type="stmt"/>
+        <line num="44" count="16" type="stmt"/>
+        <line num="46" count="12" type="stmt"/>
+        <line num="48" count="36" type="cond" truecount="3" falsecount="0"/>
+        <line num="55" count="16" type="stmt"/>
+        <line num="70" count="7" type="stmt"/>
+        <line num="78" count="4" type="stmt"/>
+        <line num="104" count="7" type="stmt"/>
+        <line num="116" count="1" type="stmt"/>
+        <line num="138" count="1" type="stmt"/>
+        <line num="139" count="1" type="stmt"/>
+      </file>
+      <file name="CenterTabsShell.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/CenterTabsShell.tsx">
+        <metrics statements="5" coveredstatements="5" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="18" count="2" type="stmt"/>
+      </file>
       <file name="UserCreate.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/UserCreate.tsx">
-        <metrics statements="71" coveredstatements="69" conditionals="37" coveredconditionals="35" methods="12" coveredmethods="12"/>
+        <metrics statements="71" coveredstatements="71" conditionals="37" coveredconditionals="36" methods="12" coveredmethods="12"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -183,44 +277,44 @@
         <line num="46" count="1" type="stmt"/>
         <line num="48" count="1" type="stmt"/>
         <line num="72" count="1" type="stmt"/>
-        <line num="73" count="36" type="stmt"/>
-        <line num="74" count="36" type="stmt"/>
-        <line num="75" count="36" type="stmt"/>
-        <line num="78" count="36" type="stmt"/>
-        <line num="82" count="36" type="stmt"/>
-        <line num="86" count="36" type="stmt"/>
-        <line num="90" count="36" type="stmt"/>
-        <line num="96" count="36" type="stmt"/>
-        <line num="100" count="36" type="stmt"/>
-        <line num="103" count="36" type="stmt"/>
-        <line num="105" count="36" type="stmt"/>
+        <line num="73" count="39" type="stmt"/>
+        <line num="74" count="39" type="stmt"/>
+        <line num="75" count="39" type="stmt"/>
+        <line num="78" count="39" type="stmt"/>
+        <line num="82" count="39" type="stmt"/>
+        <line num="86" count="39" type="stmt"/>
+        <line num="90" count="39" type="stmt"/>
+        <line num="96" count="39" type="stmt"/>
+        <line num="100" count="39" type="stmt"/>
+        <line num="103" count="39" type="stmt"/>
+        <line num="105" count="39" type="stmt"/>
         <line num="106" count="2" type="stmt"/>
-        <line num="122" count="36" type="stmt"/>
-        <line num="123" count="4" type="stmt"/>
-        <line num="124" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="122" count="39" type="stmt"/>
+        <line num="123" count="5" type="stmt"/>
+        <line num="124" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="125" count="2" type="stmt"/>
-        <line num="127" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="127" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="128" count="1" type="stmt"/>
-        <line num="130" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="130" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="131" count="1" type="stmt"/>
-        <line num="133" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="133" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="134" count="1" type="stmt"/>
-        <line num="137" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="137" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="138" count="2" type="stmt"/>
         <line num="141" count="2" type="stmt"/>
-        <line num="143" count="2" type="stmt"/>
-        <line num="150" count="2" type="stmt"/>
-        <line num="151" count="2" type="stmt"/>
-        <line num="152" count="2" type="stmt"/>
-        <line num="153" count="2" type="stmt"/>
-        <line num="154" count="0" type="stmt"/>
-        <line num="157" count="0" type="stmt"/>
+        <line num="143" count="3" type="stmt"/>
+        <line num="150" count="3" type="stmt"/>
+        <line num="151" count="3" type="stmt"/>
+        <line num="152" count="3" type="stmt"/>
+        <line num="153" count="3" type="stmt"/>
+        <line num="154" count="1" type="stmt"/>
+        <line num="157" count="1" type="stmt"/>
         <line num="172" count="2" type="stmt"/>
-        <line num="176" count="2" type="stmt"/>
-        <line num="180" count="36" type="stmt"/>
+        <line num="176" count="3" type="stmt"/>
+        <line num="180" count="39" type="stmt"/>
         <line num="181" count="1" type="stmt"/>
         <line num="182" count="1" type="stmt"/>
-        <line num="185" count="36" type="stmt"/>
+        <line num="185" count="39" type="stmt"/>
         <line num="228" count="6" type="stmt"/>
         <line num="243" count="6" type="stmt"/>
         <line num="258" count="6" type="stmt"/>
@@ -229,12 +323,12 @@
         <line num="310" count="1" type="stmt"/>
         <line num="311" count="1" type="stmt"/>
         <line num="312" count="1" type="stmt"/>
-        <line num="341" count="8" type="stmt"/>
-        <line num="373" count="4" type="stmt"/>
+        <line num="341" count="11" type="stmt"/>
+        <line num="373" count="5" type="stmt"/>
         <line num="385" count="1" type="stmt"/>
       </file>
       <file name="UserManage.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/UserManage.tsx">
-        <metrics statements="56" coveredstatements="55" conditionals="25" coveredconditionals="24" methods="13" coveredmethods="13"/>
+        <metrics statements="56" coveredstatements="56" conditionals="25" coveredconditionals="25" methods="13" coveredmethods="13"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
@@ -266,10 +360,10 @@
         <line num="67" count="39" type="stmt"/>
         <line num="68" count="10" type="stmt"/>
         <line num="69" count="10" type="cond" truecount="2" falsecount="0"/>
-        <line num="71" count="1" type="stmt"/>
-        <line num="72" count="1" type="stmt"/>
-        <line num="76" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="77" count="0" type="stmt"/>
+        <line num="71" count="9" type="stmt"/>
+        <line num="72" count="9" type="stmt"/>
+        <line num="76" count="9" type="cond" truecount="2" falsecount="0"/>
+        <line num="77" count="5" type="stmt"/>
         <line num="81" count="39" type="stmt"/>
         <line num="82" count="10" type="stmt"/>
         <line num="85" count="39" type="stmt"/>
@@ -294,16 +388,16 @@
       </file>
       <file name="UserTabsShell.tsx" path="/Users/kty/Documents/_dev/react/react-shadcn/src/pages/UserTabsShell.tsx">
         <metrics statements="6" coveredstatements="6" conditionals="2" coveredconditionals="2" methods="2" coveredmethods="2"/>
-        <line num="1" count="3" type="stmt"/>
-        <line num="2" count="3" type="stmt"/>
-        <line num="13" count="3" type="stmt"/>
-        <line num="18" count="3" type="stmt"/>
-        <line num="19" count="75" type="stmt"/>
+        <line num="1" count="4" type="stmt"/>
+        <line num="2" count="4" type="stmt"/>
+        <line num="13" count="4" type="stmt"/>
+        <line num="18" count="4" type="stmt"/>
+        <line num="19" count="188" type="stmt"/>
         <line num="23" count="1" type="cond" truecount="2" falsecount="0"/>
       </file>
     </package>
     <package name="redux.slices">
-      <metrics statements="161" coveredstatements="158" conditionals="16" coveredconditionals="16" methods="74" coveredmethods="74"/>
+      <metrics statements="161" coveredstatements="161" conditionals="16" coveredconditionals="16" methods="74" coveredmethods="74"/>
       <file name="uiSlice.ts" path="/Users/kty/Documents/_dev/react/react-shadcn/src/redux/slices/uiSlice.ts">
         <metrics statements="19" coveredstatements="19" conditionals="0" coveredconditionals="0" methods="8" coveredmethods="8"/>
         <line num="1" count="4" type="stmt"/>
@@ -312,22 +406,22 @@
         <line num="22" count="4" type="stmt"/>
         <line num="27" count="4" type="stmt"/>
         <line num="30" count="1" type="stmt"/>
-        <line num="36" count="6" type="stmt"/>
-        <line num="37" count="6" type="stmt"/>
-        <line num="43" count="6" type="stmt"/>
-        <line num="44" count="6" type="stmt"/>
+        <line num="36" count="11" type="stmt"/>
+        <line num="37" count="11" type="stmt"/>
+        <line num="43" count="17" type="stmt"/>
+        <line num="44" count="17" type="stmt"/>
         <line num="49" count="4" type="stmt"/>
-        <line num="50" count="31" type="stmt"/>
+        <line num="50" count="73" type="stmt"/>
         <line num="52" count="4" type="stmt"/>
-        <line num="54" count="9" type="stmt"/>
+        <line num="54" count="20" type="stmt"/>
         <line num="56" count="4" type="stmt"/>
-        <line num="58" count="10" type="stmt"/>
+        <line num="58" count="27" type="stmt"/>
         <line num="60" count="4" type="stmt"/>
-        <line num="61" count="33" type="stmt"/>
+        <line num="61" count="75" type="stmt"/>
         <line num="66" count="4" type="stmt"/>
       </file>
       <file name="userSlice.ts" path="/Users/kty/Documents/_dev/react/react-shadcn/src/redux/slices/userSlice.ts">
-        <metrics statements="142" coveredstatements="139" conditionals="16" coveredconditionals="16" methods="66" coveredmethods="66"/>
+        <metrics statements="142" coveredstatements="142" conditionals="16" coveredconditionals="16" methods="66" coveredmethods="66"/>
         <line num="3" count="7" type="stmt"/>
         <line num="10" count="7" type="stmt"/>
         <line num="24" count="7" type="stmt"/>
@@ -346,23 +440,23 @@
         <line num="83" count="1" type="stmt"/>
         <line num="84" count="1" type="stmt"/>
         <line num="88" count="7" type="stmt"/>
-        <line num="94" count="1" type="stmt"/>
-        <line num="95" count="1" type="stmt"/>
+        <line num="94" count="2" type="stmt"/>
+        <line num="95" count="2" type="stmt"/>
         <line num="100" count="1" type="stmt"/>
-        <line num="102" count="0" type="stmt"/>
+        <line num="102" count="1" type="stmt"/>
         <line num="107" count="7" type="stmt"/>
         <line num="110" count="1" type="stmt"/>
         <line num="122" count="1" type="stmt"/>
         <line num="126" count="7" type="stmt"/>
-        <line num="129" count="1" type="stmt"/>
-        <line num="130" count="1" type="stmt"/>
+        <line num="129" count="2" type="stmt"/>
+        <line num="130" count="2" type="stmt"/>
         <line num="131" count="1" type="stmt"/>
-        <line num="133" count="0" type="stmt"/>
+        <line num="133" count="1" type="stmt"/>
         <line num="139" count="7" type="stmt"/>
-        <line num="142" count="1" type="stmt"/>
-        <line num="143" count="1" type="stmt"/>
+        <line num="142" count="2" type="stmt"/>
+        <line num="143" count="2" type="stmt"/>
         <line num="144" count="1" type="stmt"/>
-        <line num="146" count="0" type="stmt"/>
+        <line num="146" count="1" type="stmt"/>
         <line num="152" count="7" type="stmt"/>
         <line num="155" count="1" type="stmt"/>
         <line num="156" count="1" type="stmt"/>
@@ -440,28 +534,28 @@
         <line num="434" count="1" type="stmt"/>
         <line num="435" count="1" type="stmt"/>
         <line num="441" count="7" type="stmt"/>
-        <line num="444" count="1056" type="stmt"/>
+        <line num="444" count="973" type="stmt"/>
         <line num="446" count="7" type="stmt"/>
-        <line num="448" count="7" type="stmt"/>
-        <line num="449" count="7" type="stmt"/>
+        <line num="448" count="16" type="stmt"/>
+        <line num="449" count="16" type="stmt"/>
         <line num="453" count="1" type="stmt"/>
         <line num="454" count="1" type="stmt"/>
-        <line num="458" count="143" type="stmt"/>
-        <line num="459" count="143" type="stmt"/>
+        <line num="458" count="111" type="stmt"/>
+        <line num="459" count="111" type="stmt"/>
         <line num="463" count="1" type="stmt"/>
         <line num="464" count="1" type="stmt"/>
         <line num="468" count="40" type="stmt"/>
         <line num="469" count="40" type="stmt"/>
         <line num="474" count="40" type="stmt"/>
         <line num="475" count="40" type="stmt"/>
-        <line num="478" count="143" type="stmt"/>
-        <line num="479" count="143" type="stmt"/>
-        <line num="483" count="37" type="stmt"/>
-        <line num="484" count="37" type="stmt"/>
-        <line num="488" count="37" type="stmt"/>
-        <line num="489" count="37" type="stmt"/>
-        <line num="494" count="76" type="stmt"/>
-        <line num="495" count="76" type="stmt"/>
+        <line num="478" count="111" type="stmt"/>
+        <line num="479" count="111" type="stmt"/>
+        <line num="483" count="40" type="stmt"/>
+        <line num="484" count="40" type="stmt"/>
+        <line num="488" count="40" type="stmt"/>
+        <line num="489" count="40" type="stmt"/>
+        <line num="494" count="79" type="stmt"/>
+        <line num="495" count="79" type="stmt"/>
         <line num="498" count="7" type="stmt"/>
         <line num="500" count="1" type="stmt"/>
         <line num="501" count="1" type="stmt"/>

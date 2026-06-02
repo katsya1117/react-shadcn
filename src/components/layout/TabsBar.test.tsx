@@ -150,6 +150,95 @@ describe("TabsBar", () => {
     );
   });
 
+  it("左タブへの移動で direction を更新する", async () => {
+    // System タブ（index 4）から User タブ（index 0）へ移動 → direction "left"
+    const store = configureStore({ reducer: { ui: uiSliceReducer } });
+    const Wrapper = ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[UrlPath.System]}>{children}</MemoryRouter>
+      </Provider>
+    );
+    setup(<TabsBar />, { wrapper: Wrapper });
+
+    (globalThis as any).mockLocation = {
+      pathname: UrlPath.UserManage,
+      search: "",
+      hash: "",
+      state: null,
+      key: "default",
+    };
+
+    await act(async () => {
+      store.dispatch(
+        uiActions.setLastVisitedTab({ key: UrlPath.UserManage, path: UrlPath.UserManage }),
+      );
+    });
+
+    expect(screen.getByRole("link", { name: "ユーザー設定" })).toBeInTheDocument();
+  });
+
+  it("右タブへの移動で direction を更新する", async () => {
+    // User タブ（index 0）から System タブ（index 4）へ移動 → direction "right"
+    const store = configureStore({ reducer: { ui: uiSliceReducer } });
+    const Wrapper = ({ children }: { children: ReactNode }) => (
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[UrlPath.UserManage]}>{children}</MemoryRouter>
+      </Provider>
+    );
+    setup(<TabsBar />, { wrapper: Wrapper });
+
+    (globalThis as any).mockLocation = {
+      pathname: UrlPath.System,
+      search: "",
+      hash: "",
+      state: null,
+      key: "default",
+    };
+
+    await act(async () => {
+      store.dispatch(
+        uiActions.setLastVisitedTab({ key: UrlPath.System, path: UrlPath.System }),
+      );
+    });
+
+    expect(screen.getByRole("link", { name: "システム設定" })).toBeInTheDocument();
+  });
+
+  it("タブがオーバーフローしたとき overflow リストに表示される", async () => {
+    const { Wrapper } = createWrapper(UrlPath.System);
+    const { container } = setup(<TabsBar />, { wrapper: Wrapper });
+
+    const inner = container.querySelector(".tabsbar-inner") as HTMLElement;
+    const measureTabs = container.querySelectorAll("[data-tab-measure]");
+
+    setElementWidth(inner, 100);
+    measureTabs.forEach((el) => setElementWidth(el as HTMLElement, 60));
+
+    await act(async () => { resizeCallback?.(); });
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "システム設定" })).toBeInTheDocument();
+    });
+  });
+
+  it("active タブが overflow にある場合 overflow 内にリンクが表示される", async () => {
+    const { Wrapper } = createWrapper(UrlPath.System);
+    const { container } = setup(<TabsBar />, { wrapper: Wrapper });
+
+    const inner = container.querySelector(".tabsbar-inner") as HTMLElement;
+    const measureTabs = container.querySelectorAll("[data-tab-measure]");
+
+    setElementWidth(inner, 100);
+    measureTabs.forEach((el) => setElementWidth(el as HTMLElement, 60));
+
+    await act(async () => { resizeCallback?.(); });
+
+    await waitFor(() => {
+      const links = screen.getAllByRole("link", { name: "システム設定" });
+      expect(links.length).toBeGreaterThan(0);
+    });
+  });
+
   it("リサイズで表示数が更新され、overflow に tab の lastVisited が反映される", async () => {
     const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });
     const { Wrapper } = createWrapper("/manage/User", {

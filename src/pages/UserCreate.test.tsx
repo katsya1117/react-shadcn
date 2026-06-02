@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom";
 import { jest } from "@jest/globals";
 import React from "react";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { UserCreate } from "./UserCreate";
 import {
   getAdUserList,
@@ -421,6 +421,52 @@ describe("UserCreate", () => {
     await user.click(screen.getByText("登録"));
     expect(toast.error).toHaveBeenCalled();
     expect(userCreation).not.toHaveBeenCalled();
+  });
+
+  it("登録成功で toast.success を表示する", async () => {
+    const { user, dispatchSpy } = setupWithStore(<UserCreate />, {
+      reducers: { user: userSliceReducer },
+      preloadedState: buildUserState({
+        adList: {
+          searchCondition: {},
+          data: {
+            items: [
+              {
+                mail_addr: "new@example.com",
+                account_name: "new",
+                disp_name: "New User",
+                organization_unit: "部",
+                distinguished_name: "dn",
+                status1: "0",
+                status2: "0",
+              },
+            ],
+            pagination: createMockPagination(),
+          },
+        },
+        searchResultDisp: { addSearched: true, settingSearched: false },
+      }),
+    });
+
+    dispatchSpy.mockImplementation(((action: any) => {
+      if (action?.type === "userCreation") {
+        return Object.assign(Promise.resolve({ ok: true }), {
+          unwrap: () => Promise.resolve({ ok: true }),
+        });
+      }
+      return Promise.resolve(action);
+    }) as any);
+
+    await user.click(screen.getByText("登録"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        "ユーザーを登録しました",
+        expect.objectContaining({
+          description: expect.stringContaining("New User"),
+        }),
+      );
+    });
   });
 
   it("ページネーション操作時に getAdUserList が dispatch される", async () => {

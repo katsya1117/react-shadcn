@@ -542,6 +542,53 @@ describe('userSlice', () => {
     expect(next.isLoading).toBe(false);
   });
 
+  it('updateUserInfo API エラー時に rejected を dispatch する', async () => {
+    const dispatch = jest.fn();
+    jest
+      .spyOn(UsersApi.prototype, 'updateUser')
+      .mockRejectedValue(new Error('API error'));
+
+    await updateUserInfo({ userCd: 'u2', params: {} } as any)(
+      dispatch,
+      () => ({} as any),
+      undefined,
+    );
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: updateUserInfo.rejected.type }),
+    );
+    (UsersApi.prototype.updateUser as jest.Mock).mockRestore();
+  });
+
+  it('userCreation API エラー時に rejected を dispatch する', async () => {
+    const dispatch = jest.fn();
+    jest
+      .spyOn(UsersApi.prototype, 'createUser')
+      .mockRejectedValue(new Error('API error'));
+
+    const params = { user_cd: 'u2', email: 'u2@example.com' };
+    await userCreation(params as any)(dispatch, () => ({} as any), undefined);
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: userCreation.rejected.type }),
+    );
+    (UsersApi.prototype.createUser as jest.Mock).mockRestore();
+  });
+
+  it('removeUser API エラー時に rejected を dispatch する', async () => {
+    const dispatch = jest.fn();
+    jest
+      .spyOn(UsersApi.prototype, 'removeUser')
+      .mockRejectedValue(new Error('API error'));
+
+    await removeUser('u3')(dispatch, () => ({} as any), undefined);
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: removeUser.rejected.type }),
+    );
+    (UsersApi.prototype.removeUser as jest.Mock).mockRestore();
+  });
+
   it('thunk getBoxAccountId が fulfilled を dispatch する', async () => {
     const dispatch = jest.fn();
     jest
