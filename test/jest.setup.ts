@@ -25,5 +25,12 @@ jest.mock("@vanilla-extract/css", () => ({
   assignVars: () => ({}),
 }));
 
+// jsdom does not implement navigator.clipboard (SecureContext only)
+Object.defineProperty(global.navigator, "clipboard", {
+  value: { writeText: jest.fn(), readText: jest.fn() },
+  writable: true,
+  configurable: true,
+});
+
 // NOTE: react-router, tabs, sonner, AutoCompleteMulti, Pagination are mocked via moduleNameMapper in jest.config.ts
 /* eslint-enable @typescript-eslint/no-explicit-any */

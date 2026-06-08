@@ -18,13 +18,8 @@ jest.mock("@/components/common/Version/VersionInfo", () => ({
   VersionInfo: () => <div data-testid="version" />,
 }));
 
-// @/components/ui/dropdown-menu is mocked via moduleNameMapper in jest.config.ts
-
-jest.mock("lucide-react", () => ({
-  ChevronUp: () => <span data-testid="chevron-up" />,
-  ChevronDown: () => <span data-testid="chevron-down" />,
-  UserRound: () => <span data-testid="user-round" />,
-}));
+// dropdown-menu / lucide-react は moduleNameMapper の共有モックを使う。
+// lucide のアイコンは testid がアイコン名のケバブになる（ChevronUp → "chevron-up" 等）。
 
 describe("Header", () => {
   const baseUserState = userSliceReducer(undefined, { type: "@@INIT" });

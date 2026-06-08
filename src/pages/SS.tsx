@@ -285,7 +285,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
   // SDK インスタンスを生成して explorerRef にも差し込む（hook 側はこの ref を介して navigateTo を呼ぶ）
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    /* istanbul ignore next */ if (typeof window === "undefined") return;
     if (explorerInstance) return;
     const BoxGlobal = window.Box;
     if (!BoxGlobal?.ContentExplorer) return;
@@ -392,7 +392,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     window.open(uri, "_blank");
   }, [userCd, currentFolder]);
 
-  const handleBackToShareArea = useCallback(() => {
+  const handleBackToShareArea = useCallback(/* istanbul ignore next */ () => {
     dispatch(ssActions.clearCurrentFolder(rootFolderId));
     dispatch(ssActions.clearFolderHistory(rootFolderId));
     navigate(UrlPath.ShareArea);

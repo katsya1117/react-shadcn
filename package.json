@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
     "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage --coverageReporters=text --coverageReporters=lcov",
-    "test:coverage:target": "node --experimental-vm-modules node_modules/.bin/jest --coverage --coverageReporters=text --coverageReporters=lcov"
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --runInBand --coverage --coverageReporters=text --coverageReporters=lcov",
+    "test:coverage:target": "node --experimental-vm-modules node_modules/.bin/jest --runInBand --coverage --coverageReporters=text --coverageReporters=lcov"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

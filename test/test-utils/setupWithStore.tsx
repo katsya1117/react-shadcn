@@ -3,8 +3,8 @@ import { Provider } from "react-redux";
 import { MemoryRouter } from "react-router";
 import {
   configureStore,
-  combineReducers, // 👈 追加
-  type Reducer, // 👈 追加
+  combineReducers,
+  type Reducer,
   type ReducersMapObject,
   type UnknownAction,
 } from "@reduxjs/toolkit";
@@ -13,32 +13,38 @@ import { jest } from "@jest/globals";
 import { setup } from "./setup";
 
 type Options<S> = {
+  /** スライス名 → reducer の対応表。テスト対象が読むスライスだけ渡せばよい。 */
   reducers: ReducersMapObject<S, UnknownAction>;
+  /** スライスごとの初期状態。渡したスライスだけ上書きできる。 */
   preloadedState?: Partial<S>;
 };
 
+/**
+ * Redux ストアと Router を備えた状態で UI をレンダリングするヘルパー。
+ * - 渡した reducers から本物のストアを組み立てる（reducer はモックしない）
+ * - dispatch を spy 化し、呼ばれた action を検証できるようにする
+ *
+ * 戻り値は setup() の結果（user / screen クエリ）に { store, dispatchSpy } を足したもの。
+ *
+ * @example
+ * const { user, dispatchSpy } = setupWithStore(<UserEdit />, {
+ *   reducers: { user: userSliceReducer },
+ *   preloadedState: { user: { isLogin: true } },
+ * });
+ */
 export const setupWithStore = <S extends Record<string, unknown>>(
   ui: ReactElement,
   { reducers, preloadedState }: Options<S>,
 ) => {
-  if (Object.keys(reducers).length === 0) {
-    throw new Error("setupWithStore requires at least one reducer.");
-  }
-
-  // 💡 解決の要（カナメ）
-  // 1. combineReducers を使ってオブジェクトから単一の Reducer 関数に変換する
-  // 2. ESLint に怒られない `unknown` を経由して、configureStore が求める「第3引数が Partial<S> の Reducer」に型をピタッと合わせる
+  // combineReducers の戻り値は configureStore が要求する厳密な型と一致しないため、
+  // 「preloadedState に Partial<S> を渡せる Reducer<S>」として型を合わせる。
   const rootReducer = combineReducers(reducers) as unknown as Reducer<
     S,
     UnknownAction,
     Partial<S>
   >;
 
-  const store = configureStore({
-    reducer: rootReducer,
-    preloadedState,
-  });
-
+  const store = configureStore({ reducer: rootReducer, preloadedState });
   const dispatchSpy = jest.spyOn(store, "dispatch");
 
   const Wrapper = ({ children }: { children: ReactNode }) => (
@@ -47,9 +53,5 @@ export const setupWithStore = <S extends Record<string, unknown>>(
     </Provider>
   );
 
-  return {
-    ...setup(ui, { wrapper: Wrapper }),
-    store,
-    dispatchSpy,
-  };
+  return { ...setup(ui, { wrapper: Wrapper }), store, dispatchSpy };
 };

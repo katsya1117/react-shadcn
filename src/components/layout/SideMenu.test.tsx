@@ -9,18 +9,7 @@ import { SideMenu } from "./SideMenu";
 import { setup } from "@test-utils";
 import { uiActions, uiSliceReducer } from "@/redux/slices/uiSlice";
 
-jest.mock("lucide-react", () => ({
-  Home: () => <span data-testid="icon-home" />,
-  Search: () => <span data-testid="icon-search" />,
-  Database: () => <span data-testid="icon-db" />,
-  FileSearch: () => <span data-testid="icon-file-search" />,
-  FilePlus2: () => <span data-testid="icon-file-plus" />,
-  Wrench: () => <span data-testid="icon-wrench" />,
-  Cloud: () => <span data-testid="icon-cloud" />,
-  Lock: () => <span data-testid="icon-lock" />,
-  ChevronLeft: () => <span data-testid="icon-left" />,
-  ChevronRight: () => <span data-testid="icon-right" />,
-}));
+// lucide-react は moduleNameMapper の共有モックを使う（このテストはアイコンの testid を参照しない）
 
 const createWrapper = (path: string, preloadedState?: object) => {
   const store = configureStore({

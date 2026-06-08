@@ -97,6 +97,14 @@ export const Navigate = ({ to }: { to: string }) => {
 
 export const Outlet = () => null;
 
+export const generatePath = (
+  pattern: string,
+  params: Record<string, string | number | null | undefined> = {},
+) =>
+  pattern.replace(/:([A-Za-z0-9_]+)\??/g, (_match, key: string) =>
+    String(params[key] ?? ""),
+  );
+
 export const redirect = (url: string) =>
   new Response(null, { headers: { Location: url }, status: 302 });
 

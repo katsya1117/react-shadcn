@@ -37,15 +37,7 @@ const buildUserState = (overrides: Partial<UserState> = {}) => {
 
 let radioOnValueChange: ((value: string) => void) | undefined;
 
-jest.mock("@/components/common/Confirm/ConfirmButton", () => ({
-  __esModule: true,
-  default: ({ onHandle, buttonLabel }: any) => (
-    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
-  ),
-  ConfirmButton: ({ onHandle, buttonLabel }: any) => (
-    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
-  ),
-}));
+// ConfirmButton / sonner は moduleNameMapper の __mocks__ を使う（inline mock は書かない）
 
 function passthrough(tag: keyof JSX.IntrinsicElements = "div") {
   return ({ children, ...rest }: any) =>
@@ -127,13 +119,6 @@ jest.mock("@/redux/slices/userSlice", () => {
     userCreation: userCreationMock,
   };
 });
-
-jest.mock("@/components/ui/sonner", () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
 
 describe("UserCreate", () => {
   beforeEach(() => {
@@ -503,5 +488,47 @@ describe("UserCreate", () => {
     expect(getAdUserList).toHaveBeenCalledWith(
       expect.objectContaining({ page: 2 }),
     );
+  });
+
+  it("登録失敗でエラーメッセージが文字列のとき toast.error にそのまま渡す", async () => {
+    const { user, dispatchSpy } = setupWithStore(<UserCreate />, {
+      reducers: { user: userSliceReducer },
+      preloadedState: buildUserState({
+        adList: {
+          searchCondition: {},
+          data: {
+            items: [
+              {
+                mail_addr: "new@example.com",
+                account_name: "new",
+                disp_name: "New User",
+                organization_unit: "部",
+                distinguished_name: "dn",
+                status1: "0",
+                status2: "0",
+              },
+            ],
+            pagination: createMockPagination(),
+          },
+        },
+        searchResultDisp: { addSearched: true, settingSearched: false },
+      }),
+    });
+
+    const errorMsg = "サーバーエラーが発生しました";
+    dispatchSpy.mockImplementation(((action: any) => {
+      if (action?.type === "userCreation") {
+        return Object.assign(Promise.resolve({}), {
+          unwrap: () => Promise.reject(errorMsg),
+        });
+      }
+      return Promise.resolve(action);
+    }) as any);
+
+    await user.click(screen.getByText("登録"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(errorMsg);
+    });
   });
 });

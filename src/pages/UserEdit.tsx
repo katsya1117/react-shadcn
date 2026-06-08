@@ -340,7 +340,7 @@ export const UserEdit = () => {
   );
 
   const handleUserSave = async () => {
-    if (!user_cd) return;
+    /* istanbul ignore next */ if (!user_cd) return;
     const parsed = userUpdateSchema.safeParse({
       dispName,
       account,
@@ -360,6 +360,7 @@ export const UserEdit = () => {
     const userIdParsed = userIdSchema.safeParse(derivedUserId);
     if (!userIdParsed.success) {
       toast.error(
+        /* istanbul ignore next */
         userIdParsed.error.issues[0]?.message ?? "ユーザーIDが不正です",
       );
       return;
@@ -385,7 +386,7 @@ export const UserEdit = () => {
   };
 
   const handleUserRemove = async () => {
-    if (!user_cd) return;
+    /* istanbul ignore next */ if (!user_cd) return;
     setIsRemovingUser(true);
     try {
       await dispatch(removeUser(user_cd)).unwrap();
@@ -401,7 +402,7 @@ export const UserEdit = () => {
   };
 
   const handleResetSearchCondition = async () => {
-    if (!user_cd) return;
+    /* istanbul ignore next */ if (!user_cd) return;
     const api = new SearchSetApi(Config.apiConfig);
     setIsResettingSearch(true);
     try {

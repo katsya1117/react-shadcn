@@ -25,9 +25,7 @@ jest.mock("framer-motion", () => ({
   },
 }));
 
-jest.mock("lucide-react", () => ({
-  MoreHorizontal: () => <span data-testid="more-horizontal" />,
-}));
+// lucide-react は moduleNameMapper の共有モックを使う（MoreHorizontal → testid "more-horizontal"）
 
 const createWrapper = (path: string, preloadedState?: object) => {
   const store = configureStore({

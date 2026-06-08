@@ -14,16 +14,7 @@ jest.mock("@/pages/CenterTabsShell", () => ({
   ),
 }));
 
-jest.mock("@/components/common/Confirm/ConfirmButton", () => ({
-  __esModule: true,
-  ConfirmButton: ({ onHandle, buttonLabel }: any) => (
-    <button onClick={() => onHandle && onHandle()}>{buttonLabel}</button>
-  ),
-}));
-
-jest.mock("@/components/ui/sonner", () => ({
-  toast: jest.fn(),
-}));
+// ConfirmButton / sonner は moduleNameMapper の __mocks__ を使う（inline mock は書かない）
 
 describe("CenterEdit", () => {
   beforeEach(() => {

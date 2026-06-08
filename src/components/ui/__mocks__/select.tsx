@@ -1,23 +1,39 @@
 import React from "react";
 
-export const Select = ({ value, onValueChange, children }: any) => (
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * shadcn の <Select>（実体は Radix のポップオーバー UI）をネイティブ <select> に置き換えるモック。
+ *
+ *   <Select value onValueChange>      → <select data-testid="select">
+ *   <SelectItem value>ラベル          → <option value>ラベル</option>
+ *   <SelectTrigger> / <SelectValue>   → 見た目専用なので何も描画しない
+ *   <SelectContent> / <SelectGroup>   → 子要素をそのまま通す
+ *
+ * これでテストからは `user.selectOptions(getByTestId("select"), value)` で操作でき、
+ * <select> 直下には <option> だけが入る（DOM ネストの警告も出ない）。
+ */
+export const Select = ({ value, onValueChange, disabled, children }: any) => (
   <select
-    data-testid="select-permission"
+    data-testid="select"
     value={value}
-    onChange={(e) => onValueChange(e.target.value)}
+    disabled={disabled}
+    onChange={(e) => onValueChange?.(e.target.value)}
   >
     {children}
   </select>
 );
 
-export const SelectTrigger = ({ children }: any) => <div>{children}</div>;
-export const SelectValue = ({ placeholder }: any) => <span>{placeholder}</span>;
-export const SelectContent = ({ children }: any) => <>{children}</>;
-export const SelectGroup = ({ children }: any) => <>{children}</>;
 export const SelectItem = ({ value, children }: any) => (
   <option value={value}>{children}</option>
 );
-export const SelectLabel = ({ children }: any) => <>{children}</>;
+
+export const SelectContent = ({ children }: any) => <>{children}</>;
+export const SelectGroup = ({ children }: any) => <>{children}</>;
+
+// 見た目専用の要素。<select> の中に DOM を挿入しないよう、何も描画しない。
+export const SelectTrigger = () => null;
+export const SelectValue = () => null;
+export const SelectLabel = () => null;
 export const SelectSeparator = () => null;
 export const SelectScrollUpButton = () => null;
 export const SelectScrollDownButton = () => null;
