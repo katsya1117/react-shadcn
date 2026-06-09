@@ -4,8 +4,13 @@ import { setup } from "@test-utils";
 import { CollaborationPanel } from "./CollaborationPanel";
 import type { CollaborationListItem, RoleType } from "@/types/ss";
 
-// AutoCompleteSingle / Select / ConfirmButton / dialog / tooltip は moduleNameMapper でモックに寄せている。
-// CollaborationPanel 自身は ./CollaborationPanel 相対 import で実体を使う。
+// 共有モック（src/**/__mocks__）を有効化する。
+// ※ ConfirmButton は実体のまま使う（「ボタン→確認ダイアログOK」の2段階フローを検証するため）。
+//   その確認ダイアログ（ui/dialog）だけモックして open 時に中身を描画させる。
+jest.mock("@/components/ui/select");
+jest.mock("@/components/ui/tooltip");
+jest.mock("@/components/ui/dialog");
+jest.mock("@/components/common/AutoComplete/AutoCompleteSingle");
 
 type Props = React.ComponentProps<typeof CollaborationPanel>;
 

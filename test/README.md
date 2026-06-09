@@ -1,27 +1,29 @@
 # テストの書き方ガイド（手順書）
 
-このリポのテストは **Jest + ts-jest（ESM）+ React Testing Library** で動いています。
+このリポのテストは **Jest（CommonJS 実行）+ ts-jest + React Testing Library** で動いています。
 「まずこれを読めば誰でもテストが書ける」を目指した手順書です。迷ったらこのページに戻ってきてください。
 
 ---
 
 ## 0. まず覚える3つの鉄則
 
-1. **モックは1か所（`jest.config.ts` の `moduleNameMapper` + `__mocks__/`）に集約する。**
-   テストファイルの中で `jest.mock("@/...")` を**書かない**。
-   （Node ESM 下では inline `jest.mock` が full-suite 実行で効いたり効かなかったりして事故ります）
-2. **テスト対象“本体”は相対パスで import する**（`./PathBar`）。
-   `@/...` で import するとモックに差し替わってしまうことがあります。
+1. **モックしたい依存は、各テストの先頭で `jest.mock("@/…")` で明示する。**
+   そのファイルが何をモックしているか、冒頭を見れば分かる状態にする。
+2. **何度も使うモックの“中身”は `src/**/__mocks__/<同名>.tsx` に置き、`jest.mock("@/…")`（factory 無し）で呼ぶ。**
+   そのテスト固有・1回しか使わないスタブは、`jest.mock("@/…", () => ({ … }))` と**その場に書く**。
 3. **レンダリングは `setup` / `setupWithStore` を使う。** `render` を直接呼ばない。
+
+> 補足: `react-router` / `lucide-react` / CSS・画像 などのインフラだけは `jest.config.ts` の
+> `moduleNameMapper` で全テスト共通に固定しています（各テストに書く必要はありません）。
 
 ---
 
 ## 1. 実行コマンド
 
 ```bash
-yarn test                              # 全テスト
-yarn test:watch                        # 監視モード
-yarn test:coverage                     # カバレッジ付き
+npm run test                           # 全テスト
+npm run test:watch                     # 監視モード
+npm run test:coverage                  # カバレッジ付き
 npx jest src/pages/SS.test.tsx         # 1ファイルだけ
 npx jest -t "追加ボタン"                # テスト名で絞り込み
 ```
@@ -38,6 +40,28 @@ npx jest -t "追加ボタン"                # テスト名で絞り込み
 | B. props だけのコンポーネント | `PathBar`, `CollaborationPanel` | `setup` |
 | C. Redux / Router に依存するページ | `SS`, `UserEdit`, `ShareArea` | `setupWithStore` |
 
+### パターンA テンプレート（純粋関数）
+
+`src/pages/ssHelpers.test.ts` / `src/pages/userEditSchema.test.ts` が実例です。
+
+```ts
+import { buildPath } from "./ssHelpers";
+
+describe("buildPath", () => {
+  test("id が '0' のとき ROOT のみを返す", () => {
+    const folder = { id: "0", name: "All Files", pathCollection: { entries: [] } };
+    expect(buildPath(folder)).toEqual({ fullPath: "\\share\\", relativePath: "" });
+  });
+});
+```
+
+ポイント:
+- **モック不要**。`jest.mock` は一切書かない。
+- `describe` + `test` で入力と期待値をそのまま書くだけ。
+- 複数の入力パターン（境界値・null・空文字）を `test` を並べて網羅する。
+
+---
+
 ### パターンB テンプレート（props だけ）
 
 `src/components/ss/PathBar.test.tsx` が実例です。
@@ -46,7 +70,10 @@ npx jest -t "追加ボタン"                # テスト名で絞り込み
 import { jest } from "@jest/globals";
 import { screen } from "@testing-library/react";
 import { setup } from "@test-utils";
-import { PathBar } from "./PathBar"; // ← 本体は相対 import
+import { PathBar } from "./PathBar";
+
+// PathBar が内部で使う UI 依存だけモックする（共有モックを1行で有効化）
+jest.mock("@/components/ui/tooltip");
 
 const baseProps = {
   relativePath: "",
@@ -68,8 +95,8 @@ describe("PathBar", () => {
 ```
 
 ポイント:
+- **テスト対象（PathBar）自身は mock しない**。それが内部で使う依存（tooltip 等）だけ mock する。
 - `baseProps` に**全 props のデフォルト**を置き、テストごとに必要な分だけ上書きする。
-- `setup` の戻り値から `user`（userEvent）を受け取り、クリック・入力に使う。
 
 ### パターンC テンプレート（Redux + Router 付き）
 
@@ -81,6 +108,11 @@ import { screen, waitFor } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { UserEdit } from "./UserEdit";
 import { userSliceReducer } from "@/redux/slices/userSlice";
+
+// このテストでモックする依存（実体は src/**/__mocks__）
+jest.mock("@/components/ui/select");
+jest.mock("@/components/ui/sonner");
+jest.mock("@/redux/slices/userSlice");
 
 const makeStore = (userPreload = {}) =>
   setupWithStore(<UserEdit />, {
@@ -117,34 +149,34 @@ describe("UserEdit", () => {
 
 ---
 
-## 4. モックの考え方 ― すでに用意されているものを使う
+## 4. すでに用意済みの共有モック（`jest.mock("@/…")` で有効化）
 
-UI コンポーネントや外部依存の多くは **すでに共有モックが用意済み**です。
-テスト対象がそれらを import していても、**何もしなくても自動でモックに差し替わります**。
+下記は `src/**/__mocks__/` に実体があります。使いたいテストで `jest.mock("そのパス")` を**1行**書けば有効になります。
 
-主な共有モックと「テストからの触り方」:
-
-| モジュール | テストでの見え方 |
+| `jest.mock(...)` するパス | テストでの見え方 |
 |---|---|
 | `@/components/layout/Layout` | `children` をそのまま描画（`data-testid="layout-mock"`） |
 | `@/components/ui/select` | ネイティブ `<select data-testid="select">`。`user.selectOptions(el, value)` |
 | `@/components/ui/radio-group` | `data-testid="radio-group"` + `<input type=radio>` |
 | `@/components/ui/dialog` | `open` のときだけ `children` を描画（`data-testid="dialog"`） |
 | `@/components/ui/tooltip` | Provider/Trigger は素通し、`TooltipContent` は非表示 |
+| `@/components/ui/tabs` / `@/components/ui/dropdown-menu` | ラッパは素通しの簡易版 |
 | `@/components/ui/sonner` | `toast` は呼び出し記録用。`expect(toast.error).toHaveBeenCalledWith(...)` |
-| `@/components/common/Confirm/ConfirmButton` | クリックすると `onHandle` を呼ぶ `<button>` |
+| `@/components/common/Confirm/ConfirmButton` | クリックで `onHandle` を呼ぶ `<button>` |
+| `@/components/common/Pagination/Pagination` / `@/components/common/LoadingOverlay` | 簡易スタブ |
 | `@/components/common/AutoComplete/AutoCompleteSingle` | `<select data-testid="auto-complete-single">`（option: `""`, `"c1"`） |
 | `@/components/common/AutoComplete/AutoCompleteMulti` | `<select data-testid="auto-complete-multi">` |
-| `lucide-react` | 各アイコン → `data-testid="<アイコン名のケバブ>"`（`ChevronUp` → `"chevron-up"`） |
-| `react-router` | `useNavigate`/`useParams`/`useLocation` 等。後述の global で制御 |
-| `@/redux/slices/userSlice` ほか | thunk は `jest.fn()`、selector / reducer は本物 |
-| `@/hooks/useBoxExplorer` | `jest.fn()`。テストで `(useBoxExplorer as jest.Mock).mockReturnValue(...)` |
+| `@/redux/slices/userSlice` / `@/redux/slices/permissionSlice` | thunk は `jest.fn()`、selector / reducer は本物（`jest.requireActual`） |
 
-> 完全な一覧は `jest.config.ts` の `moduleNameMapper`、実装は各 `__mocks__/` フォルダを見てください。
+`jest.config.ts` の `moduleNameMapper` で**常時固定**されているインフラ（書かなくてよい）:
+
+| 固定モック | テストでの見え方 |
+|---|---|
+| `react-router` | `useNavigate`/`useParams`/`useLocation` 等。下記の global で制御 |
+| `lucide-react` | 各アイコン → `data-testid="<アイコン名のケバブ>"`（`ChevronUp` → `"chevron-up"`） |
+| CSS / `.css.ts` / 画像 | 空スタブ |
 
 ### react-router の制御（global 変数）
-
-`react-router` モックはテスト間で共有される global で挙動を変えます。
 
 ```ts
 (globalThis as any).mockParams = { rootFolderId: "370613768434" }; // useParams() の戻り
@@ -154,29 +186,34 @@ expect(mockNavigate).toHaveBeenCalledWith("/job/ShareArea/xxx");
 
 ---
 
-## 5. まだモックが無い依存をモックしたいとき（手順）
+## 5. まだモックが無い依存をモックしたいとき
 
-「`jest.mock` をテストに書く」のではなく、**共有モックを足します**。
+### (a) そのテストだけで使う → その場に factory を書く
 
-1. 本体の隣に `__mocks__/` を作り、同名ファイルを置く。
-   例: `src/components/foo/__mocks__/Foo.tsx`
+```tsx
+jest.mock("@/components/common/BoxManager/BoxManager", () => ({
+  BoxManager: () => <div data-testid="box-manager" />,
+}));
+```
+
+### (b) 複数テストで使い回す → `__mocks__/` に置いて1行で呼ぶ
+
+1. 本体の隣に同名ファイルを作る。例: `src/components/foo/__mocks__/Foo.tsx`
    ```tsx
    import React from "react";
    /* eslint-disable @typescript-eslint/no-explicit-any */
    export const Foo = (props: any) => <div data-testid="foo" {...props} />;
    export default Foo;
    ```
-2. `jest.config.ts` の `moduleNameMapper` に追記する（**`^@/(.*)$` の汎用行より上**に書く）。
+2. 使うテストで有効化:
    ```ts
-   "^@/components/foo/Foo$": "<rootDir>/src/components/foo/__mocks__/Foo.tsx",
+   jest.mock("@/components/foo/Foo");   // factory 無し → 隣の __mocks__/Foo.tsx を使う
    ```
-3. これで全テストで `@/components/foo/Foo` が自動的にモックになります。
 
 モックを書くコツ:
-- **見た目専用の要素は何も描画しない（`() => null`）。** 余計な DOM を作らない。
-  例: `select` モックの `SelectTrigger` / `SelectValue` は `null`。
+- **見た目専用の要素は何も描画しない（`() => null`）。** 余計な DOM を作らない（例: `select` の `SelectTrigger`/`SelectValue`）。
 - **テストで掴みたい要素にだけ `data-testid` を付ける。**
-- ハンドラ系 props（`onClick` 等）は、押せる要素に素直に繋ぐ。
+- **実体を一部だけ流用する manual mock は `jest.requireActual` を使う**（`from "../foo"` の再 export は自分自身に解決して無限ループになる。`__mocks__/userSlice.ts` 参照）。
 
 ---
 
@@ -187,16 +224,16 @@ expect(mockNavigate).toHaveBeenCalledWith("/job/ShareArea/xxx");
 | `In HTML, <div> cannot be a child of <select>` | モックがネイティブ要素の中に別の DOM を入れている。見た目要素は `() => null` にする |
 | `... not wrapped in act(...)` | 非同期更新を待っていない。`await waitFor(() => expect(...))` で待つ |
 | `The requested module 'react' does not provide an export named 'XxxProps'` | 型を値として import している。`import type { XxxProps } from "react"` に直す |
-| `Unable to find element [data-testid=...]` で本体が実体描画されている | 本体を `@/...` で import してモックに化けている。**相対 import** に変える |
-| 共有モックと違う testid で見つからない | テスト内に古い inline `jest.mock` が残っていないか確認（消して mapper に任せる） |
-| full-suite だけ失敗する／カバレッジが 0% | ESM のモジュールキャッシュ問題。inline `jest.mock` をやめて `moduleNameMapper` に寄せる |
+| `Maximum call stack size exceeded`（`__mocks__` 読み込み時） | manual mock が `from "../foo"` で自分を再 import している。`jest.requireActual("../foo")` に変える |
+| `Unable to find element [data-testid=...]` | その依存を `jest.mock` し忘れている、または testid 違い。冒頭の `jest.mock` 行を確認 |
+| モックが効かない/実体が描画される | 対象の `jest.mock("@/…")` を書いたか確認（CJS では書かないと実体が使われる） |
 
 ---
 
 ## 7. 提出前チェックリスト
 
-- [ ] 本体は**相対 import**（`./Xxx`）になっている
-- [ ] テストファイルに inline `jest.mock(...)` を**新規に追加していない**
+- [ ] テスト対象が内部で使う依存を、冒頭の `jest.mock("@/…")` で明示している
+- [ ] 使い回すものは `__mocks__`＋1行、固有のものはその場 factory、で書き分けている
 - [ ] `setup` / `setupWithStore` を使っている
 - [ ] `npx jest <そのファイル>` が green、かつ **console.error / warning が出ていない**
 - [ ] 非同期は `await waitFor` / `await user.xxx` で待っている
@@ -207,8 +244,12 @@ expect(mockNavigate).toHaveBeenCalledWith("/job/ShareArea/xxx");
 
 | 見たいもの | ファイル |
 |---|---|
-| props だけのコンポーネント | `src/components/ss/PathBar.test.tsx` |
-| 確認ダイアログ・Select 操作 | `src/components/ss/CollaborationPanel.test.tsx` |
-| Redux + Router ページ | `src/pages/SS.test.tsx`, `src/pages/UserEdit.test.tsx` |
-| Layout モック下のページ | `src/pages/ShareArea.test.tsx` |
+| **純粋関数のテスト（モック不要）** | `src/pages/ssHelpers.test.ts` |
+| **zod スキーマ・定数のテスト** | `src/pages/userEditSchema.test.ts` |
+| props だけ + 共有モック1行 | `src/components/ss/PathBar.test.tsx` |
+| props だけ + ConfirmButton の2段階確認フロー | `src/components/ss/CollaboratorRow.test.tsx` |
+| 共有モック複数 + 実体 ConfirmButton + ダイアログ | `src/components/ss/CollaborationPanel.test.tsx` |
+| 共有モック + その場 factory（子コンポーネント） | `src/pages/SS.test.tsx` |
+| Redux + Router ページ | `src/pages/UserEdit.test.tsx` |
+| `__mocks__` の書き方（requireActual 含む） | `src/redux/slices/__mocks__/userSlice.ts`, `src/components/ui/__mocks__/select.tsx` |
 | ヘルパー本体 | `test/test-utils/setup.tsx`, `test/test-utils/setupWithStore.tsx` |

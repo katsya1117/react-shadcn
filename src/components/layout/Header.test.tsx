@@ -18,8 +18,10 @@ jest.mock("@/components/common/Version/VersionInfo", () => ({
   VersionInfo: () => <div data-testid="version" />,
 }));
 
-// dropdown-menu / lucide-react は moduleNameMapper の共有モックを使う。
+// dropdown-menu / userSlice は共有モックを使う（lucide-react は jest.config の mapper で固定）。
 // lucide のアイコンは testid がアイコン名のケバブになる（ChevronUp → "chevron-up" 等）。
+jest.mock("@/components/ui/dropdown-menu");
+jest.mock("@/redux/slices/userSlice");
 
 describe("Header", () => {
   const baseUserState = userSliceReducer(undefined, { type: "@@INIT" });

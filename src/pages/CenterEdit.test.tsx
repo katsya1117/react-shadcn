@@ -14,7 +14,9 @@ jest.mock("@/pages/CenterTabsShell", () => ({
   ),
 }));
 
-// ConfirmButton / sonner は moduleNameMapper の __mocks__ を使う（inline mock は書かない）
+// ConfirmButton / sonner は共有モックを使う。
+jest.mock("@/components/common/Confirm/ConfirmButton");
+jest.mock("@/components/ui/sonner");
 
 describe("CenterEdit", () => {
   beforeEach(() => {

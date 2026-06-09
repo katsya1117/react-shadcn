@@ -16,15 +16,6 @@ Element.prototype.scrollTo = jest.fn() as unknown as typeof Element.prototype.sc
   disconnect: jest.fn(),
 }));
 
-jest.mock("@vanilla-extract/css", () => ({
-  style: () => "",
-  styleVariants: () => ({}),
-  globalStyle: () => {},
-  createVar: () => "",
-  fallbackVar: (...args: string[]) => args[args.length - 1],
-  assignVars: () => ({}),
-}));
-
 // jsdom does not implement navigator.clipboard (SecureContext only)
 Object.defineProperty(global.navigator, "clipboard", {
   value: { writeText: jest.fn(), readText: jest.fn() },
@@ -32,5 +23,7 @@ Object.defineProperty(global.navigator, "clipboard", {
   configurable: true,
 });
 
-// NOTE: react-router, tabs, sonner, AutoCompleteMulti, Pagination are mocked via moduleNameMapper in jest.config.ts
+// このファイルは jsdom のポリフィルだけを置く。
+// モジュールの差し替え（react-router / lucide-react / @vanilla-extract/css 等）は
+// jest.config.ts の moduleNameMapper に集約している。
 /* eslint-enable @typescript-eslint/no-explicit-any */

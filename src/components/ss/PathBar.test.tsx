@@ -5,7 +5,8 @@ import { setup } from "@test-utils";
 import { PathBar } from "./PathBar";
 import { DISPLAY_PATH_ROOT } from "@/constants/ssConstants";
 
-// tooltip は moduleNameMapper でパススルーモックに寄せている（PathBar 自身は ./PathBar 相対 import で実体を使う）
+// tooltip は共有モック（src/components/ui/__mocks__/tooltip.tsx）を使う。
+jest.mock("@/components/ui/tooltip");
 
 const baseProps = {
   relativePath: "",

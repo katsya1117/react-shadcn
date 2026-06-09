@@ -10,8 +10,9 @@ import { setup } from "@test-utils";
 import { uiActions, uiSliceReducer } from "@/redux/slices/uiSlice";
 import { UrlPath } from "@/constants/UrlPath";
 
-// TabsBar.css.ts and @/components/ui/dropdown-menu are mocked via moduleNameMapper in jest.config.ts
-// @/components/ui/tabs is mocked via moduleNameMapper in jest.config.ts
+// TabsBar.css.ts / lucide-react は jest.config の mapper で固定。tabs / dropdown-menu は共有モックを使う。
+jest.mock("@/components/ui/tabs");
+jest.mock("@/components/ui/dropdown-menu");
 
 jest.mock("../ui/button", () => ({
   Button: ({ children }: { children: React.ReactNode }) => (

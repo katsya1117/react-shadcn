@@ -4,8 +4,9 @@ import { setup } from "@test-utils";
 import { ShareArea } from "./ShareArea";
 import { SHARE_AREAS } from "@/config/shareAreaConfig";
 
-// Layout / tooltip / react-router は moduleNameMapper でモックに寄せている。
-// ShareArea 自身は ./ShareArea 相対 import で実体を使う。
+// Layout / tooltip は共有モックを使う（react-router は jest.config の mapper で固定）。
+jest.mock("@/components/layout/Layout");
+jest.mock("@/components/ui/tooltip");
 
 const mockNavigate = (
   globalThis as unknown as { mockNavigate: ReturnType<typeof jest.fn> }

@@ -46,6 +46,10 @@ jest.mock("@/components/ui/sonner", () => ({
   toast: { success: jest.fn(), error: jest.fn() },
 }));
 
+// AutoCompleteMulti / Pagination は共有モックを使う。
+jest.mock("@/components/common/AutoComplete/AutoCompleteMulti");
+jest.mock("@/components/common/Pagination/Pagination");
+
 const setupUserManageWithRouterState = (routerState: unknown) => {
   const store = configureStore({
     reducer: reducers,

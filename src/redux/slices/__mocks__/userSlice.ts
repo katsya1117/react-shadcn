@@ -1,13 +1,17 @@
 import { jest } from "@jest/globals";
 
-// Re-export non-thunk exports via relative path (bypasses moduleNameMapper)
-export {
-  initialState,
-  userActions,
-  userSelector,
-  boxSelector,
-  userSliceReducer,
-} from "../userSlice";
+// reducer / selector / actions は実体をそのまま使い、thunk だけ jest.fn() に差し替える。
+// jest.mock() は「解決後パス」でモックを張るため、ここで `from "../userSlice"` を再 export すると
+// 自分自身に解決して無限ループになる。実体取得は必ず jest.requireActual を使う。
+const actual = jest.requireActual(
+  "../userSlice",
+) as typeof import("../userSlice");
+
+export const initialState = actual.initialState;
+export const userActions = actual.userActions;
+export const userSelector = actual.userSelector;
+export const boxSelector = actual.boxSelector;
+export const userSliceReducer = actual.userSliceReducer;
 export type { UserSearchParamsExt } from "../userSlice";
 
 // Thunks mocked as jest.fn() returning plain action objects

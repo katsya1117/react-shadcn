@@ -1,16 +1,32 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "module": "ESNext",
+    // ts-jest を CommonJS で動かすための上書き
+    "module": "CommonJS",
     "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
+    "verbatimModuleSyntax": false,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": false,
     "erasableSyntaxOnly": false,
+    // テスト用の型・パス
+    "types": ["jest", "node", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@test-utils": ["./test/test-utils/index.ts"]
     },
-    "types": ["jest", "node", "@testing-library/jest-dom"],
+    // テストコードでは未使用ローカル/引数の厳格チェックを外す（lint 側で担保）
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noEmit": true
   },
-  "include": ["src/**/*", "test/**/*"]
+  // このプロジェクトが“所有”するのはテスト関連ファイルだけ。
+  // 本体の src は tsconfig.app.json が所有する（import された分は自動で解決される）。
+  "include": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__mocks__/**/*",
+    "test/**/*"
+  ]
 }

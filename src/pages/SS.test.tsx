@@ -3,9 +3,96 @@ import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 
-// Layout / BoxManager / PathBar / CollaborationPanel / LoadingOverlay / tooltip は
-// jest.config.ts の moduleNameMapper で __mocks__ に寄せている。
-// （inline jest.mock は full-suite 実行時にローカル ESM モジュールへ確実に効かないため）
+// ── このテストでモックする依存 ─────────────────────────────────────────
+// 使い回す共有モック（src/**/__mocks__）はファクトリ無しで有効化。
+jest.mock("@/components/layout/Layout");
+jest.mock("@/components/ui/tooltip");
+jest.mock("@/components/ui/sonner");
+jest.mock("@/components/common/LoadingOverlay");
+jest.mock("@/redux/slices/userSlice");
+
+// SS 専用の子コンポーネントは、このテスト用の操作ボタンを持つスタブをここに直接定義する。
+jest.mock("@/hooks/useBoxExplorer", () => ({ useBoxExplorer: jest.fn() }));
+
+jest.mock("@/components/common/BoxManager/BoxManager", () => ({
+  BoxManager: () => <div data-testid="box-manager" />,
+}));
+
+jest.mock("@/components/ss/PathBar", () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  PathBar: ({ onCopyPath, onGoBack, onGoForward, onOpenBox, onOpenExplorer }: any) => (
+    <div data-testid="path-bar">
+      <button onClick={onCopyPath}>copy-path</button>
+      <button onClick={onGoBack}>go-back</button>
+      <button onClick={onGoForward}>go-forward</button>
+      <button onClick={onOpenBox}>open-box</button>
+      <button onClick={onOpenExplorer}>open-explorer</button>
+    </div>
+  ),
+}));
+
+jest.mock("@/components/ss/CollaborationPanel", () => ({
+  CollaborationPanel: ({
+    onAddCollaborator,
+    onRemoveCollaborator,
+    onUpdateCollaboratorRole,
+    onSelectedCollaboratorChange,
+    collaborators,
+    folderName,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }: any) => (
+    <div data-testid="collaboration-panel">
+      <span data-testid="folder-name">{folderName}</span>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {collaborators?.map((c: any, i: number) => (
+        <span key={i} data-testid="collaborator">
+          {c.collaborator.name}
+          {c.isInherited ? "(inherited)" : ""}
+          {c.sourcePath ? `[${c.sourcePath}]` : ""}
+        </span>
+      ))}
+      <button
+        onClick={() =>
+          onSelectedCollaboratorChange({ value: "new-user", label: "New User" })
+        }
+      >
+        select-collaborator
+      </button>
+      <button onClick={onAddCollaborator}>add-collaborator</button>
+      <button
+        onClick={() =>
+          onRemoveCollaborator({
+            id: "c1",
+            name: "User1",
+            type: "user",
+            role: "viewer",
+            canEdit: true,
+            sourceFolderId: "f1",
+          })
+        }
+      >
+        remove-collaborator
+      </button>
+      <button
+        onClick={() =>
+          onUpdateCollaboratorRole(
+            {
+              id: "c1",
+              name: "User1",
+              type: "user",
+              role: "viewer",
+              canEdit: true,
+              sourceFolderId: "f1",
+            },
+            "editor",
+          )
+        }
+      >
+        update-role
+      </button>
+    </div>
+  ),
+}));
 
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
 import { UrlPath } from "@/constants/UrlPath";

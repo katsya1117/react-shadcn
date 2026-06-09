@@ -12,10 +12,15 @@ import { screen, waitFor, fireEvent } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { UserEdit } from "./UserEdit";
 
-// UI コンポーネント（select / radio-group / sonner 等）と
-// react-router / userSlice / permissionSlice / ConfirmButton / AutoCompleteSingle は
-// すべて jest.config.ts の moduleNameMapper で __mocks__ に寄せている。
-// → このファイルでは個別の jest.mock を書かない（モックの所在を1か所に集約するため）。
+// このテストでモックする依存（実体は src/**/__mocks__ の共有モック）。
+jest.mock("@/components/ui/select");
+jest.mock("@/components/ui/radio-group");
+jest.mock("@/components/ui/sonner");
+jest.mock("@/components/common/AutoComplete/AutoCompleteSingle");
+jest.mock("@/components/common/Confirm/ConfirmButton");
+jest.mock("@/components/common/LoadingOverlay");
+jest.mock("@/redux/slices/userSlice");
+jest.mock("@/redux/slices/permissionSlice");
 
 // ----- helpers ----- //
 const buildUserState = (

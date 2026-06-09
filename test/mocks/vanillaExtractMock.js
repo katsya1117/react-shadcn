@@ -1,8 +1,10 @@
-// Vanilla Extract (.css.ts) ファイルのモック
-// Proxy を使って任意のプロパティアクセスに空文字を返す
-module.exports = new Proxy(
-  {},
-  {
-    get: (_target, prop) => (typeof prop === "string" ? prop : ""),
-  },
-);
+// @vanilla-extract/css の API スタブ。
+// .css.ts はビルド時 CSS なので、テストでは生成されるクラス名を空文字などに潰すだけでよい。
+module.exports = {
+  style: () => "",
+  styleVariants: () => ({}),
+  globalStyle: () => {},
+  createVar: () => "",
+  fallbackVar: (...args) => args[args.length - 1],
+  assignVars: () => ({}),
+};

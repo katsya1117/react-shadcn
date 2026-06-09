@@ -37,7 +37,11 @@ const buildUserState = (overrides: Partial<UserState> = {}) => {
 
 let radioOnValueChange: ((value: string) => void) | undefined;
 
-// ConfirmButton / sonner は moduleNameMapper の __mocks__ を使う（inline mock は書かない）
+// 共有モック（__mocks__）を使う依存。
+jest.mock("@/components/ui/sonner");
+jest.mock("@/components/common/Confirm/ConfirmButton");
+jest.mock("@/components/common/Pagination/Pagination");
+jest.mock("@/components/common/LoadingOverlay");
 
 function passthrough(tag: keyof JSX.IntrinsicElements = "div") {
   return ({ children, ...rest }: any) =>
