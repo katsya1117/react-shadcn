@@ -11,6 +11,10 @@ import { uiActions, uiSliceReducer } from "@/redux/slices/uiSlice";
 
 // lucide-react は moduleNameMapper の共有モックを使う（このテストはアイコンの testid を参照しない）
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照。
+// このファイルの await waitFor は「マウント時 useEffect → dispatch（最後に訪れたセクション記録など）」
+// という副作用が走るのを待つためのもの。dispatchSpy で「dispatch されたか / されないか」を検証する。
+
 const createWrapper = (path: string, preloadedState?: object) => {
   const store = configureStore({
     reducer: { ui: uiSliceReducer },

@@ -9,6 +9,8 @@ import { Layout } from "./Layout";
 // - Header has data-testid="header" on its <header> element
 // - TabsBar has data-testid="tabs-bar" on its root div (only when path matches /manage/ or /OA/)
 
+// 非同期は await user.click（操作の反映待ち）のみ。考え方は test/README.md「7. 非同期テスト」を参照。
+
 describe("Layout", () => {
   const baseUserState = userSliceReducer(undefined, { type: "@@INIT" });
   const baseUiState = uiSliceReducer(undefined, { type: "@@INIT" });

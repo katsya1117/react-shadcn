@@ -3,6 +3,10 @@ import React from "react";
 import { screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照。
+// 要点だけ: ① 準備（API/thunk を Promise で偽装）→ ② 操作（await user.click）→ ③ 待つ（await waitFor）。
+// このファイルは「コラボレータ追加/削除/更新」の成功・失敗フローを ①②③ で検証している。
+
 // ── このテストでモックする依存 ─────────────────────────────────────────
 // 使い回す共有モック（src/**/__mocks__）はファクトリ無しで有効化。
 jest.mock("@/components/layout/Layout");
@@ -574,18 +578,23 @@ describe("SSContent ハンドラ", () => {
   });
 
   it("handleAddCollaborator: 成功で toast.success を出す", async () => {
+    // ① 準備: 追加 API（createCollaborations）を成功する Promise に偽装。
+    //    （一覧取得の getFolderCollaborations は beforeEach で既に空配列成功にしてある）
     jest
       .spyOn(BoxApi.prototype, "createCollaborations")
       .mockResolvedValue({ data: {} as any });
 
     const { user } = makeStore();
+    // 初期描画（一覧取得 Promise の解決）を待ってからパネルを操作する
     await waitFor(() =>
       expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
     );
 
+    // ② 操作: コラボレータを選択 → 追加ボタン（スタブ PathBar/Panel のボタン）
     await user.click(screen.getByText("select-collaborator"));
     await user.click(screen.getByText("add-collaborator"));
 
+    // ③ 待つ: 追加 API 成功 → 一覧再取得 → toast.success が出るまで
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
         expect.stringContaining("追加しました"),

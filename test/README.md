@@ -230,7 +230,84 @@ jest.mock("@/components/common/BoxManager/BoxManager", () => ({
 
 ---
 
-## 7. 提出前チェックリスト
+## 7. 非同期テストの読み方・書き方（Promise が出てきたら）
+
+「Promise が絡むと途端に分からなくなる」を解消するための節です。
+**このリポの非同期テストは、必ず「① 準備 → ② 操作 → ③ 待つ」の3層に分解できます。**
+
+### なぜ `await` が要るのか（核心）
+
+ボタンを押した**直後**には、まだ `toast` も画面更新も起きていません。
+
+```
+クリック → ハンドラ実行 → await dispatch(...) → Promise解決 → catch/then → toast / 再描画
+         └─ ここまで同期 ─┘            └─ ここから先は「次の tick 以降（＝未来）」に起きる ─┘
+```
+
+`toast.error` や DOM 更新は **Promise が解決した後（未来）** に起きます。
+だから押した直後に `expect` すると必ず失敗する。
+`await waitFor(...)` は「**まだなら少し待って再チェック**」を繰り返して、この未来を待つ道具です。
+
+### 3層分解の実例（`UserEdit.test.tsx` の「API 失敗」テスト）
+
+```tsx
+it("API が Error をスローすると そのメッセージを toast.error に渡す", async () => {
+  // ① 準備: API を「失敗する Promise」に差し替える（本物の API は呼ばない）
+  const spy = jest.spyOn(SearchSetApi.prototype, "clearSearchSet")
+    .mockRejectedValueOnce(new Error("APIタイムアウト"));
+
+  const { user } = makeStore();
+
+  // ② 操作: ボタンを押す。await は「クリックによる再描画が一通り終わるまで」待つ
+  await user.click(screen.getByText("リセット"));
+
+  // ③ 待つ: 中の expect が通るまでリトライしながら待つ
+  //    （失敗 Promise 解決 → catch → toast.error が呼ばれる、までのタイムラグを吸収）
+  await waitFor(() => {
+    expect(toast.error).toHaveBeenCalledWith(
+      "検索条件のリセットに失敗しました",
+      expect.objectContaining({ description: "APIタイムアウト" }),
+    );
+  });
+
+  spy.mockRestore(); // 差し替えた API を元に戻す（後片付け）
+});
+```
+
+### このリポに出てくる非同期は4つだけ
+
+| 書き方 | 何を待つ / している | 層 |
+|---|---|---|
+| `await user.click(...)` / `await user.type(...)` | 操作による**再描画の完了**を待つ。クリック・入力系は全部これ | ② |
+| `await waitFor(() => expect(...))` | **expect が通るまで**リトライしながら待つ（非同期結果の検証） | ③ |
+| `.mockResolvedValueOnce(x)` / `.mockRejectedValueOnce(e)` | API/thunk を**成功/失敗する Promise に偽装**する（本物は呼ばれない） | ① |
+| `await act(async () => { cb() })` | 手動でコールバック（ResizeObserver 等）を発火させ**再描画を待つ** | ② |
+
+> `mockResolvedValueOnce` / `mockRejectedValueOnce` の **`Once`** は「**次の1回だけ**」その値を返す意味。
+> 2回目以降は元の挙動に戻る。連続で別の結果を試したいときに `.mockResolvedValueOnce(...).mockRejectedValueOnce(...)` と繋げる。
+
+### 読むときのコツ
+
+- `await` を見たら **「② 操作の完了待ち」か「③ 結果待ち」のどっちか** と判断する。
+- `mockResolved/Rejected` を見たら **「① 準備。本物の API は呼ばれていない」** と読む。
+- **この3分類だけで、このリポの非同期テストは全部読めます。**
+
+### やりがちな失敗
+
+| やりがち | どうなる | 正しくは |
+|---|---|---|
+| `user.click(...)` の `await` を付け忘れる | `act(...) warning`、たまに flaky | 操作系は必ず `await` |
+| `waitFor` を使わず直後に `expect` | まだ Promise 未解決で**必ず失敗** | `await waitFor(() => expect(...))` で待つ |
+| `waitFor` の中で `expect` を呼ばない | 何も待たずすぐ通ってしまう（無意味） | `waitFor` の中身は**必ず expect** |
+| `mockResolvedValue`（Once 無し）で毎回同じ値 | 別テストに値が漏れて干渉 | 1回限りなら `...Once`、毎回なら `beforeEach` で設定 |
+
+> 補足: `await expect(fn()).resolves/.rejects.toThrow()` という書き方も Jest にはありますが、
+> **このリポでは使っていません**（UI 経由で結果を検証する `waitFor` 方式に統一）。
+> 純粋関数（`ssHelpers` など）は同期なので `await` 自体が不要です。
+
+---
+
+## 8. 提出前チェックリスト
 
 - [ ] テスト対象が内部で使う依存を、冒頭の `jest.mock("@/…")` で明示している
 - [ ] 使い回すものは `__mocks__`＋1行、固有のものはその場 factory、で書き分けている

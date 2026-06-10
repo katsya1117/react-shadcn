@@ -8,6 +8,11 @@ import { SHARE_AREAS } from "@/config/shareAreaConfig";
 jest.mock("@/components/layout/Layout");
 jest.mock("@/components/ui/tooltip");
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（② await user.click → ③ 検証）。
+// カード押下で navigate される / window.open が呼ばれる、を検証する。
+// navigate・window.open はクリックで同期的に呼ばれるため検証は waitFor 不要で直接 expect できる。
+// （window.open は jest.spyOn で握りつぶし、実際に新規タブを開かせない）
+
 const mockNavigate = (
   globalThis as unknown as { mockNavigate: ReturnType<typeof jest.fn> }
 ).mockNavigate;

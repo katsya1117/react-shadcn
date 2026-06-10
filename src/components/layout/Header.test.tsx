@@ -10,6 +10,8 @@ import { userSliceReducer } from "@/redux/slices/userSlice";
 import { UrlPath } from "@/constants/UrlPath";
 import type { UserInfo } from "@/api";
 
+// 非同期は await user.click（操作の反映待ち）のみ。考え方は test/README.md「7. 非同期テスト」を参照。
+
 jest.mock("@/components/common/Information/Information", () => ({
   Information: () => <div data-testid="information" />,
 }));

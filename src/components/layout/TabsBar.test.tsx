@@ -167,6 +167,9 @@ describe("TabsBar", () => {
       key: "default",
     };
 
+    // act(async) で「dispatch による state 更新 → 再描画」を完了まで進めてから検証する。
+    // store.dispatch を React の外から呼ぶと、囲まないと「act でラップしろ」warning が出る。
+    // （詳細は test/README.md「7. 非同期テスト」の act パターンを参照）
     await act(async () => {
       store.dispatch(
         uiActions.setLastVisitedTab({ key: UrlPath.UserManage, path: UrlPath.UserManage }),
@@ -213,8 +216,11 @@ describe("TabsBar", () => {
     setElementWidth(inner, 100);
     measureTabs.forEach((el) => setElementWidth(el as HTMLElement, 60));
 
+    // ② 操作: ResizeObserver のコールバックを手動発火（jsdom は実際の resize を起こさないため）。
+    //    幅計算 → オーバーフロー判定 → 再描画 を act で完了させる。
     await act(async () => { resizeCallback?.(); });
 
+    // ③ 待つ: オーバーフローリストに「システム設定」リンクが現れるまで
     await waitFor(() => {
       expect(screen.getByRole("link", { name: "システム設定" })).toBeInTheDocument();
     });

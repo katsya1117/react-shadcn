@@ -8,6 +8,9 @@ import { UserTabsShell } from "./UserTabsShell";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockNavigate = (globalThis as any).mockNavigate as jest.Mock;
 
+// 非同期は await user.click（タブ押下）のみ。押下で navigate される引数を検証する。
+// クリックで navigate は同期的に呼ばれるため waitFor 不要。考え方は test/README.md「7」を参照。
+
 describe("UserTabsShell", () => {
   beforeEach(() => {
     jest.clearAllMocks();

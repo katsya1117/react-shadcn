@@ -11,6 +11,10 @@ import {
 import { createMockPagination, setupWithStore } from "@test-utils";
 import { toast } from "@/components/ui/sonner";
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（① 準備 → ② 操作 → ③ 待つ）。
+// 登録の成功/失敗フローは dispatchSpy.mockImplementation で userCreation thunk を偽装して再現する
+//（Object.assign(Promise, { unwrap }) のイディオムは UserEdit.test.tsx 冒頭の解説を参照）。
+
 type UserState = ReturnType<typeof userSliceReducer>;
 
 const buildUserState = (overrides: Partial<UserState> = {}) => {
@@ -104,6 +108,11 @@ jest.mock("@/components/ui/table", () => ({
   TableRow: passthrough("tr"),
 }));
 
+// userSlice の thunk だけ jest.fn に差し替える（selector / reducer は本物を使う）。
+//   ・getAdUserList / userCreation を呼ぶと「ただのアクションオブジェクト」を返すモックにする
+//     → 実 API を叩かず「dispatch されたか」「引数は何か」だけを検証できる。
+//   ・userCreation.fulfilled.match: コンポーネントが `userCreation.fulfilled.match(result)` で
+//     成功判定するため、type を見て true を返すスタブを生やしておく（無いと undefined で落ちる）。
 jest.mock("@/redux/slices/userSlice", () => {
   const actual = jest.requireActual("@/redux/slices/userSlice");
   const userCreationMock = jest.fn((arg) => ({
@@ -437,6 +446,7 @@ describe("UserCreate", () => {
       }),
     });
 
+    // ① 準備: userCreation thunk を「成功」に偽装（.unwrap() が resolve → 成功フロー）
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "userCreation") {
         return Object.assign(Promise.resolve({ ok: true }), {
@@ -446,8 +456,9 @@ describe("UserCreate", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("登録"));
+    await user.click(screen.getByText("登録")); // ② 操作
 
+    // ③ 待つ: 登録成功 → toast.success が出るまで
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
         "ユーザーを登録しました",
@@ -519,6 +530,7 @@ describe("UserCreate", () => {
       }),
     });
 
+    // ① 準備: userCreation を「文字列で reject」に偽装（→ catch で文字列をそのまま toast へ）
     const errorMsg = "サーバーエラーが発生しました";
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "userCreation") {
@@ -529,9 +541,9 @@ describe("UserCreate", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("登録"));
+    await user.click(screen.getByText("登録")); // ② 操作
 
-    await waitFor(() => {
+    await waitFor(() => {                        // ③ 待つ
       expect(toast.error).toHaveBeenCalledWith(errorMsg);
     });
   });

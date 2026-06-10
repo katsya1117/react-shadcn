@@ -27,6 +27,9 @@ const basePreloadedState = {
   autoComplete: baseAutoCompleteState,
 };
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（① 準備 → ② 操作 → ③ 待つ）。
+// ここでは getUserList thunk を「アクションを返すだけの jest.fn」に差し替える（実 API は叩かない）。
+// → 検索操作で getUserList が「どんな引数で」dispatch されたかを mockedGetUserList で検証できる。
 jest.mock("@/redux/slices/userSlice", () => {
   const actual = jest.requireActual("@/redux/slices/userSlice");
   return {
@@ -256,7 +259,7 @@ describe("UserManage", () => {
       preloadedState: basePreloadedState,
     });
 
-    // center を選択
+    // ② 操作: center を選択 → 検索ボタン
     const centerSelect = screen.getByTestId(
       "auto-complete-multi",
     ) as HTMLSelectElement;
@@ -264,6 +267,9 @@ describe("UserManage", () => {
 
     await user.click(screen.getByText("検索"));
 
+    // ③ 検証: getUserList が呼ばれた「1回目の第1引数」を取り出して中身を確認する。
+    //    mock.calls[呼び出し回数][引数の位置] でモックに渡された実引数を見られる。
+    //    （getUserList は jest.fn 化済みで同期に呼ばれるため、ここは waitFor 不要）
     const dispatchedPayload = mockedGetUserList.mock.calls[0][0];
     expect(dispatchedPayload.auto_complete).toEqual([
       { value: "center1", label: "center1" },

@@ -12,6 +12,33 @@ import { screen, waitFor, fireEvent } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { UserEdit } from "./UserEdit";
 
+// =============================================================================
+// このファイルの非同期テストの読み方（詳細は test/README.md「7. 非同期テスト」）
+//
+// 非同期テストは必ず「① 準備 → ② 操作 → ③ 待つ」の3層に分解できる。
+//   ① 準備 : API / thunk を「成功 or 失敗する Promise」に差し替える（本物は呼ばない）
+//   ② 操作 : await user.click(...) … クリックによる再描画が終わるまで待つ
+//   ③ 待つ : await waitFor(() => expect(...)) … expect が通るまでリトライして待つ
+//            （toast や画面更新は Promise 解決後＝「未来」に起きるので、待たないと必ず失敗する）
+//
+// ★ このファイル特有のイディオム（RTK thunk の戻り値を偽装する）:
+//
+//   dispatchSpy.mockImplementation((action) => {
+//     if (action?.type === "updateUserInfo") {
+//       return Object.assign(Promise.resolve(result), {
+//         unwrap: () => Promise.resolve(payload),   // ← 成功を偽装
+//         // unwrap: () => Promise.reject(err),      // ← 失敗を偽装
+//       });
+//     }
+//     return Promise.resolve(action);               // それ以外の action は素通し
+//   });
+//
+//   理由: コンポーネント側は `await dispatch(updateUserInfo(...)).unwrap()` と書く。
+//         RTK の thunk は「Promise であり、かつ .unwrap() を持つオブジェクト」を返す。
+//         それを Object.assign(Promise, { unwrap }) で再現している。
+//         .unwrap() が resolve すれば成功フロー、reject すれば catch（失敗）フローに入る。
+// =============================================================================
+
 // このテストでモックする依存（実体は src/**/__mocks__ の共有モック）。
 jest.mock("@/components/ui/select");
 jest.mock("@/components/ui/radio-group");
@@ -81,11 +108,15 @@ describe("UserEdit", () => {
 
     const inputs = screen.getAllByRole("textbox");
     // 0: user_cd (readonly), 1: 表示名, 2: アカウント, 3: メール
-    // fireEvent.change を使って高速に 101 文字を入力（userEvent.type は遅い）
+    // fireEvent.change を使って高速に 101 文字を入力（userEvent.type は1文字ずつで遅い）
     fireEvent.change(inputs[1], { target: { value: "a".repeat(101) } });
 
+    // ② 操作
     await user.click(screen.getByText("保存"));
 
+    // ③ 検証: バリデーションは zod による「同期処理」。API を呼ぶ前に toast.error が出る。
+    //    → Promise を待つ必要がないので waitFor 不要で直接 expect できる。
+    //    （API 失敗の検証だけが waitFor を要する。ここで使い分けに注目）
     expect(toast.error).toHaveBeenCalledWith(
       expect.stringContaining("表示名の文字数制限"),
     );
@@ -137,6 +168,8 @@ describe("UserEdit", () => {
       groups: [{ value: "c1", label: "c1" }],
     });
 
+    // ── ① 準備: dispatch を乗っ取り、updateUserInfo を「成功する thunk」に偽装する ──
+    //    .unwrap() が resolve するので、コンポーネントは成功フロー（toast.success）へ進む。
     const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "getUserInfo") {
@@ -144,14 +177,16 @@ describe("UserEdit", () => {
       }
       if (action?.type === "updateUserInfo") {
         return Object.assign(Promise.resolve(updateResult), {
-          unwrap: () => Promise.resolve(updateResult.payload),
+          unwrap: () => Promise.resolve(updateResult.payload), // 成功を偽装
         });
       }
       return Promise.resolve(action);
     }) as any);
 
+    // ── ② 操作: 保存ボタンを押す（クリックによる再描画の完了まで await）──
     await user.click(screen.getByText("保存"));
 
+    // ── ③ 待つ: dispatch 後、Promise 解決 → toast.success が呼ばれるまでリトライ待ち ──
     await waitFor(() => {
       expect(updateUserInfo).toHaveBeenCalledWith({
         userCd: "u123",
@@ -172,6 +207,7 @@ describe("UserEdit", () => {
     const mockNavigate = (globalThis as any).mockNavigate as jest.Mock;
     const { user, dispatchSpy } = makeStore();
 
+    // ① 準備: removeUser を「成功する thunk」に偽装（.unwrap() が resolve）
     const removeResult = { type: "user/removeUser/fulfilled", payload: true };
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "removeUser") {
@@ -182,8 +218,12 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
+    // ② 操作
     await user.click(screen.getByText("削除する"));
 
+    // ③ 検証: 削除成功時は「その場で toast を出さず」遷移先に state を渡して navigate する仕様。
+    //    （遷移先の一覧画面が deletedUserCd を見て toast を出す。ここでは navigate 引数を確認）
+    //    ※ navigate は同期的に呼ばれるため、ここは waitFor 不要で直接 expect できる。
     expect(removeUser).toHaveBeenCalledWith("u123");
     expect(toast.success).not.toHaveBeenCalledWith(
       expect.stringContaining("削除"),
@@ -292,18 +332,23 @@ describe("UserEdit", () => {
     await user.clear(inputs[3]);
     await user.type(inputs[3], "valid@example.com");
 
+    // ① 準備: updateUserInfo を「失敗する thunk」に偽装。
+    //    .unwrap() が reject('権限エラーです') → コンポーネントの catch に入る。
+    //    catch では `typeof error === "string"` なら文字列をそのまま toast.error に渡す。
     const errMsg = "権限エラーです";
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "updateUserInfo") {
         return Object.assign(Promise.resolve({}), {
-          unwrap: () => Promise.reject(errMsg),
+          unwrap: () => Promise.reject(errMsg), // 失敗を偽装（文字列を reject）
         });
       }
       return Promise.resolve(action);
     }) as any);
 
+    // ② 操作
     await user.click(screen.getByText("保存"));
 
+    // ③ 待つ: reject → catch → toast.error("権限エラーです") が呼ばれるまで待つ
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(errMsg);
     });
@@ -312,6 +357,7 @@ describe("UserEdit", () => {
   it("削除失敗で toast.error を出す", async () => {
     const { user, dispatchSpy } = makeStore();
 
+    // ① 準備: removeUser を「Error で reject する thunk」に偽装（→ catch 経路）
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "removeUser") {
         return Object.assign(Promise.resolve({}), {
@@ -321,46 +367,55 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("削除する"));
+    await user.click(screen.getByText("削除する")); // ② 操作
 
+    // ③ 待つ: Error は文字列でないので固定メッセージ "削除に失敗しました" になる
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("削除に失敗しました");
     });
   });
 
   it("検索条件リセット成功で toast.success を出す", async () => {
+    // リセットは thunk ではなく SearchSetApi を直接呼ぶ。
+    // 共有モック（__mocks__）の clearSearchSet は既定で成功を返すので、ここでは偽装不要。
     const { user } = makeStore();
-    await user.click(screen.getByText("リセット"));
-    await waitFor(() => {
+    await user.click(screen.getByText("リセット")); // ② 操作
+    await waitFor(() => {                            // ③ 待つ
       expect(toast.success).toHaveBeenCalledWith("検索条件をリセットしました");
     });
   });
 
   it("検索条件リセット: API が data=null を返すとき toast.error を出す", async () => {
+    // ① 準備: API メソッドを直接 spyOn して「data=null を返す Promise」に差し替える。
+    //    mockResolvedValueOnce の "Once" = 次の1回だけこの値を返し、以降は元の挙動に戻る。
     const { SearchSetApi } = await import("@/api");
     const spy = jest.spyOn(SearchSetApi.prototype, "clearSearchSet")
       .mockResolvedValueOnce({ data: null } as any);
 
     const { user } = makeStore();
-    await user.click(screen.getByText("リセット"));
+    await user.click(screen.getByText("リセット")); // ② 操作
 
+    // ③ 待つ: data が null → コンポーネントが「レスポンス不正」と判断し toast.error を出すまで
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
         "検索条件のリセットに失敗しました",
         expect.objectContaining({ description: "レスポンスが不正です" }),
       );
     });
-    spy.mockRestore();
+    spy.mockRestore(); // 後片付け: spyOn で差し替えた実装を元に戻す
   });
 
   it("検索条件リセット: API が Error をスローするとき そのメッセージを toast.error に渡す", async () => {
+    // ① 準備: clearSearchSet を「Error を reject する Promise」に差し替える。
+    //    mockRejectedValueOnce = 次の1回だけ reject する。
     const { SearchSetApi } = await import("@/api");
     const spy = jest.spyOn(SearchSetApi.prototype, "clearSearchSet")
       .mockRejectedValueOnce(new Error("APIタイムアウト"));
 
     const { user } = makeStore();
-    await user.click(screen.getByText("リセット"));
+    await user.click(screen.getByText("リセット")); // ② 操作
 
+    // ③ 待つ: reject(Error) → catch で e.message を取り出し description に渡すまで
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
         "検索条件のリセットに失敗しました",
@@ -371,13 +426,16 @@ describe("UserEdit", () => {
   });
 
   it("検索条件リセット: 非 Error がスローされたとき '不明なエラー' を渡す", async () => {
+    // ① 準備: Error ではなく「ただの文字列」を reject させ、catch の else 分岐を通す。
+    //    （e instanceof Error が false → description は "不明なエラー" になる）
     const { SearchSetApi } = await import("@/api");
     const spy = jest.spyOn(SearchSetApi.prototype, "clearSearchSet")
       .mockRejectedValueOnce("文字列エラー");
 
     const { user } = makeStore();
-    await user.click(screen.getByText("リセット"));
+    await user.click(screen.getByText("リセット")); // ② 操作
 
+    // ③ 待つ
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
         "検索条件のリセットに失敗しました",
@@ -506,6 +564,8 @@ describe("UserEdit", () => {
     fireEvent.change(inputs[2], { target: { value: "validacc" } });
     fireEvent.change(inputs[3], { target: { value: "valid@example.com" } });
 
+    // ① 準備: updateUserInfo を Error で reject（冒頭の thunk 偽装イディオム参照）。
+    //    Error は文字列でないため、固定メッセージ "保存に失敗しました" になる。
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "updateUserInfo") {
         return Object.assign(Promise.resolve({}), {
@@ -515,9 +575,9 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存")); // ② 操作
 
-    await waitFor(() => {
+    await waitFor(() => {                        // ③ 待つ
       expect(toast.error).toHaveBeenCalledWith("保存に失敗しました");
     });
   });
@@ -525,6 +585,7 @@ describe("UserEdit", () => {
   it("削除失敗（文字列）で その文字列を toast.error に渡す", async () => {
     const { user, dispatchSpy } = makeStore();
 
+    // ① 準備: removeUser を「文字列で reject」（→ catch で文字列をそのまま toast へ）
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "removeUser") {
         return Object.assign(Promise.resolve({}), {
@@ -534,9 +595,9 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("削除する"));
+    await user.click(screen.getByText("削除する")); // ② 操作
 
-    await waitFor(() => {
+    await waitFor(() => {                            // ③ 待つ
       expect(toast.error).toHaveBeenCalledWith("権限不足");
     });
   });
@@ -579,6 +640,8 @@ describe("UserEdit", () => {
       permissionList,
     });
 
+    // ① 準備: updateUserInfo を成功させる（冒頭の thunk 偽装イディオム参照）。
+    //    このテストの主眼は params の中身（language_code / center_cd 等）の検証。
     const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "updateUserInfo") {
@@ -589,7 +652,7 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存")); // ② 操作
 
     await waitFor(() => {
       expect(updateUserInfo).toHaveBeenCalledWith(
@@ -638,6 +701,8 @@ describe("UserEdit", () => {
       permissionList,
     });
 
+    // ① 準備: updateUserInfo を成功させる（冒頭の thunk 偽装イディオム参照）。
+    //    このテストの主眼は params の中身（language_code / center_cd 等）の検証。
     const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "updateUserInfo") {
@@ -648,7 +713,7 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存")); // ② 操作
 
     await waitFor(() => {
       expect(updateUserInfo).toHaveBeenCalledWith(
@@ -726,6 +791,8 @@ describe("UserEdit", () => {
       permissionList,
     });
 
+    // ① 準備: updateUserInfo を成功させる（冒頭の thunk 偽装イディオム参照）。
+    //    このテストの主眼は params の中身（language_code / center_cd 等）の検証。
     const updateResult = { type: "user/updateUserInfo/fulfilled", payload: {} };
     dispatchSpy.mockImplementation(((action: any) => {
       if (action?.type === "updateUserInfo") {
@@ -736,7 +803,7 @@ describe("UserEdit", () => {
       return Promise.resolve(action);
     }) as any);
 
-    await user.click(screen.getByText("保存"));
+    await user.click(screen.getByText("保存")); // ② 操作
 
     await waitFor(() => {
       expect(updateUserInfo).toHaveBeenCalledWith(

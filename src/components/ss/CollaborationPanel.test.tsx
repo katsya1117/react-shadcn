@@ -4,6 +4,7 @@ import { setup } from "@test-utils";
 import { CollaborationPanel } from "./CollaborationPanel";
 import type { CollaborationListItem, RoleType } from "@/types/ss";
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（操作は await user.click）。
 // 共有モック（src/**/__mocks__）を有効化する。
 // ※ ConfirmButton は実体のまま使う（「ボタン→確認ダイアログOK」の2段階フローを検証するため）。
 //   その確認ダイアログ（ui/dialog）だけモックして open 時に中身を描画させる。
@@ -126,8 +127,10 @@ describe("CollaborationPanel", () => {
       onAddCollaborator,
       selectedCollaborator: { value: "u9", label: "User Nine" },
     });
-    // ConfirmButton はクリックで確認ダイアログを開く2段階フロー
+    // ConfirmButton は「ボタン押下 → 確認ダイアログ表示 → OK 押下」の2段階フロー。
+    // ② 操作1: 追加ボタン → ダイアログが open（dialog モックが中身を描画）
     await user.click(screen.getByText("追加"));
+    // ② 操作2: OK → onHandle(= onAddCollaborator) が実行される
     await user.click(screen.getByText("OK"));
     expect(onAddCollaborator).toHaveBeenCalledTimes(1);
   });

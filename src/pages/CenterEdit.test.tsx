@@ -18,6 +18,12 @@ jest.mock("@/pages/CenterTabsShell", () => ({
 jest.mock("@/components/common/Confirm/ConfirmButton");
 jest.mock("@/components/ui/sonner");
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（① 準備 → ② 操作 → ③ 待つ）。
+// CenterEdit は API を叩かずローカル state を操作する画面なので、thunk 偽装は無い。
+// 各テストの await waitFor は「クリック → state 更新 → 再描画 / toast」が反映されるのを待つだけ。
+// 各テストの `const { toast } = await import("@/components/ui/sonner")` は、
+// jest.mock 済みの sonner（記録用モック）を取り出して呼び出しを検証するための動的 import。
+
 describe("CenterEdit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -136,11 +142,13 @@ describe("CenterEdit", () => {
       </MemoryRouter>,
     );
 
+    // ② 操作: シートを開く → ID・氏名を入力 → 追加（type は1文字ずつ入力するので await 必須）
     await user.click(screen.getByText("ゲスト追加"));
     await user.type(screen.getByPlaceholderText("例: u123"), "u999");
     await user.type(screen.getByPlaceholderText("氏名"), "テスト ユーザー");
     await user.click(screen.getByText("追加"));
 
+    // ③ 待つ: 追加した行が一覧に描画されるまで（state 更新 → 再描画のタイムラグを吸収）
     await waitFor(() => {
       expect(screen.getByText("テスト ユーザー")).toBeInTheDocument();
     });

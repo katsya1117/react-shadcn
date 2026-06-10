@@ -7,6 +7,10 @@ import { CenterManage } from "./CenterManage";
 
 const mockNavigate = (globalThis as any).mockNavigate as jest.Mock;
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照（② await user.click/type → ③ 検証）。
+// CenterManage は API を叩かずローカルの絞り込み（検索）を行う画面。thunk 偽装は無い。
+// await user.type / click は入力・操作の反映を待つためのもの。
+
 jest.mock("@/pages/CenterTabsShell", () => ({
   __esModule: true,
   CenterTabsShell: ({ children }: { children: React.ReactNode }) => (

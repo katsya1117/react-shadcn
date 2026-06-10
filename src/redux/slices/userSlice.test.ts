@@ -30,6 +30,28 @@ const basePagination = {
   last_page_url: '',
 };
 
+// =============================================================================
+// このファイルのテストは2種類（非同期テストの考え方は test/README.md「7」を参照）。
+//
+// (A) reducer テスト … 同期。Promise なし。
+//     「アクションを手で作って reducer に渡し、次の state を検証」するだけ。
+//       const next = userSliceReducer(undefined, getUserInfo.fulfilled(payload, ...));
+//     createAsyncThunk は .pending / .fulfilled / .rejected という
+//     アクションクリエイターを持つので、それを直接呼んでアクションを生成している。
+//
+// (B) thunk テスト … 非同期。thunk を「直接実行」して dispatch の呼ばれ方を検証する。
+//       const dispatch = jest.fn();
+//       jest.spyOn(API.prototype, 'method').mockResolvedValue(...); // ① API を成功 Promise に偽装
+//       await getUserInfo('u1')(dispatch, () => ({}), undefined);   // ② thunk を実行
+//       expect(dispatch).toHaveBeenCalledWith(...pending...);       // ③ pending → fulfilled の順で dispatch
+//
+//     ★ なぜ二重の呼び出し `getUserInfo('u1')(dispatch, getState, extra)` なのか:
+//       createAsyncThunk が返す thunk は「引数を受け取ると
+//       (dispatch, getState, extra) => Promise を返す関数」だから。
+//       1段目で引数を渡し、2段目で本物の dispatch/getState を注入して走らせる。
+//       成功偽装なら pending→fulfilled、失敗偽装(mockRejectedValue)なら pending→rejected が dispatch される。
+// =============================================================================
+
 describe('userSlice', () => {
   it('setUserId でログイン状態とユーザーコードを更新する', () => {
     const nextState = userSliceReducer(undefined, userActions.setUserId('u123'));
@@ -381,13 +403,17 @@ describe('userSlice', () => {
   });
 
   it('thunk getUserInfo が API を呼び出し fulfilled を dispatch する', async () => {
-    const dispatch = jest.fn();
+    // ↓ これが (B) thunk テストの基本形（冒頭コメント参照）。
+    const dispatch = jest.fn(); // dispatch を記録用のモックにして「何が dispatch されたか」を見る
+    // ① 準備: API を成功する Promise に偽装（本物の API は呼ばない）
     jest
       .spyOn(UsersApi.prototype, 'getUser')
       .mockResolvedValue({ data: { user: { user_cd: 'u1' } } } as any);
 
+    // ② 実行: thunk(引数)(dispatch, getState, extra)。await で Promise の完了まで待つ
     await getUserInfo('u1')(dispatch, () => ({} as any), undefined);
 
+    // ③ 検証: 成功時は pending → fulfilled の2つが dispatch される
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: getUserInfo.pending.type }),
     );
@@ -395,7 +421,7 @@ describe('userSlice', () => {
       expect.objectContaining({ type: getUserInfo.fulfilled.type }),
     );
 
-    (UsersApi.prototype.getUser as jest.Mock).mockRestore();
+    (UsersApi.prototype.getUser as jest.Mock).mockRestore(); // 後片付け: 偽装を元に戻す
   });
 
   it('thunk getLoginUserInfo が API を呼び出し fulfilled を dispatch する', async () => {
@@ -543,17 +569,21 @@ describe('userSlice', () => {
   });
 
   it('updateUserInfo API エラー時に rejected を dispatch する', async () => {
+    // ↓ 失敗系 thunk テストの基本形。成功系との違いは ① で mockRejectedValue を使う点だけ。
     const dispatch = jest.fn();
+    // ① 準備: API を「reject する Promise」に偽装 → thunk 内で catch され rejected になる
     jest
       .spyOn(UsersApi.prototype, 'updateUser')
       .mockRejectedValue(new Error('API error'));
 
+    // ② 実行
     await updateUserInfo({ userCd: 'u2', params: {} } as any)(
       dispatch,
       () => ({} as any),
       undefined,
     );
 
+    // ③ 検証: 失敗時は pending → rejected が dispatch される（fulfilled は呼ばれない）
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: updateUserInfo.rejected.type }),
     );

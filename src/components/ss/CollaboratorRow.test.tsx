@@ -82,9 +82,12 @@ describe("CollaboratorRow 表示", () => {
 describe("CollaboratorRow 削除", () => {
   test("削除ボタン → 確認ダイアログ OK で onRemove が呼ばれる", async () => {
     const { onRemove } = renderRow(makeItem());
+    // ② 操作その1: 削除ボタンを押すとダイアログが open 状態になる
     fireEvent.click(screen.getByLabelText("権限を削除"));
-    // dialog モックは open 時に children を描画するため、OK ボタンが現れる
+    // ③ 待つ: dialog モックは open=true になって初めて children を描画する。
+    //    findByRole は「OK ボタンが現れるまで待つ」非同期クエリ（getByRole は待たない）。
     const okBtn = await screen.findByRole("button", { name: "OK" });
+    // ② 操作その2: OK を押すと onHandle（= onRemove）が呼ばれる
     fireEvent.click(okBtn);
     expect(onRemove).toHaveBeenCalledWith(
       expect.objectContaining({ id: "c1", name: "Alice" }),
@@ -104,7 +107,9 @@ describe("CollaboratorRow ロール変更", () => {
   test("Select でロールを変更すると確認ダイアログが開く", async () => {
     renderRow(makeItem({ role: "viewer" }));
     const select = screen.getByTestId("select") as HTMLSelectElement;
+    // ② 操作: select の値を変更 → onValueChange で確認ダイアログが open になる
     fireEvent.change(select, { target: { value: "editor" } });
+    // ③ 待つ: ダイアログ本文が現れるまで findByText で待つ
     expect(await screen.findByText(/ロールを editor に変更/i)).toBeInTheDocument();
   });
 

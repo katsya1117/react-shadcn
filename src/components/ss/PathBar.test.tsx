@@ -8,6 +8,10 @@ import { DISPLAY_PATH_ROOT } from "@/constants/ssConstants";
 // tooltip は共有モック（src/components/ui/__mocks__/tooltip.tsx）を使う。
 jest.mock("@/components/ui/tooltip");
 
+// 非同期テストの読み方は test/README.md「7. 非同期テスト」を参照。
+// PathBar は props だけのコンポーネント。各テストは await user.click でボタンを押し、
+// 渡したコールバック（onGoBack 等）が呼ばれたかを検証するだけ（thunk・waitFor は不要）。
+
 const baseProps = {
   relativePath: "",
   canGoBack: true,
