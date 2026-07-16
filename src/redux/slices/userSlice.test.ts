@@ -10,6 +10,7 @@ import {
   userActions,
   userCreation,
   userSliceReducer,
+  initialState,
   updateUserInfo,
   userSelector,
   boxSelector,
@@ -202,14 +203,35 @@ describe('userSlice', () => {
       email: 'foo@example.com',
       language_code: 0,
     };
+    const preloadedState = {
+      ...initialState,
+      adList: {
+        ...initialState.adList,
+        data: {
+          data: [
+            {
+              mail_addr: 'foo@example.com',
+              account_name: 'foo',
+              disp_name: 'Foo',
+              status1: '0',
+              status2: '0',
+            },
+          ],
+          items: [],
+          pagination: {} as any,
+        },
+      },
+    };
     const action = userCreation.fulfilled({ ok: true, user: params }, 'req', params);
 
-    const nextState = userSliceReducer(undefined, action);
+    const nextState = userSliceReducer(preloadedState, action);
     expect(nextState.error.isError).toBe(false);
     expect(nextState.isLoading).toBe(false);
+    expect(nextState.adList.data?.data[0].status1).toBe('1');
+    expect(nextState.adList.data?.data[0].status2).toBe('1');
   });
 
-  it('userCreation.fulfilled の null でも state は変わらない', () => {
+  it('userCreation.fulfilled の ok=false 時はエラーになる', () => {
     const params = {
       user_cd: 'foo',
       disp_name: 'Foo',
@@ -219,7 +241,7 @@ describe('userSlice', () => {
     };
     const action = userCreation.fulfilled(null as any, 'req', params);
     const nextState = userSliceReducer(undefined, action);
-    expect(nextState.error.isError).toBe(false);
+    expect(nextState.error.isError).toBe(true);
     expect(nextState.isLoading).toBe(false);
   });
 
@@ -488,9 +510,9 @@ describe('userSlice', () => {
     expect(next.error.isError).toBe(false);
   });
 
-  it('userCreation.rejected でも state は変わらない', () => {
+  it('userCreation.rejected でエラーになる', () => {
     const next = userSliceReducer(undefined, userCreation.rejected(new Error('x') as any, 'r', {} as any));
-    expect(next.error.isError).toBe(false);
+    expect(next.error.isError).toBe(true);
     expect(next.isLoading).toBe(false);
   });
 

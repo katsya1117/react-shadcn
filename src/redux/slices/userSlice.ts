@@ -379,21 +379,62 @@ const userSlice = createSlice({
         state.error = setSliceError(rejectedMessage);
       });
     builder
-      // userCreation
-      .addCase(userCreation.pending, () => {
-        // state.error = initialSliceError;
+      // userCreation（楽観的更新: 作成中の一覧に即時反映し、失敗時はロールバック）
+      .addCase(userCreation.pending, (state, action) => {
+        state.error = initialSliceError;
+
+        if (state.list.data) {
+          const optimisticUser: UserInfo = {
+            user: {
+              user_cd: action.meta.arg.user_cd,
+              disp_name: action.meta.arg.disp_name,
+              user_account: action.meta.arg.account,
+              email: action.meta.arg.email,
+              language_code: action.meta.arg.language_code,
+            },
+            user_cd: action.meta.arg.user_cd,
+            disp_name: action.meta.arg.disp_name,
+            email: action.meta.arg.email,
+          };
+
+          state.list.data.data = [optimisticUser, ...state.list.data.data];
+          state.list.data.items = state.list.data.data;
+        }
       })
-      .addCase(userCreation.fulfilled, () => {
-        // if (action.payload !== null) {
-        //   state.error = initialSliceError;
-        // } else {
-        //   state.error = setSliceError("ユーザーの作成に失敗しました。", "invalid response");
-        // }
+      .addCase(userCreation.fulfilled, (state, action) => {
+        if (action.payload?.ok !== true) {
+          state.error = setSliceError(
+            "ユーザーの作成に失敗しました。",
+            "invalid response",
+          );
+          return;
+        }
+        // 成功時は pending で追加した楽観的データをそのまま確定として扱う
+
+        // AD検索結果一覧側もローカル更新（登録済みステータスへ反映）
+        // ADユーザーAPIはステートレスなモックのため、再フェッチでは反映されない
+        if (state.adList.data) {
+          const target = state.adList.data.data.find(
+            (u) => u.mail_addr === action.meta.arg.email,
+          );
+          if (target) {
+            target.status1 = "1";
+            target.status2 = "1";
+          }
+        }
       })
-      .addCase(userCreation.rejected, () => {
-        // state.error = setSliceError(
-        //   typeof action.payload === "string" ? action.payload : rejectedMessage,
-        // );
+      .addCase(userCreation.rejected, (state, action) => {
+        // ロールバック: pending で追加した楽観的データを取り除く
+        if (state.list.data) {
+          state.list.data.data = state.list.data.data.filter(
+            (u) => u.user_cd !== action.meta.arg.user_cd,
+          );
+          state.list.data.items = state.list.data.data;
+        }
+
+        state.error = setSliceError(
+          typeof action.payload === "string" ? action.payload : rejectedMessage,
+        );
       });
 
     builder

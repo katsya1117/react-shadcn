@@ -154,20 +154,9 @@ export const UserCreate = () => {
       toast.success("ユーザーを登録しました", {
         description: `${user.disp_name} (${user.account_name}) を登録しました。`,
       });
-      dispatch(
-        getAdUserList({
-          account_name: searchAccountName,
-          mail_addr: searchMailAddress,
-          distinguished_name: "",
-          disp_name: searchDispName,
-          organization_unit: "",
-          status: statusFilter,
-          sort: "disp_name",
-          order: "asc",
-          page: 1,
-          per_page: undefined,
-        }),
-      );
+      // 一覧の再フェッチは行わない: ADユーザーAPIはステートレスなモックのため
+      // 再フェッチしても登録済みステータスに反映されない。
+      // userCreation.fulfilled 内で adList をローカル更新して即時反映している。
     } catch (error) {
       toast.error(
         typeof error === "string" ? error : "ユーザーの登録に失敗しました",
