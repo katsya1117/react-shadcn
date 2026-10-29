@@ -415,7 +415,7 @@ describe('userSlice', () => {
     expect(userSelector.adUserSearchConditionSelector()(root)).toEqual(
       populated.adList.searchCondition,
     );
-    expect(userSelector.userTargetSelector()(root)).toEqual(populated.adList.data);
+    expect(userSelector.userTargetSelector()(root)).toEqual(populated.target);
     expect(userSelector.searchResultDispSelector()(root)).toEqual(
       populated.searchResultDisp,
     );

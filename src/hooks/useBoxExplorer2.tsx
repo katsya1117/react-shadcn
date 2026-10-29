@@ -70,12 +70,12 @@ export const useBoxExplorer = (
 
       const nextFolder: FolderInfo = {
         id: item.id,
-        name: item.name,
+        name: item.name ?? "",
         pathCollection: item.path_collection
           ? {
               entries: item.path_collection.entries.map((e) => ({
                 id: e.id,
-                name: e.name,
+                name: e.name ?? "",
               })),
             }
           : undefined,

@@ -64,7 +64,6 @@ const CenterEdit = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [newUserId, setNewUserId] = useState("");
   const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState("閲覧のみ");
 
   return (
     <CenterTabsShell active="edit">
@@ -225,7 +224,6 @@ const CenterEdit = () => {
                         toast(`${newName} を追加しました`);
                         setNewUserId("");
                         setNewName("");
-                        setNewRole("閲覧のみ");
                       }}
                     >
                       追加

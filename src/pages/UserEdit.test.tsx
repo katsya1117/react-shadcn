@@ -161,7 +161,7 @@ describe("UserEdit", () => {
 
     const { user, dispatchSpy } = makeStore({
       user: {
-        adList: { searchCondition: undefined, data: target as any },
+        target: target as any,
         isLoading: false,
       },
       permissionList,
@@ -453,7 +453,7 @@ describe("UserEdit", () => {
     expect(jaRadio.checked).toBe(true);
   });
 
-  it("adList.data から言語設定が 'undefined'（language_code=2）のとき setLang('undefined') が呼ばれる", async () => {
+  it("target から言語設定が 'undefined'（language_code=2）のとき setLang('undefined') が呼ばれる", async () => {
     const target = {
       user: {
         user_cd: "u123",
@@ -465,7 +465,7 @@ describe("UserEdit", () => {
       },
       center: [],
     };
-    makeStore({ user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false } });
+    makeStore({ user: { target: target as any, isLoading: false } });
     // lang が "undefined" の状態で保存を試みるために radioGroup の value を確認
     await waitFor(() => {
       const radioGroup = screen.getByTestId("radio-group");
@@ -487,7 +487,7 @@ describe("UserEdit", () => {
       center: [{ center_cd: "no-match", belonging_flg: 0 }], // groups に "no-match" はない
     };
     makeStore({
-      user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false },
+      user: { target: target as any, isLoading: false },
       groups: [{ value: "other-center", label: "Other" }],
     });
     await waitFor(() => {
@@ -636,7 +636,7 @@ describe("UserEdit", () => {
       center: [],
     };
     const { user, dispatchSpy } = makeStore({
-      user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false },
+      user: { target: target as any, isLoading: false },
       permissionList,
     });
 
@@ -697,7 +697,7 @@ describe("UserEdit", () => {
       center: [], // no center → belonging = null
     };
     const { user, dispatchSpy } = makeStore({
-      user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false },
+      user: { target: target as any, isLoading: false },
       permissionList,
     });
 
@@ -746,7 +746,7 @@ describe("UserEdit", () => {
       },
       center: [],
     };
-    makeStore({ user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false } });
+    makeStore({ user: { target: target as any, isLoading: false } });
     await waitFor(() => {
       const radioGroup = screen.getByTestId("radio-group");
       expect(radioGroup.dataset.value).toBe("en");
@@ -787,7 +787,7 @@ describe("UserEdit", () => {
       center: [],
     };
     const { user, dispatchSpy } = makeStore({
-      user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false },
+      user: { target: target as any, isLoading: false },
       permissionList,
     });
 
@@ -814,7 +814,7 @@ describe("UserEdit", () => {
     });
   });
 
-  it("adList.data で user_name/user_account/email が null のとき空文字をセットする（lines 257-259）", async () => {
+  it("target で user_name/user_account/email が null のとき空文字をセットする（lines 257-259）", async () => {
     const target = {
       user: {
         user_cd: "u123",
@@ -826,7 +826,7 @@ describe("UserEdit", () => {
       },
       center: [],
     };
-    makeStore({ user: { adList: { searchCondition: undefined, data: target as any }, isLoading: false } });
+    makeStore({ user: { target: target as any, isLoading: false } });
     await waitFor(() => {
       const inputs = screen.getAllByRole("textbox");
       // 表示名, アカウント, メール がそれぞれ空文字

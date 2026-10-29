@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layout } from "@/components/layout/Layout";
 import { Folder, Settings, FolderOpen, Users } from "lucide-react";
 import BoxIcon from "@/components/icons/BoxIcon";
 import {
@@ -27,8 +26,7 @@ const ShareArea = () => {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <Layout>
-        <div className="space-y-6">
+      <div className="space-y-6">
           <div className="space-y-1.5">
             <p className="text-[10px] uppercase tracking-[0.25em] text-primary/60 font-medium">
               Center Area
@@ -160,8 +158,7 @@ const ShareArea = () => {
               </Card>
             ))}
           </div>
-        </div>
-      </Layout>
+      </div>
     </TooltipProvider>
   );
 };

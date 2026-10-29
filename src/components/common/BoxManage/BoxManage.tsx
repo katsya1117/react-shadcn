@@ -23,7 +23,7 @@ type BoxManageProps = {
 const BoxManage = ({ children }: BoxManageProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const loginUserCd = useSelector(userSelector.loginUserCdSelector());
-  const token = useSelector(boxSelector.tokenSelector()) as string | undefined;
+  const token = useSelector(boxSelector.tokenSelector())?.accessToken;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 

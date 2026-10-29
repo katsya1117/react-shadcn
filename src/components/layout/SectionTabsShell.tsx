@@ -10,7 +10,7 @@ type TabDef = {
 
 type Props = {
   title: string;
-  tabs: TabDef[];
+  tabs: readonly TabDef[];
   active: string;
   onTabChange?: (next: string) => void;
   children: ReactNode;

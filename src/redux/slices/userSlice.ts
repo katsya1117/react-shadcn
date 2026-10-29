@@ -517,7 +517,7 @@ export const userSelector = {
     }),
   userTargetSelector: () =>
     createSelector(userRootSelector, (state) => {
-      return state.adList.data;
+      return state.target;
     }),
   // AD連携の一覧
   adUserListSelector: () =>

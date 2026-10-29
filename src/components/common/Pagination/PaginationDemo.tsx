@@ -8,7 +8,7 @@ type PaginationQuery = {
   per_page?: string;
 };
 
-const TOTAL_ITEMS = 57;
+const TOTAL_ITEMS: number = 57;
 
 export const PaginationDemo = () => {
   const [page, setPage] = useState(1);

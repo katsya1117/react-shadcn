@@ -18,16 +18,16 @@ import { CenterManage } from "./pages/CenterManage";
 import { Development } from "./pages/Development";
 import { Information } from "./pages/Information";
 import { JobCreate } from "./pages/JobCreate";
-import { JobSearch } from "./pages/JobSearch";
-import { LogSearch } from "./pages/LogSearch";
+// import { JobSearch } from "./pages/JobSearch";
+// import { LogSearch } from "./pages/LogSearch";
 import { MyPage } from "./pages/MyPage";
 import { MyPageEdit } from "./pages/MyPageEdit";
 import { OAOrders } from "./pages/OAOrders";
 import { OAUsers } from "./pages/OAUsers";
-import { RoleManage } from "./pages/RoleManage";
+// import { RoleManage } from "./pages/RoleManage";
 import { SS } from "./pages/SS";
 import { ShareArea } from "./pages/ShareArea";
-import { ShareArea2 } from "./pages/ShareArea2";
+// import { ShareArea2 } from "./pages/ShareArea2";
 import { System } from "./pages/System";
 import { Tool } from "./pages/Tool";
 import { UserCreate } from "./pages/UserCreate";
@@ -64,14 +64,20 @@ const App = () => (
     <ScrollReset />
     <Routes>
       {/* Layout でラップされたルート */}
-      <Route element={<Layout><Outlet /></Layout>}>
+      <Route
+        element={
+          <Layout>
+            <Outlet />
+          </Layout>
+        }
+      >
         <Route path={UrlPath.Root} element={<RootPage />} />
         <Route path={UrlPath.MyPage} element={<MyPage />} />
-        <Route path={UrlPath.JobSearch} element={<JobSearch />} />
+        {/* <Route path={UrlPath.JobSearch} element={<JobSearch />} /> */}
         {/* ShareArea UI切り替え: ShareArea（カード形式）/ ShareArea2（リスト形式）*/}
-        <Route path={UrlPath.ShareArea} element={<ShareArea2 />} />
+        <Route path={UrlPath.ShareArea} element={<ShareArea />} />
         {/* <Route path={UrlPath.ShareArea} element={<ShareArea />} /> */}
-        <Route path={UrlPath.LogSearch} element={<LogSearch />} />
+        {/* <Route path={UrlPath.LogSearch} element={<LogSearch />} /> */}
         <Route path={UrlPath.JobCreate} element={<JobCreate />} />
         <Route path={UrlPath.Tool} element={<Tool />} />
 
@@ -84,7 +90,7 @@ const App = () => (
         <Route path={UrlPath.CenterCreate} element={<CenterCreate />} />
         <Route path={UrlPath.CenterEdit} element={<CenterEdit />} />
 
-        <Route path={UrlPath.ManageRole} element={<RoleManage />} />
+        {/* <Route path={UrlPath.ManageRole} element={<RoleManage />} /> */}
         <Route path={UrlPath.Information} element={<Information />} />
         <Route path={UrlPath.System} element={<System />} />
         <Route path={UrlPath.UserSetting} element={<UserSetting />} />

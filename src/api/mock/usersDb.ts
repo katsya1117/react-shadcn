@@ -539,7 +539,6 @@ export const mockUserDb = {
 
     const pagination: PaginationResultMUser["pagination"] = {
       total,
-      page,
       per_page,
       current_page: page,
       last_page: Math.max(1, Math.ceil(total / per_page)),

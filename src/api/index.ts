@@ -124,6 +124,7 @@ export type UserInfo = {
     // user_cd は比較式で boolean 扱いされることがあるため幅広く許容
     user_cd: string | boolean;
     disp_name?: string;
+    user_name?: string; // モック・既存画面（UserEdit）が参照
     user_account?: string;
     email?: string;
     box_account?: string;
@@ -171,7 +172,7 @@ export type PaginationResultMUser = {
   pagination: Pagination;
 };
 
-export type AccessToken = string;
+export type AccessToken = { accessToken: string };
 
 export type MockCollaborationRole = "editor" | "viewer";
 export type MockCollaborationType = "user" | "department";
@@ -215,12 +216,16 @@ export type UpdateCollaborationParams = {
 
 export class UsersApi {
   // config is ignored in mock
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async getUser(userCd: string, _opts?: unknown) {
     const { mockUserDb } = await import("./mock/usersDb");
     const data: UserInfo = mockUserDb.get(userCd) ?? {
       user: { user_cd: userCd },
+      user_cd: userCd,
     };
     return { data };
   }
@@ -322,7 +327,10 @@ export class UsersApi {
 
 // ---------- SearchSet (mock) ----------
 export class SearchSetApi {
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async clearSearchSet(userCd: string, _opts?: unknown) {
     // 実際はユーザーの検索条件を初期化する API 想定
@@ -332,7 +340,10 @@ export class SearchSetApi {
 
 // ---------- AD User (mock) ----------
 export class ADUserApi {
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async getAdUserList(
     account_name?: string,
@@ -340,8 +351,8 @@ export class ADUserApi {
     distinguished_name?: string,
     organization_unit?: string,
     status?: string,
-    sort?: string,
-    order?: "asc" | "desc",
+    _sort?: string,
+    _order?: "asc" | "desc",
     page: number = 1,
     per_page: number = 10,
     _opts?: unknown,
@@ -454,13 +465,19 @@ export type PaginationResultCenterListItem = {
 };
 
 export class CenterApi {
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async getCenterList(
-    center_name?: string,
-    user_list?: string[],
+    _center_name?: string,
+    _user_list?: string[],
+    _sort?: string,
+    _order?: "asc" | "desc",
     page: number = 1,
     per_page: number = 10,
+    _opts?: unknown,
   ) {
     const data: PaginationResultCenterListItem = {
       data: [
@@ -482,7 +499,7 @@ export class CenterApi {
     return { data };
   }
 
-  async getCenter(center_cd: string) {
+  async getCenter(center_cd: string, _opts?: unknown) {
     return {
       data: {
         center_cd,
@@ -493,14 +510,17 @@ export class CenterApi {
     };
   }
 
-  async createCenter() {
+  async createCenter(_param?: CenterCreationParams, _opts?: unknown) {
     return { data: "created" };
   }
 }
 
 // ---------- AutoComplete (mock) ----------
 export class AutoCompleteApi {
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async getList() {
     const { mockUsers, mockGroups } = await import("./mock/autoCompleteDb");
@@ -509,14 +529,17 @@ export class AutoCompleteApi {
 }
 
 export class BoxApi {
-  constructor(public config?: unknown) {}
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
 
   async getBoxAccountId(userCd: string, _opts?: unknown) {
     return { data: `box-${userCd}` };
   }
 
   async getContentsPickerToken(accountId: string, _opts?: unknown) {
-    const token: AccessToken = `token-${accountId}`;
+    const token: AccessToken = { accessToken: `token-${accountId}` };
     return { data: token };
   }
 

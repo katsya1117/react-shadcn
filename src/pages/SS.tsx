@@ -6,6 +6,8 @@ import type { SingleValue } from "react-select";
 import type { AutoCompleteData, CreateCollaborationsParams } from "@/api";
 import { Layout } from "@/components/layout/Layout";
 import { BoxManager } from "@/components/common/BoxManager/BoxManager";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
@@ -453,6 +455,19 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         <BoxManager />
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 lg:overflow-hidden">
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-ml-2"
+              onClick={handleBackToShareArea}
+            >
+              <ArrowLeft className="size-4" />
+              ShareArea に戻る
+            </Button>
+          </div>
+
           {isRestoring ? (
             <PathBarSkeleton />
           ) : (
