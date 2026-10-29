@@ -9,12 +9,14 @@ import {
   type CenterCreationParams,
   type CenterInfo,
   type CenterSearchParams,
+  type CenterUpdateParams,
   type PaginationResultCenterListItem,
 } from "@/api";
 
 import Config from "@/config/apiConfig";
 import {
   initialSliceError,
+  parseApiError,
   rejectedMessage,
   setSliceError,
   type SliceError,
@@ -26,14 +28,18 @@ const sliceName = "center";
 
 const api = new CenterApi(Config.apiConfig);
 
+/** センター作成 Action（作成した center_cd を返す） */
 export const createCenter = createAsyncThunk(
   sliceName + "/createCenter",
-  async (param: CenterCreationParams) => {
-    const response = api.createCenter(
-      param,
-      Config.apiOption
-    );
-    return (await response).data;
+  async (param: CenterCreationParams, { rejectWithValue }) => {
+    try {
+      const response = await api.createCenter(param, Config.apiOption);
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(
+        parseApiError(e, e instanceof Error ? e.message : undefined),
+      );
+    }
   }
 );
 
@@ -61,6 +67,43 @@ export const getCenterInfo = createAsyncThunk(
   }
 );
 
+/** センター更新 Action */
+export const updateCenterInfo = createAsyncThunk(
+  sliceName + "/updateCenterInfo",
+  async (
+    param: { centerCd: string; params: CenterUpdateParams },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await api.updateCenter(
+        param.centerCd,
+        param.params,
+        Config.apiOption,
+      );
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(
+        parseApiError(e, e instanceof Error ? e.message : undefined),
+      );
+    }
+  }
+);
+
+/** センター削除 Action */
+export const removeCenter = createAsyncThunk(
+  sliceName + "/removeCenter",
+  async (centerCd: string, { rejectWithValue }) => {
+    try {
+      const response = await api.removeCenter(centerCd, Config.apiOption);
+      return response.data;
+    } catch (e) {
+      return rejectWithValue(
+        parseApiError(e, e instanceof Error ? e.message : undefined),
+      );
+    }
+  }
+);
+
 interface CenterState {
   isLoading: boolean;
   error: SliceError;
@@ -69,6 +112,9 @@ interface CenterState {
     data: PaginationResultCenterListItem | undefined;
   };
   target: CenterInfo | undefined;
+  searchResultDisp: {
+    settingSearched: boolean;
+  };
   create: {
     success: string;
   };
@@ -82,6 +128,9 @@ const initialState: CenterState = {
     data: undefined,
   },
   target: undefined,
+  searchResultDisp: {
+    settingSearched: false,
+  },
   create: {
     success: "",
   },
@@ -112,6 +161,7 @@ const centerSlice = createSlice({
       .addCase(getCenterList.fulfilled, (state, action) => {
         if (action.payload != null) {
           state.list.data = action.payload;
+          state.searchResultDisp.settingSearched = true;
         } else {
           state.error = setSliceError(
             "データの取得に失敗しました。",
@@ -163,9 +213,17 @@ const centerSlice = createSlice({
         }
         state.isLoading = false;
       })
-      .addCase(createCenter.rejected, (state) => {
+      .addCase(createCenter.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = setSliceError(rejectedMessage);
+        state.error = setSliceError(
+          typeof action.payload === "string" ? action.payload : rejectedMessage,
+        );
+      });
+
+    builder
+      // updateCenterInfo の結果は呼び出し側（unwrap）で扱う。削除時は編集対象をクリアする
+      .addCase(removeCenter.fulfilled, (state) => {
+        state.target = undefined;
       });
   },
 });
@@ -185,6 +243,11 @@ export const centerSelector = {
   centerListSelector: () =>
     createSelector(centerRootSelector, (state) => {
       return state.list.data;
+    }),
+
+  searchResultDispSelector: () =>
+    createSelector(centerRootSelector, (state) => {
+      return state.searchResultDisp;
     }),
 
   centerTargetSelector: () =>

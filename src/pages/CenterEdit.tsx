@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { CenterTabsShell } from "@/pages/CenterTabsShell";
@@ -29,12 +30,14 @@ import {
 } from "@/components/ui/sheet";
 import { ConfirmButton } from "@/components/common/Confirm/ConfirmButton";
 import { toast } from "@/components/ui/sonner";
-
-const centersMock = [
-  { code: "c001", name: "東京センター", type: "所属", site: "横浜" },
-  { code: "c002", name: "大阪DR", type: "所属", site: "中部" },
-  { code: "c003", name: "監査チーム", type: "カスタマイズ", site: "横浜" },
-];
+import { LoadingOverlay } from "@/components/common/LoadingOverlay";
+import {
+  centerSelector,
+  getCenterInfo,
+  removeCenter,
+  updateCenterInfo,
+} from "@/redux/slices/centerSlice";
+import type { AppDispatch } from "@/redux/store";
 
 type Member = {
   id: string;
@@ -47,8 +50,16 @@ type Member = {
 const CenterEdit = () => {
   const { center_cd } = useParams<{ center_cd: string }>();
   const navigate = useNavigate();
+  const dispatch: AppDispatch = useDispatch();
+  const target = useSelector(centerSelector.centerTargetSelector());
+  // 別センターの取得結果が残っている場合は無視する
+  const center = target?.center_cd === center_cd ? target : undefined;
 
-  const center = useMemo(() => centersMock.find((c) => c.code === center_cd), [center_cd]);
+  const [centerName, setCenterName] = useState("");
+  const [folderName, setFolderName] = useState("");
+  const [site, setSite] = useState("");
+  const [isSavingCenter, setIsSavingCenter] = useState(false);
+  const [isRemovingCenter, setIsRemovingCenter] = useState(false);
   const [members, setMembers] = useState<Member[]>([
     { id: "u001", name: "佐藤 健",     role: "標準",   isAdmin: true,  guestLabel: "所属" },
     { id: "u002", name: "田中 美咲",   role: "標準",   isAdmin: false, guestLabel: "所属" },
@@ -64,6 +75,68 @@ const CenterEdit = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [newUserId, setNewUserId] = useState("");
   const [newName, setNewName] = useState("");
+  const [, setNewRole] = useState("閲覧のみ");
+
+  useEffect(() => {
+    if (!center_cd) return;
+    dispatch(getCenterInfo(center_cd));
+    return () => {
+      setCenterName("");
+      setFolderName("");
+      setSite("");
+    };
+  }, [center_cd, dispatch]);
+
+  useEffect(() => {
+    if (!center) return;
+    setCenterName(center.center_name ?? "");
+    setFolderName(center.folder_name ?? "");
+    setSite(center.site ?? "");
+  }, [center]);
+
+  const handleCenterSave = async () => {
+    /* istanbul ignore next */ if (!center_cd) return;
+    const trimmedName = centerName.trim();
+    if (!trimmedName) {
+      toast.error("センター名を入力してください");
+      return;
+    }
+    setIsSavingCenter(true);
+    try {
+      await dispatch(
+        updateCenterInfo({
+          centerCd: center_cd,
+          params: {
+            center_name: trimmedName,
+            folder_name: folderName.trim(),
+            site: site.trim(),
+          },
+        }),
+      ).unwrap();
+      toast.success("保存しました");
+      dispatch(getCenterInfo(center_cd));
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "保存に失敗しました");
+    } finally {
+      setIsSavingCenter(false);
+    }
+  };
+
+  const handleCenterRemove = async () => {
+    /* istanbul ignore next */ if (!center_cd) return;
+    setIsRemovingCenter(true);
+    try {
+      await dispatch(removeCenter(center_cd)).unwrap();
+      navigate(UrlPath.CenterManage, {
+        replace: true,
+        state: { deletedCenterCd: center_cd },
+      });
+    } catch (error) {
+      toast.error(typeof error === "string" ? error : "削除に失敗しました");
+    } finally {
+      setIsRemovingCenter(false);
+    }
+  };
 
   return (
     <CenterTabsShell active="edit">
@@ -82,7 +155,7 @@ const CenterEdit = () => {
             </Button>
             <div className="space-y-1">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Center Edit</p>
-              <p className="text-2xl font-semibold">{center?.name ?? "センター編集"}</p>
+              <p className="text-2xl font-semibold">{center?.center_name ?? "センター編集"}</p>
             </div>
             <div className="ml-auto">
               <Button
@@ -97,7 +170,7 @@ const CenterEdit = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="outline">センターコード: {center?.code ?? center_cd ?? "-"}</Badge>
+            <Badge variant="outline">センターコード: {center?.center_cd ?? center_cd ?? "-"}</Badge>
             {center?.site && (
               <span className="rounded-full bg-muted px-3 py-1 text-foreground/70">拠点 {center.site}</span>
             )}
@@ -112,26 +185,45 @@ const CenterEdit = () => {
             <CardDescription>センターの基本情報を確認・編集します。</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {isSavingCenter && <LoadingOverlay />}
             <div className="flex flex-wrap gap-4">
               <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                <Label>センターコード</Label>
-                <Input readOnly value={center?.code ?? center_cd ?? ""} />
+                <Label htmlFor="centerCd">センターコード</Label>
+                <Input id="centerCd" readOnly value={center?.center_cd ?? center_cd ?? ""} />
               </div>
               <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                <Label>センター名</Label>
-                <Input defaultValue={center?.name ?? ""} />
+                <Label htmlFor="centerName">センター名</Label>
+                <Input
+                  id="centerName"
+                  value={centerName}
+                  onChange={(e) => setCenterName(e.target.value)}
+                />
               </div>
               <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                <Label>タイプ</Label>
-                <Input defaultValue={center?.type ?? ""} />
+                <Label htmlFor="centerType">タイプ</Label>
+                <Input id="centerType" readOnly value={center?.type ?? ""} />
               </div>
               <div className="space-y-1 w-full md:w-[calc(50%-8px)]">
-                <Label>拠点</Label>
-                <Input defaultValue={center?.site ?? ""} />
+                <Label htmlFor="centerSite">拠点</Label>
+                <Input
+                  id="centerSite"
+                  value={site}
+                  onChange={(e) => setSite(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1 w-full">
+                <Label htmlFor="centerFolder">フォルダ名</Label>
+                <Input
+                  id="centerFolder"
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
+                />
               </div>
             </div>
             <div className="flex justify-end">
-              <Button size="sm">保存</Button>
+              <Button size="sm" onClick={handleCenterSave} disabled={isSavingCenter}>
+                保存
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -224,6 +316,7 @@ const CenterEdit = () => {
                         toast(`${newName} を追加しました`);
                         setNewUserId("");
                         setNewName("");
+                        setNewRole("閲覧のみ");
                       }}
                     >
                       追加
@@ -299,17 +392,15 @@ const CenterEdit = () => {
             <CardDescription>このセンターを削除すると元に戻せません。</CardDescription>
           </CardHeader>
           <CardContent>
+            {isRemovingCenter && <LoadingOverlay />}
             <ConfirmButton
               variant="destructive"
               buttonLabel="削除する"
               dialogTitle="本当に削除しますか？"
               dialogBody={
-                <>{center?.name ?? "このセンター"} を削除します。この操作は取り消せません。</>
+                <>{center?.center_name ?? "このセンター"} を削除します。この操作は取り消せません。</>
               }
-              onHandle={async () => {
-                toast(`${center?.name ?? "センター"} を削除しました`);
-                navigate(UrlPath.CenterManage);
-              }}
+              onHandle={handleCenterRemove}
             />
           </CardContent>
         </Card>

@@ -73,10 +73,32 @@ const UserManage = () => {
       replace: true,
       state: null,
     });
-    if (searchCondition) {
-      dispatch(getUserList(searchCondition));
-    }
-  }, [location.state, navigate, dispatch, searchCondition]);
+  }, [location.state, navigate]);
+
+  // 編集・削除から戻ってきたときに、表示中の一覧を最新化する（未検索なら何もしない）
+  useEffect(() => {
+    if (!isSearched || !searchCondition) return;
+    const refetch = async () => {
+      const result = await dispatch(getUserList(searchCondition));
+      const items = (result.payload as { items?: unknown[] } | undefined)
+        ?.items;
+      // TODO(実API確認): 範囲外ページ（削除等で最終ページが空になった場合）を実APIが
+      // 「空配列で 200」「404」のどちらで返すかを確認し、最終仕様に合わせてここを直すこと。
+      // 現状の仮仕様: 取得成功・0件・page > 1 のときは 1 ページ目で取り直す。
+      // （404 の場合は rejected になりここに入らないため、rejected 側の扱いも合わせて決める）
+      const page = Number(searchCondition.page ?? 1);
+      if (
+        result.meta?.requestStatus === "fulfilled" &&
+        page > 1 &&
+        (items?.length ?? 0) === 0
+      ) {
+        dispatch(getUserList({ ...searchCondition, page: 1 }));
+      }
+    };
+    refetch();
+    // マウント時のみ実行する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     tableContainerRef.current?.scrollTo({ top: 0 });
@@ -255,7 +277,8 @@ const UserManage = () => {
               <CustomPagination<UserSearchParams>
                 pagination={list.pagination}
                 onHandle={(t) => {
-                  dispatch(getUserList(t));
+                  // ページネーションURLは page/per_page のみのため、検索条件を引き継ぐ
+                  dispatch(getUserList({ ...searchCondition, ...t }));
                 }}
               />
             </div>

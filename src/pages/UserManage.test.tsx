@@ -305,7 +305,7 @@ describe("UserManage", () => {
           searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
           list: {
             ...baseUserState.list,
-            searchCondition: {},
+            searchCondition: { user_name: "taro" },
             data: {
               items: [
                 {
@@ -340,8 +340,65 @@ describe("UserManage", () => {
     const paginateButton = screen.getByTestId("pagination-mock");
     await user.click(paginateButton);
 
+    // ページネーションURLは page のみのため、保存済みの検索条件を引き継ぐ
     expect(mockedGetUserList).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 2 }),
+      expect.objectContaining({ page: 2, user_name: "taro" }),
     );
+  });
+
+  it("検索済みで戻ってきたときは、保存済みの検索条件で一覧を再取得する", () => {
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: { ...baseUserState.list, searchCondition: { user_name: "taro" }, data: undefined },
+        },
+      },
+    });
+
+    expect(getUserList).toHaveBeenCalledWith({ user_name: "taro" });
+  });
+
+  it("未検索のときはマウント時に一覧を再取得しない", () => {
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: basePreloadedState,
+    });
+
+    expect(getUserList).not.toHaveBeenCalled();
+  });
+
+  // 実API確認後に仕様が変わる可能性あり（UserManage.tsx の TODO を参照）
+  it("再取得結果が0件で page > 1 のときは 1 ページ目で取り直す", async () => {
+    mockedGetUserList.mockImplementationOnce((() => () =>
+      Promise.resolve({
+        meta: { requestStatus: "fulfilled" },
+        payload: { items: [] },
+      })) as any);
+    setupWithStore(<UserManage />, {
+      reducers,
+      preloadedState: {
+        ...basePreloadedState,
+        user: {
+          ...baseUserState,
+          searchResultDisp: { ...baseUserState.searchResultDisp, settingSearched: true },
+          list: {
+            ...baseUserState.list,
+            searchCondition: { user_name: "taro", page: 3 },
+            data: undefined,
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(getUserList).toHaveBeenNthCalledWith(2, {
+        user_name: "taro",
+        page: 1,
+      });
+    });
   });
 });

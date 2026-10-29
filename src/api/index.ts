@@ -434,9 +434,19 @@ export class ADUserApi {
 }
 
 // ---------- Center (mock) ----------
+export type CenterType = "所属" | "カスタマイズ";
+
 export type CenterCreationParams = {
   center_name: string;
   folder_name?: string;
+  site?: string;
+  type?: CenterType;
+};
+
+export type CenterUpdateParams = {
+  center_name?: string;
+  folder_name?: string;
+  site?: string;
 };
 
 export type CenterInfo = {
@@ -444,6 +454,8 @@ export type CenterInfo = {
   center_name: string;
   folder_name: string;
   guest?: boolean;
+  type?: CenterType;
+  site?: string;
 };
 
 export type CenterSearchParams = {
@@ -455,13 +467,17 @@ export type CenterSearchParams = {
   per_page?: number;
 };
 
+// 一覧表示用（CenterInfo + 表示用の付加情報）
+export type CenterListItem = CenterInfo & {
+  members: number;
+  type: CenterType;
+  site: string;
+};
+
 export type PaginationResultCenterListItem = {
-  data: CenterInfo[];
-  pagination: {
-    total: number;
-    page: number;
-    per_page: number;
-  };
+  data: CenterListItem[];
+  items: CenterListItem[]; // CenterManage は items を参照するため互換用エイリアス
+  pagination: Pagination;
 };
 
 export class CenterApi {
@@ -471,47 +487,55 @@ export class CenterApi {
   }
 
   async getCenterList(
-    _center_name?: string,
-    _user_list?: string[],
+    center_name?: string,
+    user_list?: string[],
     _sort?: string,
     _order?: "asc" | "desc",
-    page: number = 1,
-    per_page: number = 10,
+    page: number | string = 1,
+    per_page: number | string = 10,
     _opts?: unknown,
   ) {
-    const data: PaginationResultCenterListItem = {
-      data: [
-        {
-          center_cd: "c001",
-          center_name: "東京センター",
-          folder_name: "/tokyo",
-          guest: false,
-        },
-        {
-          center_cd: "c002",
-          center_name: "大阪DR",
-          folder_name: "/osaka-dr",
-          guest: true,
-        },
-      ],
-      pagination: { total: 2, page, per_page },
-    };
+    const { mockCenterDb } = await import("./mock/centersDb");
+    // ページネーションURLのクエリ由来で文字列が来ることがあるため数値化する
+    const data = mockCenterDb.list({
+      center_name,
+      user_list,
+      page: Number(page) || 1,
+      per_page: Number(per_page) || 10,
+    });
     return { data };
   }
 
   async getCenter(center_cd: string, _opts?: unknown) {
-    return {
-      data: {
-        center_cd,
-        center_name: `センター ${center_cd}`,
-        folder_name: `/centers/${center_cd}`,
-        guest: false,
-      } as CenterInfo,
-    };
+    const { mockCenterDb } = await import("./mock/centersDb");
+    // 存在しない場合は data が undefined（slice 側で「取得失敗」として扱う）
+    return { data: mockCenterDb.get(center_cd) };
   }
 
-  async createCenter(_param?: CenterCreationParams, _opts?: unknown) {
-    return { data: "created" };
+  /** 作成したセンターの center_cd を返す */
+  async createCenter(param: CenterCreationParams, _opts?: unknown) {
+    const { mockCenterDb } = await import("./mock/centersDb");
+    return { data: mockCenterDb.create(param) };
+  }
+
+  async updateCenter(
+    center_cd: string,
+    param: CenterUpdateParams,
+    _opts?: unknown,
+  ) {
+    const { mockCenterDb } = await import("./mock/centersDb");
+    if (!mockCenterDb.update(center_cd, param)) {
+      throw new Error("センターが見つかりません。");
+    }
+    return { data: { ok: true } };
+  }
+
+  async removeCenter(center_cd: string, _opts?: unknown) {
+    const { mockCenterDb } = await import("./mock/centersDb");
+    if (!mockCenterDb.remove(center_cd)) {
+      throw new Error("センターが見つかりません。");
+    }
+    return { data: { ok: true } };
   }
 }
 
