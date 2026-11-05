@@ -135,6 +135,18 @@ export const useBoxExplorer = ({
         }
       }
 
+      // パターン2: 戻る/進むボタン経由
+      // handleGoBack/Forward が履歴の位置を先に更新しているため、このイベントは次の「重複通知」の判定に
+      // 一致してしまう。そのため重複判定より前に処理する。履歴は更新済みなので、現在地の更新だけ行う。
+      if (isNavigatingRef.current) {
+        isNavigatingRef.current = false;
+        setCurrentFolder(nextFolder);
+        dispatch(
+          ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
+        );
+        return;
+      }
+
       // 同じフォルダの再通知は無視（SDK が冗長に発火するケースの保険）
       if (folderHistoryRef.current[historyIndexRef.current] === nextFolder.id) {
         return;
@@ -144,12 +156,6 @@ export const useBoxExplorer = ({
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
       );
-
-      // パターン2: 戻る/進むボタン経由
-      if (isNavigatingRef.current) {
-        isNavigatingRef.current = false;
-        return;
-      }
 
       // パターン3: ユーザー操作（クリック・パンくず）による移動
       const currentHistory = folderHistoryRef.current;
