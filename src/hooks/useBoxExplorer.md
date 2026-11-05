@@ -116,15 +116,20 @@ index:                ^
 
 ### 2. 深いフォルダへの復元
 
-Box SDK の `show()` に渡せる初期フォルダはルートだけ。
-ルートより深い位置に復帰したい場合は以下の流れ：
+`show()` の第1引数（`rootFolderId`）はパンくずの起点になる。復元先は、`options` の `currentFolderId` で
+指定すると、ルートを経由せず最初から復元先を表示できる（SS.tsx で `show` に渡している）。
 
-1. SDK 起動時にルートで初期化
-2. `navigate` イベントでルート到達を検知
-3. `navigateTo(復元先のID)` を呼んでジャンプ
-4. 復元先到達を検知して復元完了
+1. SDK 起動時に、復元先を `currentFolderId` に指定して表示（ルートの取得は発生しない）
+2. `navigate` イベントで復元先への到達を検知して復元完了
 
 `isRestoring` がこの間 `true` になるため、UI 側でスケルトンを出せる。
+
+- `currentFolderId` は公式ドキュメントに記載がない。Box UI Elements v23.0.0 のソースでは、`show()` の
+  options が ContentExplorer の props にそのまま渡され、`componentDidMount` で最初に取得される。
+  バージョンを上げるときは、この挙動が維持されているか確認すること。
+- パンくずは、取得したフォルダの `path_collection` を `rootFolderId` から先で切り出して作られる。
+  復元先がルートの子孫でない場合（Box 上で移動された等）は、All Files からの全階層が出る。
+- 保険として、`navigate` でルート到達を検知したら `navigateTo(復元先のID)` を呼ぶ分岐も残している。
 
 ### 3. handleNavigate の3パターン
 
@@ -231,6 +236,12 @@ SDK はその直後に `navigate` イベントを発火する。
 ### Q. 戻る/進むボタンを押したら履歴が二重に積まれる
 
 → `isNavigatingRef` のセット忘れ。`navigateTo` の前に必ず `true` を立てる。
+
+### Q. 戻る/進むを押したのに、現在地（パスバー等）が更新されない
+
+→ `handleGoBack/Forward` は、`navigateTo` の前に履歴の位置を更新している。そのため、後から届く
+`navigate` イベントは、「同じフォルダの再通知」の判定に一致してしまう。
+`handleNavigate` では、**`isNavigatingRef` の判定を、重複判定より前に置き**、その中で現在地も更新すること。
 
 ### Q. 連続でボタンを押すと変な位置に飛ぶ
 
