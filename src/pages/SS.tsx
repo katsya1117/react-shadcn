@@ -31,6 +31,8 @@ import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
 import { PathBar } from "@/components/ss/PathBar";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
+import { getBoxDevToken } from "@/lib/boxDevToken";
+import { boxFolderCache, isBoxFolderCacheEnabled } from "@/lib/boxFolderCache";
 import { useAppDispatch } from "@/redux/hooks";
 import { DEFAULT_ROLE } from "@/constants/ssConstants";
 import { UrlPath } from "@/constants/UrlPath";
@@ -111,8 +113,14 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
   const isLogin = useSelector(userSelector.isLoginSelector());
   const userCd = useSelector(userSelector.loginUserCdSelector());
   const token = useSelector(boxSelector.tokenSelector());
+  // 開発時のみ、開発用トークンがあれば、ログイン状態やモックのトークンに関係なく、それで接続する。
+  const devToken = getBoxDevToken();
   const accessToken =
-    token?.accessToken ?? localStorage.getItem("box_dev_token") ?? undefined;
+    devToken ??
+    token?.accessToken ??
+    localStorage.getItem("box_dev_token") ??
+    undefined;
+  const hasBoxToken = Boolean(token?.accessToken) || Boolean(devToken);
   const groups = useSelector(autoCompleteSelector.groupsSelector());
   const collaborationsByFolderId = useSelector(ssSelector.byFolderIdSelector());
   const rememberedCurrentFolder = useSelector(
@@ -164,6 +172,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     handleNavigate,
     handleGoBack,
     handleGoForward,
+    handleRefresh,
   } = useBoxExplorer({
     rootFolderId,
     initialFolder,
@@ -216,18 +225,32 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     /* istanbul ignore next */ if (typeof window === "undefined") return;
     if (explorerInstance) return;
     const BoxGlobal = window.Box;
-    if (!BoxGlobal?.ContentExplorer) return;
+    if (!BoxGlobal?.ContentExplorer) {
+      if (devToken) {
+        console.warn(
+          "[box] window.Box.ContentExplorer がありません。index.html の Box UI Elements の読み込みを確認してください。",
+        );
+      }
+      return;
+    }
     const explorer = new BoxGlobal.ContentExplorer();
     setExplorerInstance(explorer);
     explorerRef.current = explorer;
-  }, [explorerInstance, explorerRef]);
+  }, [explorerInstance, explorerRef, devToken]);
 
   // show() 済みかどうか。hide() は show() 前に呼ぶと例外になるため、unmount 時の判定に使う。
   const hasShownRef = useRef(false);
 
   // ログイン済み & トークンがあれば Explorer を表示
   useEffect(() => {
-    if (!explorerInstance || !isLogin || !accessToken) return;
+    if (!explorerInstance || !accessToken) return;
+    if (!isLogin && !devToken) return;
+    if (devToken) {
+      // 診断用。トークンの中身は出さず、長さだけを出す（Box の開発用トークンは通常 32 文字）。
+      console.info(
+        `[box] 開発用トークンで接続します（長さ ${devToken.length}）。401 になる場合は、期限切れ（60 分）か、トークンの誤りです。`,
+      );
+    }
     explorerInstance.show(rootFolderId, accessToken, {
       container: ".box-container",
       // 深いフォルダからの復帰時は、ルートを経由せず最初から離脱時のフォルダを表示する（ルートの取得を省く）。
@@ -237,6 +260,13 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         ? { currentFolderId: initialRestoreTargetIdRef.current }
         : {}),
       canPreview: false,
+      // フォルダ取得を 5 分間キャッシュする（Explorer は訪問済みのフォルダでも毎回通信するため）。
+      ...(isBoxFolderCacheEnabled()
+        ? {
+            requestInterceptor: boxFolderCache.requestInterceptor,
+            responseInterceptor: boxFolderCache.responseInterceptor,
+          }
+        : {}),
       // このアプリの Explorer はコラボレート対象フォルダを選ぶための画面。
       // ファイル・フォルダの変更系操作は画面から行わせない（UI 上のボタン非表示のみで、Box 側の権限は変えない）。
       canUpload: false,
@@ -246,7 +276,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       size: "large",
     });
     hasShownRef.current = true;
-  }, [explorerInstance, rootFolderId, accessToken, isLogin]);
+  }, [explorerInstance, rootFolderId, accessToken, isLogin, devToken]);
 
   // 画面を離れるときに Explorer を破棄する。
   // hide() を呼ばないと、Box 側の React ツリー（API インスタンスとキャッシュ）が unmount されず残り続ける。
@@ -320,6 +350,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
   }, [currentFolder.id, dispatch, isListOpen]);
 
+
   // 開いたときに取得する（キャッシュが 5 分以内なら取得しない）。
   useEffect(() => {
     if (isRestoring || !isListOpen) return;
@@ -331,6 +362,21 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
   }, [isRestoring, isListOpen, currentFolder.id, dispatch]);
 
   // ----- パスバーのアクション -----
+
+  // 更新ボタン: 今見ている画面の情報を、まとめて最新にする。
+  // 1. フォルダ取得のキャッシュ（Explorer）を全て破棄して、現在のフォルダを取り直す（先に破棄する。逆だと保存済みの内容が返る）
+  // 2. コラボレーター一覧のキャッシュを全て破棄して、一覧が開いていれば、現在のフォルダの一覧を取り直す
+  //    （追加・削除・ロール変更の後と同じ処理。一覧には親フォルダからの継承分も含まれ、他の管理者が親フォルダを
+  //     変更すると配下の一覧も古くなるため、現在のフォルダ以外も破棄する。畳んでいれば、次に開いたときに取得する）
+  const handleRefreshAll = useCallback(async () => {
+    boxFolderCache.clear();
+    handleRefresh();
+    try {
+      await refreshCollaborations();
+    } catch {
+      toast.error("コラボレーター一覧の取得に失敗しました");
+    }
+  }, [handleRefresh, refreshCollaborations]);
 
   const handleCopyPath = useCallback(async () => {
     try {
@@ -545,6 +591,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
               canGoForward={canGoForward}
               onGoBack={handleGoBack}
               onGoForward={handleGoForward}
+              onRefresh={() => void handleRefreshAll()}
               onCopyPath={handleCopyPath}
               onOpenBox={handleOpenBox}
               onOpenExplorer={handleOpenExplorer}
@@ -554,7 +601,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
           <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1 lg:flex-row lg:items-stretch lg:overflow-hidden">
             <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">
               <Card className="relative flex min-h-0 flex-1 flex-col gap-0 overflow-hidden py-0">
-                {token?.accessToken ? (
+                {hasBoxToken ? (
                   <div className="box-container h-full min-h-96 flex-1 [&_.be-logo]:hidden [&_.be-logo-container]:hidden [&_.be-header]:pl-3" />
                 ) : (
                   <div className="flex min-h-96 flex-1 items-center justify-center text-sm text-muted-foreground">

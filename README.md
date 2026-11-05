@@ -17,6 +17,28 @@ $ yarn test
 $ yarn test:coverage
 ```
 
+## ローカルで Box の Explorer を表示する
+
+SS 画面（`/job/ShareArea/:rootFolderId`）の Box Content Explorer は、このリポジトリのままでは表示されない。
+API 層がモックで、ログイン処理もないため（`isLogin` が true にならず、モックが返す Box トークンも偽物）。
+開発時は、**開発用トークン** で接続できる。ログインやモックのトークンは要らない。
+
+1. Box Developer Console で、アプリの開発用トークンを発行する（有効期間は 60 分）。
+2. 次のどちらかで渡す。
+   - **ブラウザの localStorage**（再読み込みだけで反映。期限が切れたときの差し替えに便利）
+     ```js
+     localStorage.setItem("box_dev_token", "発行したトークン");
+     ```
+   - **`.env.local`**（`.env.example` をコピーして `VITE_BOX_DEV_TOKEN` を設定。開発サーバーの再起動が必要）
+3. `yarn dev` で起動し、ShareArea 画面から SS 画面を開く。
+
+- **CORS の登録が必要**: Box Developer Console の対象アプリ → Configuration → CORS Domains に、`http://localhost:5174` を登録する（スキーム・ホスト・ポートまで完全一致。末尾のスラッシュなし）。未登録だと、Explorer は `403 cors_origin_not_whitelisted` になる。
+- 開発サーバーのポートは 5174 に固定している（`vite.config.ts` の `strictPort`）。使用中のときは、別のポートへ移らず、エラーで止まる。使用中のプロセスを止めてから起動する。
+- 開発サーバー（`import.meta.env.DEV`）のときだけ有効。本番ビルドでは、localStorage にトークンが残っていても使われない。
+- 開いたルートのフォルダ（`src/config/shareAreaConfig.ts` の `boxFolderId`）に、トークンのアカウントがアクセスできる必要がある。
+- 表示されないとき: ブラウザのコンソールを確認する。`window.Box.ContentExplorer がありません` と出る場合は、`index.html` の Box UI Elements（CDN）の読み込みに失敗している。
+- 実装: `src/lib/boxDevToken.ts`
+
 ## 構成図
 
 ```

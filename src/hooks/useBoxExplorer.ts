@@ -28,6 +28,8 @@ type UseBoxExplorerResult = {
   handleNavigate: (item: BoxFolder) => void;
   handleGoBack: () => void;
   handleGoForward: () => void;
+  /** 現在のフォルダを取り直す。結果のイベントで、現在地の名前・パスが最新になる（履歴は変えない） */
+  handleRefresh: () => void;
 };
 
 /**
@@ -57,6 +59,8 @@ export const useBoxExplorer = ({
   const isRestoringRef = useRef(Boolean(restoreTargetId));
   /** 復元先のフォルダID。初期化以後は変わらない。 */
   const restoreTargetIdRef = useRef(restoreTargetId);
+  /** 更新（handleRefresh）の結果のイベントを待っているフォルダ ID。待っていなければ undefined。 */
+  const refreshTargetIdRef = useRef<string | undefined>(undefined);
   /** 履歴インデックス。handleGoBack/Forward で「いまの位置 ±1」を即座に読むのに使う。 */
   const historyIndexRef = useRef(savedIndex);
   /** 履歴配列本体。state も持つが、handleNavigate 中で同期的に最新値を参照したいので ref も併用。 */
@@ -127,6 +131,20 @@ export const useBoxExplorer = ({
         if (targetId && nextFolder.id === targetId) {
           isRestoringRef.current = false;
           setIsRestoring(false);
+          setCurrentFolder(nextFolder);
+          dispatch(
+            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
+          );
+          return;
+        }
+      }
+
+      // 更新（handleRefresh）の結果: 現在地の名前・パスだけを最新にする。履歴は変えない。
+      // 更新の結果より先に別のフォルダのイベントが来たら、更新の待ちを解除して、通常の移動として扱う。
+      if (refreshTargetIdRef.current !== undefined) {
+        const refreshTargetId = refreshTargetIdRef.current;
+        refreshTargetIdRef.current = undefined;
+        if (nextFolder.id === refreshTargetId) {
           setCurrentFolder(nextFolder);
           dispatch(
             ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
@@ -218,6 +236,21 @@ export const useBoxExplorer = ({
     explorerRef.current?.navigateTo?.(folderId);
   }, [canGoForward, syncHistory]);
 
+  /**
+   * 更新：現在のフォルダを Box から取り直す。
+   * navigateTo でフォルダの取得を起こし、結果の navigate イベントを、更新として扱う（handleNavigate を参照）。
+   * キャッシュを使っている場合は、呼び出し側が、先にキャッシュを破棄すること（そうしないと、保存済みの内容が返る）。
+   */
+  const handleRefresh = useCallback(() => {
+    // 復元中は何もしない。インスタンスがなければ、結果のイベントが来ず待ち状態が残るため、何もしない。
+    if (isRestoringRef.current) return;
+    const explorer = explorerRef.current;
+    if (!explorer?.navigateTo) return;
+    refreshTargetIdRef.current = currentFolder.id;
+    // navigateTo は、this を使うため、メソッドとして呼ぶ
+    explorer.navigateTo(currentFolder.id);
+  }, [currentFolder.id]);
+
   return {
     explorerRef,
     currentFolder,
@@ -229,5 +262,6 @@ export const useBoxExplorer = ({
     handleNavigate,
     handleGoBack,
     handleGoForward,
+    handleRefresh,
   };
 };

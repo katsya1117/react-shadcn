@@ -52,6 +52,7 @@ const setupHook = (options: Options = {}) => {
     act(() => result.current.handleNavigate(folder(id, type)));
   const goBack = () => act(() => result.current.handleGoBack());
   const goForward = () => act(() => result.current.handleGoForward());
+  const refresh = () => act(() => result.current.handleRefresh());
 
   /** 履歴の現在位置と、現在地・Redux の保存値をまとめて読む */
   const state = () => ({
@@ -64,7 +65,17 @@ const setupHook = (options: Options = {}) => {
     reduxIndex: store.getState().ss.historyIndexByRootId[ROOT],
   });
 
-  return { result, store, dispatchSpy, navigateTo, navigate, goBack, goForward, state };
+  return {
+    result,
+    store,
+    dispatchSpy,
+    navigateTo,
+    navigate,
+    goBack,
+    goForward,
+    refresh,
+    state,
+  };
 };
 
 describe("useBoxExplorer", () => {
@@ -306,6 +317,115 @@ describe("useBoxExplorer", () => {
 
       expect(navigateTo.mock.calls.map((c) => c[0])).toEqual(["B", "A"]);
       expect(state()).toMatchObject({ index: 1 });
+    });
+  });
+
+  describe("更新（現在のフォルダを取り直す）", () => {
+    /** 更新後に Explorer が発火する navigate イベント（フォルダ名が変わっている） */
+    const renamed = (id: string): BoxFolder => ({
+      id,
+      type: "folder",
+      name: "renamed",
+      path_collection: { entries: [{ id: "0", name: "All Files" }, { id: ROOT, name: "R-renamed" }] },
+    });
+
+    it("現在のフォルダへ navigateTo を呼ぶ", () => {
+      const { navigate, refresh, navigateTo } = setupHook();
+      navigate("A");
+
+      refresh();
+
+      expect(navigateTo).toHaveBeenCalledTimes(1);
+      expect(navigateTo).toHaveBeenCalledWith("A");
+    });
+
+    it("結果のイベントで、現在地の名前とパスが最新になる。履歴と位置は変わらない", () => {
+      const { navigate, refresh, result, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      refresh();
+
+      act(() => result.current.handleNavigate(renamed("B")));
+
+      expect(result.current.currentFolder).toEqual({
+        id: "B",
+        name: "renamed",
+        pathCollection: {
+          entries: [
+            { id: "0", name: "All Files" },
+            { id: ROOT, name: "R-renamed" },
+          ],
+        },
+      });
+      expect(state()).toMatchObject({
+        history: [ROOT, "A", "B"],
+        index: 2,
+        reduxCurrent: "B",
+        reduxHistory: [ROOT, "A", "B"],
+      });
+    });
+
+    it("更新の後に続けてフォルダを開くと、通常どおり履歴に積まれる", () => {
+      const { navigate, refresh, result, state } = setupHook();
+      navigate("A");
+      refresh();
+      act(() => result.current.handleNavigate(renamed("A")));
+
+      navigate("B");
+
+      expect(state()).toMatchObject({ current: "B", history: [ROOT, "A", "B"], index: 2 });
+    });
+
+    it("更新のイベントが重複して届いても、2 回目は無視される", () => {
+      const { navigate, refresh, result, dispatchSpy } = setupHook();
+      navigate("A");
+      refresh();
+      act(() => result.current.handleNavigate(renamed("A")));
+      dispatchSpy.mockClear();
+
+      navigate("A");
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+
+    it("更新の結果が来る前に、別のフォルダを開いたら、通常の移動として扱う（更新の待ちは解除される）", () => {
+      const { navigate, refresh, state } = setupHook();
+      navigate("A");
+      refresh();
+
+      navigate("B"); // 更新の結果（A）より先に、B のイベントが来た
+
+      expect(state()).toMatchObject({ current: "B", history: [ROOT, "A", "B"], index: 2 });
+    });
+
+    it("「戻る」の最中に更新を押しても、戻るの処理を壊さない", () => {
+      const { navigate, goBack, refresh, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      goBack(); // 位置 1（A へ移動中）
+      navigate("A"); // 戻るの結果
+      refresh();
+
+      expect(state()).toMatchObject({ current: "A", history: [ROOT, "A", "B"], index: 1 });
+    });
+
+    it("Explorer のインスタンスがないときは、何もしない（待ち状態にならない）", () => {
+      const { navigate, result, state } = setupHook();
+      navigate("A");
+      result.current.explorerRef.current = undefined;
+
+      act(() => result.current.handleRefresh());
+      navigate("B");
+
+      expect(state()).toMatchObject({ current: "B", history: [ROOT, "A", "B"], index: 2 });
+    });
+
+    it("復元中は、何もしない", () => {
+      const { result, navigateTo } = setupHook({ restoreTargetId: "T" });
+
+      act(() => result.current.handleRefresh());
+
+      expect(navigateTo).not.toHaveBeenCalled();
     });
   });
 

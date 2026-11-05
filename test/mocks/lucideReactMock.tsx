@@ -15,6 +15,7 @@ export const ChevronDown = makeIcon("chevron-down");
 export const ChevronDownIcon = makeIcon("chevron-down-icon");
 export const ChevronLeft = makeIcon("chevron-left");
 export const ChevronRight = makeIcon("chevron-right");
+export const RefreshCw = makeIcon("refresh-cw");
 export const ChevronRightIcon = makeIcon("chevron-right-icon");
 export const ChevronsLeft = makeIcon("chevrons-left");
 export const ChevronsRight = makeIcon("chevrons-right");

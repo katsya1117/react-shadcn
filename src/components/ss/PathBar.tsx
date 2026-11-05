@@ -5,6 +5,7 @@ import {
   ExternalLink,
   Folder,
   FolderOpen,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ type PathBarProps = {
   canGoForward: boolean;
   onGoBack: () => void;
   onGoForward: () => void;
+  /** 今見ている画面の情報（フォルダの内容、パス、コラボレーター一覧）を、まとめて最新の情報に更新する */
+  onRefresh: () => void;
   onCopyPath: () => void;
   onOpenBox: () => void;
   onOpenExplorer: () => void;
@@ -93,6 +96,7 @@ export const PathBar = ({
   canGoForward,
   onGoBack,
   onGoForward,
+  onRefresh,
   onCopyPath,
   onOpenBox,
   onOpenExplorer,
@@ -146,6 +150,21 @@ export const PathBar = ({
               </Button>
             </TooltipTrigger>
             <TooltipContent>進む</TooltipContent>
+          </Tooltip>
+          {/* 戻る/進むと並べて置く（ブラウザの「戻る/進む/更新」と同じ並び） */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className={`shrink-0 ${pathBarIconButtonClass}`}
+                onClick={onRefresh}
+                aria-label="最新の情報に更新"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>最新の情報に更新（フォルダの内容・パス・コラボレーター）</TooltipContent>
           </Tooltip>
 
           <Folder className="h-4 w-4 shrink-0 text-muted-foreground/75" />

@@ -122,18 +122,19 @@ export const CollaborationPanel = ({
         <Separator />
 
         <div className="flex min-h-0 flex-col gap-2 data-[open=true]:flex-1" data-open={isListOpen}>
+          {/* 開閉アイコンは、タイトルの右側に置く。畳んでいるときは右向き（▶）、開いているときは下向き（▼） */}
           <button
             type="button"
             className="flex w-full items-center gap-1 text-left text-sm font-medium"
             aria-expanded={isListOpen}
             onClick={onToggleList}
           >
+            コラボレータ一覧
             {isListOpen ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
               <ChevronRight className="h-4 w-4" />
             )}
-            コラボレータ一覧
           </button>
 
           {isListOpen && (

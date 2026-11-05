@@ -18,6 +18,10 @@ export default defineConfig({
   server: {
     host: true,
     port: 5174,
+    // 使用中のときに別のポートへ移らず、エラーで止める。
+    // Box の CORS 設定（Developer Console の CORS Domains）は、ポートまで完全一致で登録するため、
+    // ポートが変わると Box Explorer が 403（cors_origin_not_whitelisted）になる。
+    strictPort: true,
     watch: {
       usePolling: true,
     },

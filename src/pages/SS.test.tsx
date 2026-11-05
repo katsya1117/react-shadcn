@@ -24,8 +24,9 @@ jest.mock("@/components/common/BoxManager/BoxManager", () => ({
 
 jest.mock("@/components/ss/PathBar", () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  PathBar: ({ onCopyPath, onGoBack, onGoForward, onOpenBox, onOpenExplorer }: any) => (
+  PathBar: ({ onCopyPath, onGoBack, onGoForward, onRefresh, onOpenBox, onOpenExplorer }: any) => (
     <div data-testid="path-bar">
+      <button onClick={onRefresh}>refresh-folder</button>
       <button onClick={onCopyPath}>copy-path</button>
       <button onClick={onGoBack}>go-back</button>
       <button onClick={onGoForward}>go-forward</button>
@@ -102,6 +103,8 @@ jest.mock("@/components/ss/CollaborationPanel", () => ({
 }));
 
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
+import { configureBoxDevToken } from "@/lib/boxDevToken";
+import { boxFolderCache, configureBoxFolderCache } from "@/lib/boxFolderCache";
 import { UrlPath } from "@/constants/UrlPath";
 import { setup, setupWithStore } from "@test-utils";
 import {
@@ -136,6 +139,7 @@ const makeBoxExplorerMock = (
   handleNavigate: jest.fn(),
   handleGoBack: jest.fn(),
   handleGoForward: jest.fn(),
+  handleRefresh: jest.fn(),
   ...overrides,
 });
 
@@ -1274,6 +1278,93 @@ describe("Explorer の復元表示と破棄", () => {
 
   afterEach(() => {
     delete (window as any).Box;
+    configureBoxFolderCache({ enabled: true });
+  });
+
+  it("フォルダ取得のキャッシュが有効なとき、show() に requestInterceptor / responseInterceptor を渡す", async () => {
+    const mockShow = installExplorer();
+
+    makeStore(undefined, loggedIn);
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    expect(mockShow.mock.calls[0][2]).toMatchObject({
+      requestInterceptor: boxFolderCache.requestInterceptor,
+      responseInterceptor: boxFolderCache.responseInterceptor,
+    });
+  });
+
+  it("フォルダ取得のキャッシュが無効なとき（VITE_BOX_FOLDER_CACHE=false）は、中継処理を渡さない", async () => {
+    configureBoxFolderCache({ enabled: false });
+    const mockShow = installExplorer();
+
+    makeStore(undefined, loggedIn);
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("requestInterceptor");
+    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("responseInterceptor");
+  });
+
+  describe("開発用トークン（ローカル開発）", () => {
+    afterEach(() => {
+      localStorage.removeItem("box_dev_token");
+      configureBoxDevToken({ enabled: false });
+    });
+
+    it("有効で開発用トークンがあれば、ログインしていなくても Explorer を表示し、そのトークンで接続する", async () => {
+      configureBoxDevToken({ enabled: true });
+      localStorage.setItem("box_dev_token", "dev-123");
+      const mockShow = installExplorer();
+
+      makeStore(); // 未ログイン・Redux のトークンなし
+
+      await waitFor(() =>
+        expect(mockShow).toHaveBeenCalledWith(
+          VALID_ROOT_FOLDER_ID,
+          "dev-123",
+          expect.any(Object),
+        ),
+      );
+      expect(screen.queryByText("Box に接続中...")).not.toBeInTheDocument();
+    });
+
+    it("Redux にモックのトークンがあっても、開発用トークンを優先する", async () => {
+      configureBoxDevToken({ enabled: true });
+      localStorage.setItem("box_dev_token", "dev-123");
+      const mockShow = installExplorer();
+
+      makeStore(undefined, loggedIn); // Redux のトークンは "test-token"
+
+      await waitFor(() => expect(mockShow).toHaveBeenCalled());
+      expect(mockShow.mock.calls[0][1]).toBe("dev-123");
+    });
+
+    it("無効（既定）のときは、localStorage にトークンがあっても、未ログインなら表示しない", async () => {
+      localStorage.setItem("box_dev_token", "dev-123");
+      const mockShow = installExplorer();
+
+      makeStore();
+
+      await waitFor(() =>
+        expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
+      );
+      expect(mockShow).not.toHaveBeenCalled();
+      expect(screen.getByText("Box に接続中...")).toBeInTheDocument();
+    });
+
+    it("window.Box がないとき、開発用トークンがあれば警告をコンソールに出す", async () => {
+      configureBoxDevToken({ enabled: true });
+      localStorage.setItem("box_dev_token", "dev-123");
+      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+      makeStore(); // window.Box は未設定
+
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining("window.Box.ContentExplorer がありません"),
+        ),
+      );
+      warn.mockRestore();
+    });
   });
 
   it("通常の表示では currentFolderId を渡さない（ルートから表示）", async () => {
@@ -1366,6 +1457,92 @@ describe("Explorer の復元表示と破棄", () => {
 
     expect(() => unmount()).not.toThrow();
     expect(hide).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ===== 更新ボタン（フォルダの表示と、コラボレーター一覧を、まとめて最新にする）=====
+
+describe("更新ボタン", () => {
+  const fetchSpy = () => BoxApi.prototype.getFolderCollaborations as unknown as jest.Mock;
+
+  it("フォルダ取得のキャッシュを破棄してから、現在のフォルダを取り直す", async () => {
+    const handleRefresh = jest.fn();
+    (useBoxExplorer as any).mockReturnValue(makeBoxExplorerMock({ handleRefresh }));
+    const clearSpy = jest.spyOn(boxFolderCache, "clear");
+    const { user } = makeStore();
+
+    await user.click(screen.getByText("refresh-folder"));
+
+    expect(clearSpy).toHaveBeenCalledTimes(1);
+    expect(handleRefresh).toHaveBeenCalledTimes(1);
+    // 破棄してから取り直す（順序が逆だと、保存済みの内容が返る）
+    expect(clearSpy.mock.invocationCallOrder[0]).toBeLessThan(
+      handleRefresh.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("一覧が開いているときは、5 分以内のキャッシュがあっても、一覧も取り直す", async () => {
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByText("refresh-folder"));
+
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(2));
+    expect(fetchSpy()).toHaveBeenLastCalledWith(VALID_ROOT_FOLDER_ID, expect.anything());
+  });
+
+  it("全フォルダ分の一覧のキャッシュを破棄する（他のフォルダの分も）", async () => {
+    const { user, store } = makeStore({
+      byFolderId: { "other-folder": [] },
+      collaborationFetchedAtByFolderId: { "other-folder": Date.now() },
+    });
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+    expect(Object.keys(store.getState().ss.collaborationFetchedAtByFolderId)).toEqual(
+      expect.arrayContaining(["other-folder", VALID_ROOT_FOLDER_ID]),
+    );
+
+    await user.click(screen.getByText("refresh-folder"));
+
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(2));
+    // 破棄された後、取り直した現在のフォルダの分だけが残る
+    expect(Object.keys(store.getState().ss.collaborationFetchedAtByFolderId)).toEqual([
+      VALID_ROOT_FOLDER_ID,
+    ]);
+  });
+
+  it("一覧が畳まれているときは、一覧を取得しない（キャッシュだけ破棄し、次に開いたときに取得する）", async () => {
+    const { user, store } = makeStore({
+      byFolderId: { "other-folder": [] },
+      collaborationFetchedAtByFolderId: { "other-folder": Date.now() },
+    });
+
+    await user.click(screen.getByText("refresh-folder"));
+
+    expect(fetchSpy()).not.toHaveBeenCalled();
+    expect(store.getState().ss.collaborationFetchedAtByFolderId).toEqual({});
+
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+  });
+
+  it("一覧の取り直しに失敗したら、一覧の取得失敗のメッセージを表示する（フォルダの更新は行う）", async () => {
+    const handleRefresh = jest.fn();
+    (useBoxExplorer as any).mockReturnValue(makeBoxExplorerMock({ handleRefresh }));
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+    jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockRejectedValue(new Error("fetch fail"));
+
+    await user.click(screen.getByText("refresh-folder"));
+
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith("コラボレーター一覧の取得に失敗しました"),
+    );
+    expect(handleRefresh).toHaveBeenCalledTimes(1);
   });
 });
 

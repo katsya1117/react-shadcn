@@ -256,4 +256,34 @@ describe("CollaborationPanel", () => {
       screen.getByRole("button", { name: "コラボレータ一覧" }),
     ).toHaveAttribute("aria-expanded", "true");
   });
+
+  describe("一覧の見出し（開閉アイコン）", () => {
+    it("開閉アイコンは、タイトルの右側に置かれる（タイトル → アイコンの順）", () => {
+      renderPanel({ isListOpen: false });
+
+      const toggle = screen.getByRole("button", { name: "コラボレータ一覧" });
+      const children = Array.from(toggle.childNodes);
+
+      expect(children[0].textContent).toBe("コラボレータ一覧");
+      expect((children[1] as HTMLElement).dataset.testid).toBe("chevron-right");
+    });
+
+    it("畳んでいるときは右向き、開いているときは下向きのアイコンを表示する", () => {
+      const { unmount } = renderPanel({ isListOpen: false });
+      expect(screen.getByTestId("chevron-right")).toBeInTheDocument();
+      expect(screen.queryByTestId("chevron-down")).not.toBeInTheDocument();
+      unmount();
+
+      renderPanel({ isListOpen: true });
+      expect(screen.getByTestId("chevron-down")).toBeInTheDocument();
+      expect(screen.queryByTestId("chevron-right")).not.toBeInTheDocument();
+    });
+
+    it("一覧専用の更新ボタンはない（更新は、パスバーの更新ボタンに集約している）", () => {
+      renderPanel({ isListOpen: true });
+
+      expect(screen.queryByLabelText("コラボレーター一覧を更新")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("refresh-cw")).not.toBeInTheDocument();
+    });
+  });
 });

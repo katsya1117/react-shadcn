@@ -18,6 +18,7 @@ const baseProps = {
   canGoForward: true,
   onGoBack: jest.fn(),
   onGoForward: jest.fn(),
+  onRefresh: jest.fn(),
   onCopyPath: jest.fn(),
   onOpenBox: jest.fn(),
   onOpenExplorer: jest.fn(),
@@ -98,5 +99,32 @@ describe("PathBar", () => {
   it("className を受け取ってルート要素に適用する", () => {
     const { container } = renderPathBar({ className: "custom-class" });
     expect(container.querySelector(".custom-class")).toBeInTheDocument();
+  });
+
+  it("更新ボタンを押すと onRefresh が呼ばれる", async () => {
+    const onRefresh = jest.fn();
+    const { user } = renderPathBar({ onRefresh });
+
+    await user.click(screen.getByLabelText("最新の情報に更新"));
+
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("更新ボタンは、「戻る」「進む」の後ろ（左側のナビゲーションの並び）に置かれる", () => {
+    renderPathBar();
+
+    const labels = screen
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"));
+
+    expect(labels.slice(0, 3)).toEqual(["戻る", "進む", "最新の情報に更新"]);
+    // 右側の操作（コピー等）とは、別の並び
+    expect(labels.slice(3)).toEqual(["パスをコピー", "Boxで開く", "Box Driveで開く"]);
+  });
+
+  it("戻る・進むが無効でも、更新ボタンは押せる", () => {
+    renderPathBar({ canGoBack: false, canGoForward: false });
+
+    expect(screen.getByLabelText("最新の情報に更新")).toBeEnabled();
   });
 });
