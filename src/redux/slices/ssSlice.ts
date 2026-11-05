@@ -26,6 +26,9 @@ const sliceName = "ss";
 
 const api = new BoxApi(Config.apiConfig);
 
+/** コラボレーター一覧のキャッシュ有効時間（5分）。Box API の呼び出し回数を減らすために、この間は再取得しない。 */
+export const COLLABORATIONS_TTL_MS = 5 * 60 * 1000;
+
 export const getFolderCollaborations = createAsyncThunk(
   sliceName + "/getFolderCollaborations",
   async (folderId: string) => {
@@ -36,6 +39,30 @@ export const getFolderCollaborations = createAsyncThunk(
       folderId,
       data: (await response).data as GetFolderCollaborationsResponse[],
     };
+  },
+);
+
+/**
+ * 一覧が新しければ（TTL 内）取得済みの rows を返し、古い・未取得なら Box から取得する。
+ * キャッシュ破棄（invalidateCollaborations）後は必ず取得し直す。
+ */
+export const ensureFolderCollaborations = createAsyncThunk(
+  sliceName + "/ensureFolderCollaborations",
+  async (folderId: string, { dispatch, getState }) => {
+    const { byFolderId, collaborationFetchedAtByFolderId } = (
+      getState() as AppRootState
+    ).ss;
+    const rows = byFolderId[folderId];
+    const fetchedAt = collaborationFetchedAtByFolderId[folderId];
+    if (
+      rows &&
+      fetchedAt !== undefined &&
+      Date.now() - fetchedAt < COLLABORATIONS_TTL_MS
+    ) {
+      return rows;
+    }
+    const result = await dispatch(getFolderCollaborations(folderId)).unwrap();
+    return result.data;
   },
 );
 
@@ -87,6 +114,8 @@ interface SSState {
     string,
     "idle" | "loading" | "succeeded" | "failed"
   >;
+  // フォルダごとの一覧の取得時刻（ms）。TTL 判定に使う。破棄すると未取得扱いになる。
+  collaborationFetchedAtByFolderId: Record<string, number>;
   currentFolderByRootId: Record<string, FolderInfo | undefined>;
   folderHistoryByRootId: Record<string, string[]>;
   historyIndexByRootId: Record<string, number>;
@@ -97,6 +126,7 @@ interface SSState {
 const initialState: SSState = {
   byFolderId: {},
   collaborationStatusByFolderId: {},
+  collaborationFetchedAtByFolderId: {},
   currentFolderByRootId: {},
   folderHistoryByRootId: {},
   historyIndexByRootId: {},
@@ -130,6 +160,14 @@ const ssSlice = createSlice({
     clearCurrentFolder: (state, action: PayloadAction<string>) => {
       delete state.currentFolderByRootId[action.payload];
     },
+    /**
+     * 全フォルダの一覧キャッシュを破棄する（次回は必ず取得し直す）。
+     * 一覧は親フォルダからの継承分も含むため、あるフォルダの変更は配下の一覧にも影響する。
+     * 変更は頻繁ではないので、フォルダを絞らず全体を破棄する。
+     */
+    invalidateCollaborations: (state) => {
+      state.collaborationFetchedAtByFolderId = {};
+    },
     clearFolderHistory: (state, action: PayloadAction<string>) => {
       delete state.folderHistoryByRootId[action.payload];
       delete state.historyIndexByRootId[action.payload];
@@ -147,6 +185,7 @@ const ssSlice = createSlice({
           const { folderId, data } = action.payload;
           state.byFolderId[folderId] = data;
           state.collaborationStatusByFolderId[folderId] = "succeeded";
+          state.collaborationFetchedAtByFolderId[folderId] = Date.now();
         } else {
           state.error = setSliceError(
             "データの取得に失敗しました。",

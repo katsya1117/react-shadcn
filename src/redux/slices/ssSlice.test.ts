@@ -1,7 +1,12 @@
 import type { FolderInfo } from "@/types/ss";
 import { initialSliceError } from "@/redux/common/error";
 
+import { configureStore } from "@reduxjs/toolkit";
+import { jest } from "@jest/globals";
+import { BoxApi } from "@/api";
 import {
+  COLLABORATIONS_TTL_MS,
+  ensureFolderCollaborations,
   ssActions,
   ssSelector,
   ssSliceReducer,
@@ -263,5 +268,86 @@ describe("ssSelector デフォルト値", () => {
 
     expect(ssSelector.byFolderIdSelector()(state)).toEqual({ f1: data });
     expect(ssSelector.collaborationByFolderIdSelector()(state)).toEqual({ f1: data });
+  });
+});
+
+describe("ensureFolderCollaborations（一覧キャッシュ）", () => {
+  const makeStore = () => configureStore({ reducer: { ss: ssSliceReducer } });
+  const rows = [{ id: "c1" }] as never;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("未取得なら Box から取得し、TTL 内の 2 回目は取得しない", async () => {
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValue({ data: rows });
+    const store = makeStore();
+
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    const second = await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(rows);
+  });
+
+  it("フォルダが違えば別々に取得する", async () => {
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValue({ data: rows });
+    const store = makeStore();
+
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    await store.dispatch(ensureFolderCollaborations("f2")).unwrap();
+
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("TTL（5分）を過ぎたら取得し直す", async () => {
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValue({ data: rows });
+    const now = jest.spyOn(Date, "now").mockReturnValue(1_000_000);
+    const store = makeStore();
+
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    now.mockReturnValue(1_000_000 + COLLABORATIONS_TTL_MS - 1);
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(1_000_000 + COLLABORATIONS_TTL_MS);
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidateCollaborations で全フォルダのキャッシュを破棄し、次は取得し直す", async () => {
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValue({ data: rows });
+    const store = makeStore();
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    await store.dispatch(ensureFolderCollaborations("f2")).unwrap();
+
+    store.dispatch(ssActions.invalidateCollaborations());
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    await store.dispatch(ensureFolderCollaborations("f2")).unwrap();
+
+    expect(spy).toHaveBeenCalledTimes(4);
+  });
+
+  it("取得に失敗したときは reject し、キャッシュ扱いにしない", async () => {
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockRejectedValueOnce(new Error("fail"))
+      .mockResolvedValue({ data: rows });
+    const store = makeStore();
+
+    await expect(
+      store.dispatch(ensureFolderCollaborations("f1")).unwrap(),
+    ).rejects.toBeDefined();
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+
+    expect(spy).toHaveBeenCalledTimes(2);
   });
 });

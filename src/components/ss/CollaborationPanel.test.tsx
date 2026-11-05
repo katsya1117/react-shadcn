@@ -18,6 +18,8 @@ type Props = React.ComponentProps<typeof CollaborationPanel>;
 const baseProps: Props = {
   folderName: "対象フォルダ",
   collaborators: [],
+  isListOpen: true,
+  onToggleList: jest.fn(),
   isBusy: false,
   selectedCollaborator: null,
   selectedRole: "viewer",
@@ -225,5 +227,33 @@ describe("CollaborationPanel", () => {
     await user.selectOptions(getRowRoleSelect(), "editor");
     await user.click(screen.getByText("キャンセル"));
     expect(onUpdateCollaboratorRole).not.toHaveBeenCalled();
+  });
+
+  it("一覧が畳まれているときは一覧を表示せず、見出しの開閉ボタンで onToggleList を呼ぶ", async () => {
+    const onToggleList = jest.fn();
+    const { user } = renderPanel({
+      isListOpen: false,
+      onToggleList,
+      collaborators: [makeItem({ name: "Hidden User" })],
+    });
+
+    expect(screen.queryByText("Hidden User")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "コラボレータ一覧" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(toggle);
+    expect(onToggleList).toHaveBeenCalledTimes(1);
+  });
+
+  it("一覧が開いているときは一覧を表示する（aria-expanded=true）", () => {
+    renderPanel({
+      isListOpen: true,
+      collaborators: [makeItem({ name: "Shown User" })],
+    });
+
+    expect(screen.getByText("Shown User")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "コラボレータ一覧" }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 });

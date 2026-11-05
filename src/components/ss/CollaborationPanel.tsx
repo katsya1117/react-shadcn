@@ -1,5 +1,5 @@
 import type { SingleValue } from "react-select";
-import { UserPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, UserPlus } from "lucide-react";
 
 import type { AutoCompleteData } from "@/api";
 import { AutoCompleteSingle } from "@/components/common/AutoComplete/AutoCompleteSingle";
@@ -27,6 +27,9 @@ type CollaborationPanelProps = {
   folderName: string;
   collaborators: CollaborationListItem[];
   isListLoading?: boolean;
+  /** 一覧の開閉状態。畳んでいる間は Box から一覧を取得しない。 */
+  isListOpen: boolean;
+  onToggleList: () => void;
   isBusy: boolean;
   selectedCollaborator: SingleValue<AutoCompleteData>;
   selectedRole: RoleType;
@@ -45,6 +48,8 @@ export const CollaborationPanel = ({
   folderName,
   collaborators,
   isListLoading = false,
+  isListOpen,
+  onToggleList,
   isBusy,
   selectedCollaborator,
   selectedRole,
@@ -116,34 +121,48 @@ export const CollaborationPanel = ({
 
         <Separator />
 
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
-          <div className="text-sm font-medium">コラボレータ一覧</div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background">
-            {isListLoading ? (
-              <div className="divide-y">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <CollaboratorRowSkeleton key={index} />
-                ))}
-              </div>
-            ) : collaborators.length === 0 ? (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                コラボレーターは設定されていません
-              </div>
+        <div className="flex min-h-0 flex-col gap-2 data-[open=true]:flex-1" data-open={isListOpen}>
+          <button
+            type="button"
+            className="flex w-full items-center gap-1 text-left text-sm font-medium"
+            aria-expanded={isListOpen}
+            onClick={onToggleList}
+          >
+            {isListOpen ? (
+              <ChevronDown className="h-4 w-4" />
             ) : (
-              <div className="divide-y">
-                {collaborators.map((item) => (
-                  <CollaboratorRow
-                    key={`${item.collaborator.id}:${item.collaborator.role}:${item.isInherited ? "inherited" : "direct"}`}
-                    item={item}
-                    isBusy={isBusy}
-                    onUpdateRole={onUpdateCollaboratorRole}
-                    onRemove={onRemoveCollaborator}
-                  />
-                ))}
-              </div>
+              <ChevronRight className="h-4 w-4" />
             )}
-          </div>
+            コラボレータ一覧
+          </button>
+
+          {isListOpen && (
+            <div className="flex-1 min-h-0 overflow-y-auto rounded-md border bg-background">
+              {isListLoading ? (
+                <div className="divide-y">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <CollaboratorRowSkeleton key={index} />
+                  ))}
+                </div>
+              ) : collaborators.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  コラボレーターは設定されていません
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {collaborators.map((item) => (
+                    <CollaboratorRow
+                      key={`${item.collaborator.id}:${item.collaborator.role}:${item.isInherited ? "inherited" : "direct"}`}
+                      item={item}
+                      isBusy={isBusy}
+                      onUpdateRole={onUpdateCollaboratorRole}
+                      onRemove={onRemoveCollaborator}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

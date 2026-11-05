@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { useSelector } from "react-redux";
 import type { SingleValue } from "react-select";
 
-import type { AutoCompleteData, CreateCollaborationsParams } from "@/api";
+import type {
+  AutoCompleteData,
+  CreateCollaborationsParams,
+  GetFolderCollaborationsResponse,
+} from "@/api";
 import { Layout } from "@/components/layout/Layout";
 import { BoxManager } from "@/components/common/BoxManager/BoxManager";
 import { ArrowLeft } from "lucide-react";
@@ -16,6 +20,7 @@ import { autoCompleteSelector } from "@/redux/slices/autoCompleteSlice";
 import {
   createCollaborations,
   deleteCollaborations,
+  ensureFolderCollaborations,
   getFolderCollaborations,
   ssActions,
   ssSelector,
@@ -145,6 +150,10 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       ? rememberedCurrentFolder.id
       : undefined;
 
+  // 復元先は「マウント時点」の値で固定する。離脱時のフォルダは、移動のたびに Redux 側で更新されるため、
+  // そのまま show の依存に使うと、移動のたびに show し直してしまう。
+  const initialRestoreTargetIdRef = useRef(restoreTargetId);
+
   // ----- フォルダ移動の状態管理（hook） -----
   const {
     explorerRef,
@@ -213,15 +222,46 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     explorerRef.current = explorer;
   }, [explorerInstance, explorerRef]);
 
+  // show() 済みかどうか。hide() は show() 前に呼ぶと例外になるため、unmount 時の判定に使う。
+  const hasShownRef = useRef(false);
+
   // ログイン済み & トークンがあれば Explorer を表示
   useEffect(() => {
     if (!explorerInstance || !isLogin || !accessToken) return;
     explorerInstance.show(rootFolderId, accessToken, {
       container: ".box-container",
+      // 深いフォルダからの復帰時は、ルートを経由せず最初から離脱時のフォルダを表示する（ルートの取得を省く）。
+      // rootFolderId はパンくずの起点として引き続き使われる。currentFolderId は公式ドキュメント未記載だが、
+      // Box UI Elements v23.0.0 のソース上、show() の options が ContentExplorer の props にそのまま渡される。
+      ...(initialRestoreTargetIdRef.current
+        ? { currentFolderId: initialRestoreTargetIdRef.current }
+        : {}),
       canPreview: false,
+      // このアプリの Explorer はコラボレート対象フォルダを選ぶための画面。
+      // ファイル・フォルダの変更系操作は画面から行わせない（UI 上のボタン非表示のみで、Box 側の権限は変えない）。
+      canUpload: false,
+      canDelete: false,
+      canRename: false,
+      canCreateNewFolder: false,
       size: "large",
     });
+    hasShownRef.current = true;
   }, [explorerInstance, rootFolderId, accessToken, isLogin]);
+
+  // 画面を離れるときに Explorer を破棄する。
+  // hide() を呼ばないと、Box 側の React ツリー（API インスタンスとキャッシュ）が unmount されず残り続ける。
+  useEffect(() => {
+    if (!explorerInstance) return;
+    return () => {
+      if (!hasShownRef.current) return;
+      hasShownRef.current = false;
+      try {
+        explorerInstance.hide?.();
+      } catch {
+        // 破棄に失敗しても画面遷移は妨げない
+      }
+    };
+  }, [explorerInstance]);
 
   // navigate イベントを useBoxExplorer の handleNavigate に流し込む
   useEffect(() => {
@@ -262,17 +302,33 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       (currentCollaborationStatus === "idle" ||
         currentCollaborationStatus === "loading"));
 
-  const refreshCollaborations = useCallback(async () => {
-    // 一覧更新は reducer の局所パッチではなく、常に Box の最新結果を再取得して揃える。
-    await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
-  }, [currentFolder.id, dispatch]);
+  // 一覧は畳んだ状態を初期値とし、開いたときだけ Box から取得する（API 呼び出し回数の削減）。
+  // 開いているフォルダ ID で持つことで、フォルダを移動すると自動的に畳んだ状態に戻る。
+  const [openListFolderId, setOpenListFolderId] = useState<string | null>(null);
+  const isListOpen = openListFolderId === currentFolder.id;
+  const handleToggleList = useCallback(() => {
+    setOpenListFolderId((prev) =>
+      prev === currentFolder.id ? null : currentFolder.id,
+    );
+  }, [currentFolder.id]);
 
+  // 変更後は、全フォルダの一覧キャッシュを破棄する（親の変更は配下の継承分にも影響するため）。
+  // 開いている場合は Box の最新結果を再取得して揃える。畳んでいる場合は次に開いたときに取得する。
+  const refreshCollaborations = useCallback(async () => {
+    dispatch(ssActions.invalidateCollaborations());
+    if (!isListOpen) return;
+    await dispatch(getFolderCollaborations(currentFolder.id)).unwrap();
+  }, [currentFolder.id, dispatch, isListOpen]);
+
+  // 開いたときに取得する（キャッシュが 5 分以内なら取得しない）。
   useEffect(() => {
-    if (isRestoring) return;
-    void refreshCollaborations().catch(() => {
-      toast.error("コラボレーター一覧の取得に失敗しました");
-    });
-  }, [isRestoring, refreshCollaborations]);
+    if (isRestoring || !isListOpen) return;
+    void dispatch(ensureFolderCollaborations(currentFolder.id))
+      .unwrap()
+      .catch(() => {
+        toast.error("コラボレーター一覧の取得に失敗しました");
+      });
+  }, [isRestoring, isListOpen, currentFolder.id, dispatch]);
 
   // ----- パスバーのアクション -----
 
@@ -331,9 +387,22 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     const accessibleByType =
       collaboratorType === "department" ? "group" : "user";
 
+    // 重複チェックには最新の一覧が必要。キャッシュ（TTL 内）は他の人の変更で古い可能性があるため使わず、
+    // 追加のたびに必ず取得する（追加は人手の操作で回数が少なく、取得 1 回のコストは小さい）。
+    setIsAddingCollaborator(true);
+    let existingRows: GetFolderCollaborationsResponse[];
+    try {
+      existingRows = (
+        await dispatch(getFolderCollaborations(currentFolder.id)).unwrap()
+      ).data;
+    } catch {
+      toast.error("コラボレーター一覧の取得に失敗しました");
+      setIsAddingCollaborator(false);
+      return;
+    }
+
     // 重複チェック：can_view_path=true の collaboration 同士のみが対象。
     // Box UI 経由で作られた can_view_path=false は重複ブロックには使わない（一覧には出すが管理対象外）。
-    const existingRows = collaborationsByFolderId[currentFolder.id] ?? [];
     const duplicated = existingRows.find((item) => {
       const canManage = item.can_view_path ?? item.canViewPath ?? true;
       return (
@@ -344,6 +413,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     });
     if (duplicated) {
       toast.error("同じコラボレーターは既に設定されています");
+      setIsAddingCollaborator(false);
       return;
     }
 
@@ -356,7 +426,6 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       can_view_path: true,
     };
 
-    setIsAddingCollaborator(true);
     try {
       // mutation thunk は API 1 回だけを責務にしている。
       await dispatch(createCollaborations(params)).unwrap();
@@ -379,7 +448,6 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       setIsAddingCollaborator(false);
     }
   }, [
-    collaborationsByFolderId,
     currentFolder.id,
     dispatch,
     groups,
@@ -507,6 +575,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
                   folderName={currentFolderName}
                   collaborators={collaborators}
                   isListLoading={isCollaboratorsListLoading}
+                  isListOpen={isListOpen}
+                  onToggleList={handleToggleList}
                   isBusy={isMutating}
                   selectedCollaborator={selectedCollaborator}
                   selectedRole={selectedRole}

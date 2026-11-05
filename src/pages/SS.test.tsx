@@ -43,9 +43,12 @@ jest.mock("@/components/ss/CollaborationPanel", () => ({
     onSelectedCollaboratorChange,
     collaborators,
     folderName,
+    isListOpen,
+    onToggleList,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }: any) => (
-    <div data-testid="collaboration-panel">
+    <div data-testid="collaboration-panel" data-list-open={String(isListOpen)}>
+      <button onClick={onToggleList}>toggle-list</button>
       <span data-testid="folder-name">{folderName}</span>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {collaborators?.map((c: any, i: number) => (
@@ -349,7 +352,8 @@ describe("toCollaborationListItem", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collab = screen.getByTestId("collaborator");
       expect(collab.textContent).not.toContain("inherited");
@@ -370,7 +374,8 @@ describe("toCollaborationListItem", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collab = screen.getByTestId("collaborator");
       expect(collab.textContent).toContain("inherited");
@@ -390,7 +395,8 @@ describe("toCollaborationListItem", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collab = screen.getByTestId("collaborator");
       expect(collab.textContent).not.toContain("inherited");
@@ -410,7 +416,8 @@ describe("toCollaborationListItem", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       expect(screen.getByTestId("collaborator")).toBeInTheDocument();
     });
@@ -428,7 +435,8 @@ describe("toCollaborationListItem", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       expect(screen.getByTestId("collaborator")).toBeInTheDocument();
     });
@@ -463,7 +471,8 @@ describe("toCollaborationListItem", () => {
         ],
       });
 
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const spans = screen.queryAllByTestId("collaborator");
       expect(spans.some((s) => s.textContent?.includes("inherited"))).toBe(true);
@@ -697,7 +706,8 @@ describe("SSContent ハンドラ", () => {
       .spyOn(BoxApi.prototype, "getFolderCollaborations")
       .mockRejectedValue(new Error("fetch fail"));
 
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
@@ -799,12 +809,15 @@ describe("追加ブランチカバレッジ", () => {
     // 初回ロード成功、成功後のリフレッシュは失敗
     jest
       .spyOn(BoxApi.prototype, "getFolderCollaborations")
-      .mockResolvedValueOnce({ data: [] })
-      .mockRejectedValueOnce(new Error("refresh fail"));
+      .mockResolvedValueOnce({ data: [] }) // 一覧を開いたときの取得
+      .mockResolvedValueOnce({ data: [] }) // 追加時の重複チェック用の取得
+      .mockRejectedValueOnce(new Error("refresh fail")); // 追加後の再取得
 
     const { user } = makeStore();
+    // 一覧を開いて初回取得（成功）を済ませる。以降の変更後の再取得（失敗）を検証する。
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() =>
-      expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
+      expect(BoxApi.prototype.getFolderCollaborations).toHaveBeenCalledTimes(1),
     );
 
     await user.click(screen.getByText("select-collaborator"));
@@ -827,8 +840,10 @@ describe("追加ブランチカバレッジ", () => {
       .mockRejectedValueOnce(new Error("refresh fail"));
 
     const { user } = makeStore();
+    // 一覧を開いて初回取得（成功）を済ませる。以降の変更後の再取得（失敗）を検証する。
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() =>
-      expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
+      expect(BoxApi.prototype.getFolderCollaborations).toHaveBeenCalledTimes(1),
     );
     await user.click(screen.getByText("remove-collaborator"));
 
@@ -849,8 +864,10 @@ describe("追加ブランチカバレッジ", () => {
       .mockRejectedValueOnce(new Error("refresh fail"));
 
     const { user } = makeStore();
+    // 一覧を開いて初回取得（成功）を済ませる。以降の変更後の再取得（失敗）を検証する。
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() =>
-      expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
+      expect(BoxApi.prototype.getFolderCollaborations).toHaveBeenCalledTimes(1),
     );
     await user.click(screen.getByText("update-role"));
 
@@ -882,7 +899,8 @@ describe("追加ブランチカバレッジ", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collabs = screen.queryAllByTestId("collaborator");
       expect(collabs).toHaveLength(2);
@@ -935,7 +953,8 @@ describe("追加ブランチカバレッジ", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collab = screen.getByTestId("collaborator");
       expect(collab.textContent).toContain("名称未設定");
@@ -963,7 +982,8 @@ describe("追加ブランチカバレッジ", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collabs = screen.queryAllByTestId("collaborator");
       expect(collabs).toHaveLength(2);
@@ -993,7 +1013,8 @@ describe("追加ブランチカバレッジ", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collabs = screen.queryAllByTestId("collaborator");
       expect(collabs).toHaveLength(2);
@@ -1023,7 +1044,8 @@ describe("追加ブランチカバレッジ", () => {
           } as any,
         ],
       });
-    makeStore();
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
     await waitFor(() => {
       const collabs = screen.queryAllByTestId("collaborator");
       expect(collabs).toHaveLength(2);
@@ -1085,9 +1107,16 @@ describe("追加ブランチカバレッジ", () => {
       expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
     );
 
-    dispatchSpy.mockReturnValue(
-      dispatchUnwrapRejectsWith(new Error("non-string error")),
-    );
+    // 1 回目の dispatch は重複チェック用の一覧取得（getFolderCollaborations）。これは成功させ、
+    // 2 回目以降（createCollaborations）を「文字列でないエラー」で失敗させる。
+    dispatchSpy
+      .mockImplementationOnce(
+        () =>
+          Object.assign(Promise.resolve(), {
+            unwrap: () => Promise.resolve({ folderId: "f", data: [] }),
+          }) as never,
+      )
+      .mockReturnValue(dispatchUnwrapRejectsWith(new Error("non-string error")));
 
     await user.click(screen.getByText("select-collaborator"));
     await user.click(screen.getByText("add-collaborator"));
@@ -1215,5 +1244,272 @@ describe("Box SDK 連携", () => {
     }
 
     delete (window as any).Box;
+  });
+});
+
+// ===== Explorer の復元表示・破棄 =====
+
+describe("Explorer の復元表示と破棄", () => {
+  const loggedIn = {
+    isLogin: true,
+    box: {
+      boxAccountId: "acc1",
+      token: { accessToken: "test-token" } as any,
+      tokenDt: Date.now(),
+    },
+  };
+
+  const installExplorer = (hide?: () => void) => {
+    const mockShow = jest.fn();
+    (window as any).Box = {
+      ContentExplorer: class {
+        show = mockShow;
+        addListener = jest.fn();
+        removeAllListeners = jest.fn();
+        hide = hide;
+      },
+    };
+    return mockShow;
+  };
+
+  afterEach(() => {
+    delete (window as any).Box;
+  });
+
+  it("通常の表示では currentFolderId を渡さない（ルートから表示）", async () => {
+    const mockShow = installExplorer();
+
+    makeStore(undefined, loggedIn);
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("currentFolderId");
+  });
+
+  it("離脱時のフォルダがあるときは、ルートを経由せず currentFolderId で直接表示する", async () => {
+    const mockShow = installExplorer();
+
+    makeStore(
+      {
+        currentFolderByRootId: {
+          [VALID_ROOT_FOLDER_ID]: {
+            id: "child-saved",
+            name: "saved-child",
+            pathCollection: { entries: [] },
+          },
+        },
+      },
+      loggedIn,
+    );
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    // 第1引数（rootFolderId）はルートのまま。パンくずの起点になる。
+    expect(mockShow).toHaveBeenCalledWith(
+      VALID_ROOT_FOLDER_ID,
+      "test-token",
+      expect.objectContaining({ currentFolderId: "child-saved" }),
+    );
+  });
+
+  it("離脱時のフォルダがルート自身のときは currentFolderId を渡さない", async () => {
+    const mockShow = installExplorer();
+
+    makeStore(
+      {
+        currentFolderByRootId: {
+          [VALID_ROOT_FOLDER_ID]: {
+            id: VALID_ROOT_FOLDER_ID,
+            name: "qms",
+            pathCollection: { entries: [] },
+          },
+        },
+      },
+      loggedIn,
+    );
+
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("currentFolderId");
+  });
+
+  it("画面を離れるとき（unmount）に Explorer を hide() で破棄する", async () => {
+    const hide = jest.fn();
+    const mockShow = installExplorer(hide);
+    const { unmount } = makeStore(undefined, loggedIn);
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+    expect(hide).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
+
+  it("show() していない（未ログイン等）ときは unmount しても hide() を呼ばない", async () => {
+    const hide = jest.fn();
+    const mockShow = installExplorer(hide);
+    const { unmount } = makeStore(); // 未ログイン・トークンなし → show されない
+    await waitFor(() =>
+      expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
+    );
+
+    unmount();
+
+    expect(mockShow).not.toHaveBeenCalled();
+    expect(hide).not.toHaveBeenCalled();
+  });
+
+  it("hide() が例外を投げても unmount は失敗しない", async () => {
+    const hide = jest.fn(() => {
+      throw new Error("hide fail");
+    });
+    const mockShow = installExplorer(hide);
+    const { unmount } = makeStore(undefined, loggedIn);
+    await waitFor(() => expect(mockShow).toHaveBeenCalled());
+
+    expect(() => unmount()).not.toThrow();
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ===== コラボレーター一覧の取得（畳み・キャッシュ）=====
+
+describe("コラボレーター一覧の取得タイミング", () => {
+  const fetchSpy = () => BoxApi.prototype.getFolderCollaborations as unknown as jest.Mock;
+
+  it("初期表示（畳んだ状態）では一覧を取得しない", async () => {
+    makeStore();
+    await waitFor(() =>
+      expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
+        "data-list-open",
+        "false",
+      ),
+    );
+    expect(fetchSpy()).not.toHaveBeenCalled();
+  });
+
+  it("一覧を開いたときに取得する", async () => {
+    const { user } = makeStore();
+
+    await user.click(screen.getByText("toggle-list"));
+
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+    expect(fetchSpy()).toHaveBeenCalledWith(VALID_ROOT_FOLDER_ID, expect.anything());
+  });
+
+  it("閉じて開き直しても、5分以内なら再取得しない", async () => {
+    const { user } = makeStore();
+
+    await user.click(screen.getByText("toggle-list")); // 開く → 取得
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByText("toggle-list")); // 閉じる
+    await user.click(screen.getByText("toggle-list")); // 再度開く
+
+    expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
+      "data-list-open",
+      "true",
+    );
+    expect(fetchSpy()).toHaveBeenCalledTimes(1);
+  });
+
+  it("フォルダを移動すると一覧は畳んだ状態に戻る", async () => {
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
+    expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
+      "data-list-open",
+      "true",
+    );
+
+    // 別フォルダへ移動したことにして再描画させる（select-collaborator の state 更新で再描画される）
+    (useBoxExplorer as any).mockReturnValue(
+      makeBoxExplorerMock({
+        currentFolder: {
+          id: "child-folder",
+          name: "child",
+          pathCollection: { entries: [] },
+        },
+      }),
+    );
+    await user.click(screen.getByText("select-collaborator"));
+
+    expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
+      "data-list-open",
+      "false",
+    );
+  });
+
+  it("一覧を畳んだまま追加すると、重複チェックのために一覧を取得し、追加後は再取得しない", async () => {
+    jest
+      .spyOn(BoxApi.prototype, "createCollaborations")
+      .mockResolvedValue({ data: {} as any });
+    const { user } = makeStore();
+
+    await user.click(screen.getByText("select-collaborator"));
+    await user.click(screen.getByText("add-collaborator"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("New User を追加しました");
+    });
+    // 取得は重複チェックの 1 回のみ（畳んでいるので追加後の再取得はしない）
+    expect(fetchSpy()).toHaveBeenCalledTimes(1);
+  });
+
+  it("追加後は一覧キャッシュを破棄し、次に開いたとき取得し直す", async () => {
+    jest
+      .spyOn(BoxApi.prototype, "createCollaborations")
+      .mockResolvedValue({ data: {} as any });
+    const { user } = makeStore();
+    await user.click(screen.getByText("select-collaborator"));
+    await user.click(screen.getByText("add-collaborator"));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(fetchSpy()).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByText("toggle-list"));
+
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(2));
+  });
+
+  it("追加時の重複チェックは、キャッシュが新しくても必ず取得し直す", async () => {
+    jest
+      .spyOn(BoxApi.prototype, "createCollaborations")
+      .mockResolvedValue({ data: {} as any });
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1)); // 開いたときの取得（キャッシュ済み）
+
+    await user.click(screen.getByText("select-collaborator"));
+    await user.click(screen.getByText("add-collaborator"));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("New User を追加しました");
+    });
+    // 開いたとき 1 回 + 追加時の重複チェック 1 回 + 追加後の再取得 1 回
+    expect(fetchSpy()).toHaveBeenCalledTimes(3);
+  });
+
+  it("他の人が追加済みで、キャッシュが古くても、追加時の取得結果で重複を検出して止める", async () => {
+    const createSpy = jest.spyOn(BoxApi.prototype, "createCollaborations");
+    jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValueOnce({ data: [] }) // 開いたとき: まだ誰もいない（キャッシュされる）
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: "c9",
+            accessible_by: { id: "new-user", name: "New User", type: "user" as const },
+            role: "viewer" as const,
+            item: { id: VALID_ROOT_FOLDER_ID, type: "folder" as const, name: "qms" },
+            can_view_path: true,
+          } as any,
+        ],
+      }); // 追加時: その間に他の人が追加していた
+    const { user } = makeStore();
+    await user.click(screen.getByText("toggle-list"));
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+
+    await user.click(screen.getByText("select-collaborator"));
+    await user.click(screen.getByText("add-collaborator"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("同じコラボレーターは既に設定されています");
+    });
+    expect(createSpy).not.toHaveBeenCalled();
   });
 });
