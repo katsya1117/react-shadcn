@@ -6,6 +6,7 @@ import { centerSliceReducer } from "./slices/centerSlice";
 import { uiSliceReducer } from "./slices/uiSlice";
 import { permissionReducer } from "./slices/permissionSlice";
 import { ssSliceReducer } from "./slices/ssSlice";
+import { sharedAreaSliceReducer } from "./slices/sharedAreaSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     ui: uiSliceReducer,
     permission: permissionReducer,
     ss: ssSliceReducer,
+    sharedArea: sharedAreaSliceReducer,
   },
 });
 

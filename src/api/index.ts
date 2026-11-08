@@ -540,6 +540,39 @@ export class CenterApi {
 }
 
 // ---------- AutoComplete (mock) ----------
+/** 他センターから共有された領域のロール */
+export type SharedAreaRole = "editor" | "viewer";
+
+/** ランチャーの「共有」セクションの 1 枚分（共有されたフォルダ 1 つ） */
+export type SharedAreaItem = {
+  folderId: string;
+  centerFolderId: string;
+  /** センターのフォルダ名（Box 上の名前。部署コード的な英字）。フルパス・Box Drive のパスに使う */
+  centerName: string;
+  /** センターの表示名（「〇〇センター」。人が読む名前）。カードのラベルに使う */
+  centerLabel: string;
+  /** Box 上のフォルダ名（夜間バッチで更新される） */
+  folderName: string;
+  /** センターより下の名前の並び（共有されたフォルダ自身を除く） */
+  pathNames: string[];
+  role: SharedAreaRole;
+  /** missing: Box 上で見つからない（削除または権限喪失） */
+  status: "ok" | "missing";
+};
+
+export class ShareAreaApi {
+  config?: unknown;
+  constructor(config?: unknown) {
+    this.config = config;
+  }
+
+  /** ログインユーザーに共有された領域の一覧（DB のみ。Box は呼ばない） */
+  async getSharedAreas(userCd: string, _opts?: unknown) {
+    const { listSharedAreas } = await import("./mock/sharedFoldersDb");
+    return { data: listSharedAreas(userCd) };
+  }
+}
+
 export class AutoCompleteApi {
   config?: unknown;
   constructor(config?: unknown) {

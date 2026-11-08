@@ -54,6 +54,7 @@ export const LogOut = makeIcon("log-out");
 export const User = makeIcon("user");
 export const Building = makeIcon("building");
 export const Building2 = makeIcon("building2");
+export const Share2 = makeIcon("share2");
 export const Copy = makeIcon("copy");
 export const ExternalLink = makeIcon("external-link");
 export const Eye = makeIcon("eye");

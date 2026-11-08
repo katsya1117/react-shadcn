@@ -36,7 +36,7 @@ When `VITE_USE_SIMPLE_SSO=true`, the root `/` renders `SimpleSingleSignOn` inste
 
 ### State Management
 
-Redux store (`src/redux/store.ts`) has 7 slices:
+Redux store (`src/redux/store.ts`) has 8 slices:
 
 | Slice | Purpose |
 |-------|---------|
@@ -47,6 +47,7 @@ Redux store (`src/redux/store.ts`) has 7 slices:
 | `ui` | SideMenu collapse state, last-visited sections/tabs |
 | `permission` | User permissions |
 | `ss` | ShareArea folder navigation history per root folder |
+| `sharedArea` | Folders shared to the user from other centers (launcher's "共有された領域" section) |
 
 Async thunks live inside each slice file under `src/redux/slices/`. They instantiate API classes from `src/api/index.ts` using config from `src/config/apiConfig.ts`.
 
