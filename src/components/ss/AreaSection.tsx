@@ -7,25 +7,24 @@ export type AreaTone = "primary" | "sky";
 
 const toneClasses: Record<
   AreaTone,
-  { chip: string; eyebrow: string; count: string; line: string }
+  { chip: string; eyebrow: string; count: string }
 > = {
   primary: {
     chip: "bg-primary/10 text-primary ring-primary/20",
     eyebrow: "text-primary/70",
     count: "bg-primary/10 text-primary",
-    line: "from-primary/30",
   },
   sky: {
     chip: "bg-sky-500/10 text-sky-600 ring-sky-500/20 dark:text-sky-400",
     eyebrow: "text-sky-600/80 dark:text-sky-400/80",
     count: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
-    line: "from-sky-500/30",
   },
 };
 
 /**
  * ランチャーの区分け 1 つ分（見出し + カード一覧）。
- * 見出しは「アイコン / 英字の小見出し + タイトル + 件数」と、右へ消えていく罫線で作る。
+ * 見出しは「アイコン / 英字の小見出し + タイトル + 件数」で作り、全体を角丸の薄いグレーのブロックで囲む
+ * （二つの区分けを、ブロックで分ける。カードは平らに載せる）。
  */
 export const AreaSection = ({
   id,
@@ -49,7 +48,10 @@ export const AreaSection = ({
 }) => {
   const t = toneClasses[tone];
   return (
-    <section className="space-y-4" aria-labelledby={id}>
+    <section
+      className="space-y-4 rounded-2xl bg-slate-200/50 p-5 dark:bg-slate-800/50"
+      aria-labelledby={id}
+    >
       <header className="space-y-2">
         <div className="flex items-center gap-3">
           <div
@@ -85,13 +87,6 @@ export const AreaSection = ({
               )}
             </div>
           </div>
-          <div
-            className={cn(
-              "h-px flex-1 bg-gradient-to-r to-transparent",
-              t.line,
-            )}
-            aria-hidden
-          />
         </div>
         <p className="text-sm text-muted-foreground">{description}</p>
       </header>

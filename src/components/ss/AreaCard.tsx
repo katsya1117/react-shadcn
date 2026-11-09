@@ -14,18 +14,17 @@ import { Folder, FolderOpen } from "lucide-react";
 import type { AreaTone } from "./AreaSection";
 
 const CARD_TONE_CLASSES: Record<AreaTone, string> = {
-  primary:
-    "border-l-primary/30 hover:border-primary/30 hover:shadow-primary/5",
-  sky: "border-l-sky-500/40 hover:border-sky-500/40 hover:shadow-sky-500/5",
+  primary: "border-l-primary/30 hover:border-primary/40",
+  sky: "border-l-sky-500/40 hover:border-sky-500/50",
 };
 
 const ICON_TONE_CLASSES: Record<AreaTone, { chip: string; icon: string }> = {
   primary: {
-    chip: "from-primary/10 to-primary/5 ring-primary/10 group-hover:from-primary/15 group-hover:to-primary/10 group-hover:ring-primary/20",
+    chip: "bg-primary/10 ring-primary/10 group-hover:bg-primary/15 group-hover:ring-primary/20",
     icon: "text-primary/70 group-hover:text-primary",
   },
   sky: {
-    chip: "from-sky-500/15 to-sky-500/5 ring-sky-500/20 group-hover:from-sky-500/20 group-hover:to-sky-500/10 group-hover:ring-sky-500/30",
+    chip: "bg-sky-500/10 ring-sky-500/20 group-hover:bg-sky-500/15 group-hover:ring-sky-500/30",
     icon: "text-sky-600/80 group-hover:text-sky-600 dark:text-sky-400",
   },
 };
@@ -34,7 +33,7 @@ const ICON_TONE_CLASSES: Record<AreaTone, { chip: string; icon: string }> = {
 export const AreaFolderIcon = ({ tone = "primary" }: { tone?: AreaTone }) => (
   <div
     className={cn(
-      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 transition-all duration-300",
+      "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-all duration-300",
       ICON_TONE_CLASSES[tone].chip,
     )}
   >
@@ -47,7 +46,7 @@ export const AreaFolderIcon = ({ tone = "primary" }: { tone?: AreaTone }) => (
   </div>
 );
 
-/** 領域カードの外枠（ホバー時の装飾つき）。所属・ゲストのカードと、共有のカードで共通 */
+/** 領域カードの外枠（平らな見た目。ホバーでは枠の色だけ変える）。所属・ゲストのカードと、共有のカードで共通 */
 export const AreaCard = ({
   children,
   muted = false,
@@ -63,14 +62,12 @@ export const AreaCard = ({
 }) => (
   <Card
     className={cn(
-      "group relative overflow-hidden border-border/60 bg-card/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 py-0 gap-0 border-l-2",
+      "group relative overflow-hidden border-border/60 bg-card shadow-none transition-colors duration-200 hover:shadow-none py-0 gap-0 border-l-2",
       CARD_TONE_CLASSES[tone],
       muted && "opacity-60",
       className,
     )}
   >
-    {/* サブトルなグラデーションオーバーレイ */}
-    <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
     <CardContent className="relative p-4">{children}</CardContent>
   </Card>
 );

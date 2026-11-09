@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { ShareArea } from "./ShareArea";
 import { SHARE_AREAS } from "@/config/shareAreaConfig";
@@ -112,26 +112,53 @@ describe("ShareArea", () => {
       await waitFor(() => expect(collab.querySelectorAll("li").length).toBeGreaterThan(0));
     });
 
-    it("5 件を超えるときは、最初は 5 件だけ出し、『すべて表示』で残りを出す", async () => {
-      const { user } = renderShareArea("mock-user");
+    it("親のセンターごとに小見出しをつけて、センターの区分けはすべて出す", async () => {
+      renderShareArea("mock-user");
       const collab = await screen.findByRole("region", { name: /共有された領域/ });
-      await waitFor(() => expect(collab.querySelectorAll("li")).toHaveLength(5));
-      await user.click(screen.getByRole("button", { name: /すべて表示（あと 2 件）/ }));
-      expect(collab.querySelectorAll("li")).toHaveLength(7);
-      await user.click(screen.getByRole("button", { name: "折りたたむ" }));
-      expect(collab.querySelectorAll("li")).toHaveLength(5);
+      const centers = await within(collab).findAllByRole("region");
+      expect(centers).toHaveLength(2);
+      expect(centers[0]).toHaveTextContent("第2ソフトウェア開発センター");
+      expect(centers[0]).toHaveTextContent("JCLGD2SWDV");
+      expect(centers[1]).toHaveTextContent("第3ネットワークセンター");
+      // センターの表示名は、カードではなく小見出しに出る
+      expect(within(centers[1]).getAllByText("第3ネットワークセンター")).toHaveLength(1);
     });
 
-    it("絞り込みでは、隠れている分も含めて、一致するものをすべて出す", async () => {
+    it("センターごとに最初は 4 件だけ出し、『他 N 件を表示』で広げる。他のセンターは影響を受けない", async () => {
       const { user } = renderShareArea("mock-user");
       const collab = await screen.findByRole("region", { name: /共有された領域/ });
-      await waitFor(() => expect(collab.querySelectorAll("li")).toHaveLength(5));
-      await user.type(screen.getByLabelText("共有された領域を絞り込み"), "インフラ");
-      // フォルダ名またはパスに「インフラ」を含むもの
-      expect(collab.querySelectorAll("li")).toHaveLength(3);
-      expect(screen.queryByRole("button", { name: /すべて表示/ })).not.toBeInTheDocument();
-      await user.clear(screen.getByLabelText("共有された領域を絞り込み"));
-      await user.type(screen.getByLabelText("共有された領域を絞り込み"), "存在しない名前");
+      const [first, second] = await within(collab).findAllByRole("region");
+      // 第2ソフトウェア開発センターは 5 件 → 4 件 + 他 1 件
+      expect(first.querySelectorAll("li")).toHaveLength(4);
+      // 第3ネットワークセンターは 4 件 → 広げるボタンなし
+      expect(second.querySelectorAll("li")).toHaveLength(4);
+      expect(
+        within(second).queryByRole("button", { name: /件を表示|折りたたむ/ }),
+      ).not.toBeInTheDocument();
+
+      await user.click(within(first).getByRole("button", { name: "他 1 件を表示" }));
+      expect(first.querySelectorAll("li")).toHaveLength(5);
+      expect(second.querySelectorAll("li")).toHaveLength(4);
+      await user.click(within(first).getByRole("button", { name: "折りたたむ" }));
+      expect(first.querySelectorAll("li")).toHaveLength(4);
+    });
+
+    it("絞り込みでは、一致するカードをすべて出し、一致のないセンターは出さない", async () => {
+      const { user } = renderShareArea("mock-user");
+      const collab = await screen.findByRole("region", { name: /共有された領域/ });
+      await within(collab).findAllByRole("region");
+      const input = screen.getByLabelText("共有された領域を絞り込み");
+
+      // 「経理」を含むのは 請求書 だけ（第2ソフトウェア開発センターの、隠れていた 5 件目）
+      await user.type(input, "経理");
+      const regions = within(collab).getAllByRole("region");
+      expect(regions).toHaveLength(1);
+      expect(regions[0].querySelectorAll("li")).toHaveLength(1);
+      expect(regions[0]).toHaveTextContent("請求書");
+      expect(within(collab).queryByRole("button", { name: /件を表示/ })).not.toBeInTheDocument();
+
+      await user.clear(input);
+      await user.type(input, "存在しない名前");
       expect(screen.getByText("一致する領域はありません。")).toBeInTheDocument();
     });
 
@@ -170,14 +197,17 @@ describe("ShareArea", () => {
       expect(card).not.toHaveTextContent("閲覧者");
     });
 
-    it("カードの上段にセンター名のラベル、中段にフォルダ名を出し、2 段組で並べる", async () => {
+    it("センターの小見出しの下に、フォルダ名のカードを 2 段組で並べる", async () => {
       renderShareArea("u001");
       const title = await screen.findByText("見積資料");
       const card = title.closest("li") as HTMLElement;
-      // ラベルは、センターの表示名（〇〇センター）。フルパスの先頭は、Box 上のフォルダ名（英字）
-      expect(card).toHaveTextContent("第2ソフトウェア開発センター");
+      // 親のセンターの小見出しの区分けの中にある
+      const group = card.closest("section") as HTMLElement;
+      expect(group).toHaveTextContent("第2ソフトウェア開発センター");
+      // カード自体には、センターの表示名を出さない
+      expect(card).not.toHaveTextContent("第2ソフトウェア開発センター");
+      // フルパスの先頭は、Box 上のフォルダ名（英字）
       expect(card).toHaveTextContent("JCLGD2SWDV › … › 案件A › 見積資料");
-      expect(title).not.toHaveTextContent("JCLGD2SWDV");
       // 2 段組（md 以上で 2 列）
       expect(card.parentElement).toHaveClass("md:grid-cols-2");
     });

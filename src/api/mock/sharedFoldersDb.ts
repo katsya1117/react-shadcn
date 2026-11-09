@@ -75,6 +75,20 @@ const sharedFolders: SharedFolderRow[] = [
     status: "ok",
   },
   {
+    folder_id: "370710000014",
+    center_folder_id: "370700000001",
+    folder_name: "提案書",
+    path_names: ["2024年度", "営業部", "案件B"],
+    status: "ok",
+  },
+  {
+    folder_id: "370710000015",
+    center_folder_id: "370700000001",
+    folder_name: "請求書",
+    path_names: ["2024年度", "経理"],
+    status: "ok",
+  },
+  {
     folder_id: "370710000012",
     center_folder_id: "370700000002",
     folder_name: "ネットワーク構成図",
@@ -168,6 +182,20 @@ const shareGrants: ShareGrantRow[] = [
   {
     collaboration_id: "g-13",
     folder_id: "370710000013",
+    principal_type: "user",
+    principal_id: "mock-user",
+    role: "viewer",
+  },
+  {
+    collaboration_id: "g-14",
+    folder_id: "370710000014",
+    principal_type: "user",
+    principal_id: "mock-user",
+    role: "viewer",
+  },
+  {
+    collaboration_id: "g-15",
+    folder_id: "370710000015",
     principal_type: "user",
     principal_id: "mock-user",
     role: "viewer",

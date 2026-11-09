@@ -1,5 +1,3 @@
-import { Building2 } from "lucide-react";
-
 import type { SharedAreaItem } from "@/api";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +15,8 @@ import { AreaCard, AreaFolderIcon, BoxLinkButtons } from "./AreaCard";
  * 他センターから共有されたフォルダ 1 つ分のカード。
  * 共有されたフォルダへ直接移動するための表示で、コラボレーション設定のボタンは持たない。
  *
- * 所属・ゲストのカードと同じ骨格（アイコン / フォルダ名とバッジ / センターの表示名 / 下段のボタン）で、
+ * 所属・ゲストのカードと同じ骨格（アイコン / フォルダ名とバッジ / 下段のボタン）。
+ * どのセンターから共有されたかは、カードではなく、センターごとの小見出し（SharedAreaList）で示す。
  * 共有のカードだけがフルパスの行を足す。
  */
 export const SharedAreaCard = ({ item }: { item: SharedAreaItem }) => {
@@ -48,13 +47,8 @@ export const SharedAreaCard = ({ item }: { item: SharedAreaItem }) => {
                 {ROLE_LABELS[item.role]}
               </Badge>
             </div>
-            {/* どのセンターから共有されたか（センターの表示名） */}
-            <p className="flex items-center gap-1 truncate text-xs text-muted-foreground/80">
-              <Building2 className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">{item.centerLabel}</span>
-            </p>
             {/* フルパス。長いときは途中を省略し、2 行まで折り返す。全文は title で見せる。
-                センター直下のときは、フォルダ名とセンターが分かるので出さない */}
+                センター直下のときは、小見出しとフォルダ名で分かるので出さない */}
             {item.pathNames.length > 0 && (
               <p
                 className="line-clamp-2 break-all text-xs text-muted-foreground/60"
