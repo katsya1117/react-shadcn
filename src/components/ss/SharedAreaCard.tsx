@@ -1,77 +1,76 @@
 import type { SharedAreaItem } from "@/api";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   PATH_SEPARATOR,
   ROLE_LABELS,
-  abbreviatePath,
   buildBoxDriveUrl,
   buildFullPath,
   buildWebBoxUrl,
 } from "@/lib/sharedArea";
+import { FolderSymlink } from "lucide-react";
 
-import { AreaCard, AreaFolderIcon, BoxLinkButtons } from "./AreaCard";
+import { AreaCard, BoxLinkButtons } from "./AreaCard";
 
 /**
- * 他センターから共有されたフォルダ 1 つ分のカード。
- * 共有されたフォルダへ直接移動するための表示で、コラボレーション設定のボタンは持たない。
- *
- * 所属・ゲストのカードと同じ骨格（アイコン / フォルダ名とバッジ / 下段のボタン）。
- * どのセンターから共有されたかは、カードではなく、センターごとの小見出し（SharedAreaList）で示す。
- * 共有のカードだけがフルパスの行を足す。
+ * 他センターから共有されたフォルダ 1 つ分の横長パネル。
+ * 1 行目は「センターコード › フォルダ名」とロール、2 行目にセンター名のピル。
+ * 途中のパスはツールチップでだけ見せる。
  */
 export const SharedAreaCard = ({ item }: { item: SharedAreaItem }) => {
   const isMissing = item.status === "missing";
-  const fullPath = buildFullPath(item);
+  const fullPathText = buildFullPath(item).join(PATH_SEPARATOR);
 
   return (
     <li>
-      <AreaCard muted={isMissing} tone="sky" className="h-full">
-        <div className="flex items-start gap-3">
-          <AreaFolderIcon tone="sky" />
-
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
-                {item.folderName}
-              </span>
-              <Badge
-                variant="secondary"
-                className="h-5 shrink-0 border-0 bg-sky-100/80 px-1.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-400"
-              >
-                共有
-              </Badge>
-              <Badge
-                variant="outline"
-                className="h-5 shrink-0 px-1.5 text-[10px] font-medium"
-              >
-                {ROLE_LABELS[item.role]}
-              </Badge>
-            </div>
-            {/* フルパス。長いときは途中を省略し、2 行まで折り返す。全文は title で見せる。
-                センター直下のときは、小見出しとフォルダ名で分かるので出さない */}
-            {item.pathNames.length > 0 && (
-              <p
-                className="line-clamp-2 break-all text-xs text-muted-foreground/60"
-                title={fullPath.join(PATH_SEPARATOR)}
-              >
-                {abbreviatePath(fullPath).join(PATH_SEPARATOR)}
-              </p>
-            )}
-            {isMissing && (
-              <p className="text-xs text-destructive">
-                Box 上で見つかりません（削除された、または権限がありません）
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-end">
+      <AreaCard
+        icon={FolderSymlink}
+        muted={isMissing}
+        className="py-2"
+        actions={
           <BoxLinkButtons
             webBoxUrl={buildWebBoxUrl(item.folderId)}
             boxDriveUrl={buildBoxDriveUrl(item)}
             disabled={isMissing}
           />
+        }
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="flex min-w-0 items-baseline gap-1.5 text-[13px] leading-5 font-semibold text-foreground">
+                <span className="shrink-0">{item.centerName}</span>
+                <span className="shrink-0 font-normal text-muted-foreground/70" aria-hidden>
+                  ›
+                </span>
+                <span className="truncate">{item.folderName}</span>
+                <span className="sr-only">（{fullPathText}）</span>
+              </p>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-md break-all">
+              {fullPathText}
+            </TooltipContent>
+          </Tooltip>
+          <Badge
+            variant="outline"
+            className="h-4 shrink-0 rounded-full border-border/70 px-1.5 text-[10px] leading-none font-normal text-muted-foreground"
+          >
+            {ROLE_LABELS[item.role]}
+          </Badge>
+          {isMissing && (
+            <span className="shrink-0 text-[11px] text-destructive">
+              Box 上で見つかりません
+            </span>
+          )}
         </div>
+
+        <span className="mt-0.5 block w-fit max-w-full truncate rounded-full bg-muted px-2 text-[10px] leading-4 text-muted-foreground">
+          {item.centerLabel}
+        </span>
       </AreaCard>
     </li>
   );

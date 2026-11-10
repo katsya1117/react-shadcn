@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Information } from "../common/Information/Information";
-import { VersionInfo } from "../common/Version/VersionInfo";
+import { VersionInfo } from "../common/version/VersionInfo";
 import { userSelector } from "@/redux/slices/userSlice";
 import { useSelector } from "react-redux";
 import {

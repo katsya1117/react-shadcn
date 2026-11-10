@@ -1,96 +1,71 @@
 import type { ReactNode } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-/** セクションの色味。所属（primary）と、共有（sky）で分ける */
-export type AreaTone = "primary" | "sky";
-
-const toneClasses: Record<
-  AreaTone,
-  { chip: string; eyebrow: string; count: string }
-> = {
-  primary: {
-    chip: "bg-primary/10 text-primary ring-primary/20",
-    eyebrow: "text-primary/70",
-    count: "bg-primary/10 text-primary",
-  },
-  sky: {
-    chip: "bg-sky-500/10 text-sky-600 ring-sky-500/20 dark:text-sky-400",
-    eyebrow: "text-sky-600/80 dark:text-sky-400/80",
-    count: "bg-sky-500/10 text-sky-700 dark:text-sky-400",
-  },
-};
-
 /**
- * ランチャーの区分け 1 つ分（見出し + カード一覧）。
- * 見出しは「アイコン / 英字の小見出し + タイトル + 件数」で作り、全体を角丸の薄いグレーのブロックで囲む
- * （二つの区分けを、ブロックで分ける。カードは平らに載せる）。
+ * ランチャーの区分け 1 つ分。見出しはグレーのパネルの中の上端に置き（スクロールしない）、
+ * 中身があふれたときは見出しの下だけでスクロールする。
+ * 見出し左のボタンでセクション全体を折りたためる。
  */
 export const AreaSection = ({
   id,
-  eyebrow,
   title,
-  description,
-  icon,
-  tone,
-  count,
+  open,
+  onOpenChange,
+  action,
+  className,
   children,
 }: {
   id: string;
-  eyebrow: string;
   title: string;
-  description: string;
-  icon: ReactNode;
-  tone: AreaTone;
-  /** 件数。未取得のときは undefined にして表示しない */
-  count?: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** 見出しの右側に置く要素（絞り込み欄など）。折りたたみ中は出さない */
+  action?: ReactNode;
+  className?: string;
   children: ReactNode;
 }) => {
-  const t = toneClasses[tone];
+  const bodyId = `${id}-body`;
+
   return (
     <section
-      className="space-y-4 rounded-2xl bg-slate-200/50 p-5 dark:bg-slate-800/50"
       aria-labelledby={id}
+      className={cn("flex min-h-0 flex-col rounded-2xl bg-muted", className)}
     >
-      <header className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
-              t.chip,
-            )}
+      <header className="flex min-h-8 flex-none items-center justify-between gap-4 px-3 py-2.5">
+        <h2 id={id} className="min-w-0">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={open ? bodyId : undefined}
+            onClick={() => onOpenChange(!open)}
+            className="flex items-center gap-1.5 rounded-md py-1 pl-1 pr-2 text-sm font-bold text-foreground transition-colors hover:bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "text-[10px] font-medium uppercase tracking-[0.25em]",
-                t.eyebrow,
-              )}
-            >
-              {eyebrow}
-            </p>
-            <div className="flex items-center gap-2">
-              <h2 id={id} className="text-lg font-semibold tracking-tight">
-                {title}
-              </h2>
-              {count !== undefined && (
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums",
-                    t.count,
-                  )}
-                >
-                  {count}
-                </span>
-              )}
-            </div>
+            {open ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+            )}
+            {title}
+          </button>
+        </h2>
+        {open && action}
+      </header>
+
+      {open && (
+        <div
+          id={bodyId}
+          className="flex min-h-0 flex-1 flex-col px-4 pb-4"
+        >
+          {/* カードの影が切れないよう、スクロール領域に少し余白を持たせる。
+              relative は必須: 中の sr-only（position: absolute）が body 基準で配置されると、
+              スクロール外へはみ出してページ全体に余白ができる */}
+          <div className="relative -m-1 min-h-0 flex-1 overflow-y-auto p-1">
+            {children}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </header>
-      {children}
+      )}
     </section>
   );
 };
