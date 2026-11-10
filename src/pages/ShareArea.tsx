@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { generatePath, useNavigate } from "react-router";
+import { generatePath, useNavigate, useSearchParams } from "react-router";
 import { UrlPath } from "@/constants/UrlPath";
-import { SHARE_AREAS } from "@/config/shareAreaConfig";
+import {
+  MOCK_MANY_SHARE_AREAS,
+  SHARE_AREAS,
+} from "@/config/shareAreaConfig";
 import {
   AreaActionDivider,
   AreaCard,
@@ -31,7 +34,9 @@ import { buildWebBoxUrl } from "@/lib/sharedArea";
 const IS_ADMIN = true;
 
 const ShareArea = () => {
-  const areas = SHARE_AREAS;
+  const [searchParams] = useSearchParams();
+  const areas =
+    searchParams.get("mock") === "many" ? MOCK_MANY_SHARE_AREAS : SHARE_AREAS;
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const userCd = useSelector(userSelector.loginUserCdSelector());
@@ -72,7 +77,9 @@ const ShareArea = () => {
           onOpenChange={setMyCenterOpen}
           className={myCenterClass}
         >
-          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          {/* 画面幅ではなくレーン自体の幅で 2 列にする（サイドバーの開閉に追従させるため） */}
+          <div className="@container">
+          <ul className="grid grid-cols-1 gap-2 @3xl:grid-cols-2">
             {areas.map((area) => (
               <li key={area.code}>
                 <AreaCard
@@ -105,7 +112,7 @@ const ShareArea = () => {
                   }
                 >
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
+                    <span className="truncate text-sm font-semibold text-foreground">
                       {area.folderName}
                     </span>
                     {area.isGuest && (
@@ -124,6 +131,7 @@ const ShareArea = () => {
               </li>
             ))}
           </ul>
+          </div>
         </AreaSection>
 
         <AreaSection

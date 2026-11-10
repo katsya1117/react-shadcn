@@ -38,3 +38,38 @@ export const SHARE_AREAS: ShareArea[] = [
     boxFolderId: "370615941389",
   },
 ];
+
+const MOCK_CENTER_LABELS = [
+  "第2ソフトウェア開発センター",
+  "第3ソフトウェア開発センター",
+  "品質保証センター",
+  "インフラ基盤センター",
+  "ネットワーク技術センター",
+  "セキュリティ運用センター",
+  "データ活用推進センター",
+  "クラウドサービスセンター",
+  "業務システム開発センター",
+  "組込みシステム開発センター",
+  "生産技術センター",
+  "顧客サポートセンター",
+  "研究開発センター",
+  "人材育成センター",
+  "購買管理センター",
+  "経営企画室",
+];
+
+/** 所属が多いときの見え方を確かめるためのモック（?mock=many で使う） */
+export const MOCK_MANY_SHARE_AREAS: ShareArea[] = [
+  ...SHARE_AREAS,
+  ...MOCK_CENTER_LABELS.map((label, index) => {
+    const folderName = `JCLGD${index + 2}MOCK`;
+    return {
+      code: folderName.toLowerCase(),
+      folderName,
+      label,
+      isGuest: index % 7 === 3,
+      jclUrl: `/launch/${folderName}/jcl`,
+      boxFolderId: "370615941389",
+    };
+  }),
+];

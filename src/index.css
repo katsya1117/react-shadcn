@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -208,7 +208,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    font-family: "Noto Sans JP", system-ui, -apple-system, sans-serif;
+    /* 英数字は Lato、和文は Lato に字形がないので Noto Sans JP にフォールバックする */
+    font-family: "Lato", "Noto Sans JP", system-ui, -apple-system, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
