@@ -1,20 +1,19 @@
 import type { SharedAreaItem } from "@/api";
 import { Input } from "@/components/ui/input";
-import { PATH_SEPARATOR, buildFullPath } from "@/lib/sharedArea";
 
 import { SharedAreaCard } from "./SharedAreaCard";
 
 /** 絞り込み欄を出す件数（これを超えるときだけ） */
 export const SHARED_AREA_FILTER_MIN_COUNT = 5;
 
+/** センターのフォルダ名・センターの表示名・共有フォルダ名の 3 つで絞り込む（途中のパスは対象外） */
 export const filterSharedAreas = (items: SharedAreaItem[], query: string) => {
   const keyword = query.trim().toLowerCase();
   if (!keyword) return items;
   return items.filter((item) =>
-    [item.centerLabel, ...buildFullPath(item)]
-      .join(PATH_SEPARATOR)
-      .toLowerCase()
-      .includes(keyword),
+    [item.centerName, item.centerLabel, item.folderName].some((field) =>
+      field.toLowerCase().includes(keyword),
+    ),
   );
 };
 
@@ -30,7 +29,7 @@ export const SharedAreaFilter = ({
     type="search"
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    placeholder="センター名・フォルダ名・パスで絞り込み"
+    placeholder="センター名・フォルダ名で絞り込み"
     aria-label="My Collaboration を絞り込み"
     className="h-8 w-64 shrink-0 rounded-lg border-border/60 bg-card text-xs shadow-xs"
   />
