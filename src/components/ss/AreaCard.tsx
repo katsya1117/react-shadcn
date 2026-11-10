@@ -19,6 +19,7 @@ export const AreaCard = ({
   actions,
   icon: Icon = Folder,
   muted = false,
+  accent = false,
   className,
 }: {
   children: ReactNode;
@@ -28,15 +29,24 @@ export const AreaCard = ({
   icon?: LucideIcon;
   /** 見つからない領域などを、グレー表示にする */
   muted?: boolean;
+  /** カード上端に細い帯をつける（所属センター用） */
+  accent?: boolean;
   className?: string;
 }) => (
   <div
     className={cn(
-      "flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-xs transition-[box-shadow,border-color] hover:border-primary/25 hover:shadow-sm",
+      "relative flex items-center gap-3 overflow-hidden rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-xs transition-[box-shadow,border-color] hover:border-primary/25 hover:shadow-sm",
+      accent && "pt-3",
       muted && "opacity-60",
       className,
     )}
   >
+    {accent && (
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-primary/70"
+        aria-hidden
+      />
+    )}
     <span
       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-primary"
       aria-hidden

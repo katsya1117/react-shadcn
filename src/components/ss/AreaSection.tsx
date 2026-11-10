@@ -58,8 +58,10 @@ export const AreaSection = ({
           id={bodyId}
           className="flex min-h-0 flex-1 flex-col rounded-2xl bg-muted p-4"
         >
-          {/* カードの影が切れないよう、スクロール領域に少し余白を持たせる */}
-          <div className="-m-1 min-h-0 flex-1 overflow-y-auto p-1">
+          {/* カードの影が切れないよう、スクロール領域に少し余白を持たせる。
+              relative は必須: 中の sr-only（position: absolute）が body 基準で配置されると、
+              スクロール外へはみ出してページ全体に余白ができる */}
+          <div className="relative -m-1 min-h-0 flex-1 overflow-y-auto p-1">
             {children}
           </div>
         </div>

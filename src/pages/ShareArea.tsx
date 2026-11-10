@@ -80,6 +80,7 @@ const ShareArea = () => {
             {areas.map((area) => (
               <li key={area.code}>
                 <AreaCard
+                  accent
                   actions={
                     <>
                       {IS_ADMIN && (
