@@ -38,7 +38,7 @@ export const AreaSection = ({
           <button
             type="button"
             aria-expanded={open}
-            aria-controls={bodyId}
+            aria-controls={open ? bodyId : undefined}
             onClick={() => onOpenChange(!open)}
             className="-ml-1 flex items-center gap-1.5 rounded-md py-1 pl-1 pr-2 text-sm font-bold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -53,27 +53,16 @@ export const AreaSection = ({
         {open && action}
       </header>
 
-      {open ? (
+      {open && (
         <div
           id={bodyId}
-          className="flex min-h-0 flex-1 flex-col rounded-xl bg-muted p-2.5"
+          className="flex min-h-0 flex-1 flex-col rounded-2xl bg-muted p-4"
         >
           {/* カードの影が切れないよう、スクロール領域に少し余白を持たせる */}
           <div className="-m-1 min-h-0 flex-1 overflow-y-auto p-1">
             {children}
           </div>
         </div>
-      ) : (
-        <button
-          type="button"
-          aria-controls={bodyId}
-          aria-expanded={false}
-          onClick={() => onOpenChange(true)}
-          className="flex w-full flex-none items-center justify-center gap-1 rounded-xl bg-muted py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-          展開する
-        </button>
       )}
     </section>
   );

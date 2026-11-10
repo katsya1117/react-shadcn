@@ -2,12 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Users } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { generatePath, useNavigate, useSearchParams } from "react-router";
+import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constants/UrlPath";
-import {
-  MOCK_MANY_SHARE_AREAS,
-  SHARE_AREAS,
-} from "@/config/shareAreaConfig";
+import { MOCK_MANY_SHARE_AREAS } from "@/config/shareAreaConfig";
 import {
   AreaActionDivider,
   AreaCard,
@@ -33,10 +30,10 @@ import { buildWebBoxUrl } from "@/lib/sharedArea";
 /** モック用フラグ。将来的にはセッションのロールから取得する */
 const IS_ADMIN = true;
 
+/** デザイン確認用に 20 件のモックを表示中。本番データに戻すときは SHARE_AREAS にする */
+const areas = MOCK_MANY_SHARE_AREAS;
+
 const ShareArea = () => {
-  const [searchParams] = useSearchParams();
-  const areas =
-    searchParams.get("mock") === "many" ? MOCK_MANY_SHARE_AREAS : SHARE_AREAS;
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const userCd = useSelector(userSelector.loginUserCdSelector());
@@ -79,7 +76,7 @@ const ShareArea = () => {
         >
           {/* 画面幅ではなくレーン自体の幅で 2 列にする（サイドバーの開閉に追従させるため） */}
           <div className="@container">
-          <ul className="grid grid-cols-1 gap-2 @3xl:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 @3xl:grid-cols-2">
             {areas.map((area) => (
               <li key={area.code}>
                 <AreaCard

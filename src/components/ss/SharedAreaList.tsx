@@ -41,7 +41,7 @@ export const SharedAreaList = ({ items }: { items: SharedAreaItem[] }) =>
   items.length === 0 ? (
     <p className="text-sm text-muted-foreground">一致する領域はありません。</p>
   ) : (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-3">
       {items.map((item) => (
         <SharedAreaCard key={item.folderId} item={item} />
       ))}
