@@ -35,7 +35,7 @@ export const AreaCard = ({
 }) => (
   <div
     className={cn(
-      "relative flex items-center gap-3 overflow-hidden rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-xs transition-[box-shadow,border-color] hover:border-primary/25 hover:shadow-sm",
+      "relative flex items-center gap-3 overflow-hidden rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-none transition-[box-shadow,border-color] hover:border-primary/25 hover:shadow-xs",
       accent && "pt-3",
       muted && "opacity-60",
       className,
