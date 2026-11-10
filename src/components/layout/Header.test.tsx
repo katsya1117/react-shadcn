@@ -16,7 +16,7 @@ jest.mock("@/components/common/Information/Information", () => ({
   Information: () => <div data-testid="information" />,
 }));
 
-jest.mock("@/components/common/Version/VersionInfo", () => ({
+jest.mock("@/components/common/version/VersionInfo", () => ({
   VersionInfo: () => <div data-testid="version" />,
 }));
 
