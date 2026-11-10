@@ -4,7 +4,7 @@ import { Settings, Users } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { generatePath, useNavigate } from "react-router";
 import { UrlPath } from "@/constants/UrlPath";
-import { MOCK_MANY_SHARE_AREAS } from "@/config/shareAreaConfig";
+import { MOCK_MY_CENTER_AREAS } from "@/config/shareAreaConfig";
 import {
   AreaActionDivider,
   AreaCard,
@@ -30,8 +30,8 @@ import { buildWebBoxUrl } from "@/lib/sharedArea";
 /** モック用フラグ。将来的にはセッションのロールから取得する */
 const IS_ADMIN = true;
 
-/** デザイン確認用に 20 件のモックを表示中。本番データに戻すときは SHARE_AREAS にする */
-const areas = MOCK_MANY_SHARE_AREAS;
+/** 所属・ゲストのセンター（モック 20 件）。本番は API が DB の所属に応じて返す */
+const areas = MOCK_MY_CENTER_AREAS;
 
 const ShareArea = () => {
   const navigate = useNavigate();

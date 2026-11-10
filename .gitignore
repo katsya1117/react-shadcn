@@ -24,3 +24,6 @@ coverage*
 *.njsproj
 *.sln
 *.sw?
+
+# パッケージマネージャーは yarn に統一（npm の lockfile は置かない）
+package-lock.json

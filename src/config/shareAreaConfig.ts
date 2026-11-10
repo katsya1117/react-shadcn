@@ -58,8 +58,13 @@ const MOCK_CENTER_LABELS = [
   "経営企画室",
 ];
 
-/** 所属が多いときの見え方を確かめるためのモック（?mock=many で使う） */
-export const MOCK_MANY_SHARE_AREAS: ShareArea[] = [
+/**
+ * ランチャーの My Center に出す、所属・ゲストのセンターのモック（20 件）。
+ * 本番は API が DB の所属に応じて返す。
+ * 先頭 4 件は実在のフォルダ（SHARE_AREAS）。残りは件数が多いときの見え方のためのもので、
+ * Box のフォルダ ID は SHARE_AREAS の 1 件を流用している。
+ */
+export const MOCK_MY_CENTER_AREAS: ShareArea[] = [
   ...SHARE_AREAS,
   ...MOCK_CENTER_LABELS.map((label, index) => {
     const folderName = `JCLGD${index + 2}MOCK`;

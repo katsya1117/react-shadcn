@@ -33,6 +33,7 @@ export const FilePenLine = makeIcon("file-pen-line");
 export const Folder = makeIcon("folder");
 export const FolderLock = makeIcon("folder-lock");
 export const FolderOpen = makeIcon("folder-open");
+export const FolderSymlink = makeIcon("folder-symlink");
 export const Info = makeIcon("info");
 export const Link2 = makeIcon("link2");
 export const List = makeIcon("list");

@@ -425,7 +425,7 @@ netsh winhttp show proxy
 Box SDK はサーバーサイドで動いていると思いますが、Node.jsはOSのプロキシ設定を自動で使いません。これが根本原因の可能性が高いです。
 
 対処法：https-proxy-agent を使う
-npm install https-proxy-agent
+yarn add https-proxy-agent
 
 import BoxSDK from "box-node-sdk";
 import { HttpsProxyAgent } from "https-proxy-agent";

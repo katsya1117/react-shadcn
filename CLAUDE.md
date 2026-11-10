@@ -5,17 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev        # Start dev server on port 5174
-npm run build      # TypeScript check + Vite build
-npm run lint       # ESLint
-npm run test       # Jest (single-threaded, jsdom environment)
-npm run test:watch # Jest watch mode
-npm run test:coverage  # Jest with LCOV coverage report
+yarn install       # Package manager is yarn (yarn.lock). Do not commit package-lock.json
+yarn dev            # Start dev server on port 5174
+yarn build          # TypeScript check + Vite build
+yarn lint           # ESLint
+yarn test           # Jest (single-threaded, jsdom environment)
+yarn test:watch     # Jest watch mode
+yarn test:coverage  # Jest with LCOV coverage report
 ```
 
 To run a single test file:
 ```bash
-npx jest src/redux/slices/userSlice.test.ts
+yarn jest src/redux/slices/userSlice.test.ts
 ```
 
 ## Architecture Overview
