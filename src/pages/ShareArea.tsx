@@ -39,6 +39,17 @@ const ShareArea = () => {
   const sharedLoaded = useSelector(sharedAreaSelector.loadedSelector());
   const sharedError = useSelector(sharedAreaSelector.errorSelector());
   const [query, setQuery] = useState("");
+  const [myCenterOpen, setMyCenterOpen] = useState(true);
+  const [collaborationOpen, setCollaborationOpen] = useState(true);
+
+  // My Center は中身の高さだけ取り、両方開いているときは半分まで。
+  // My Collaboration は残りをすべて使う。たたんだ側は見出しの高さだけになる
+  const myCenterClass = !myCenterOpen
+    ? "flex-none"
+    : collaborationOpen
+      ? "flex-none max-h-1/2"
+      : "flex-initial";
+  const collaborationClass = collaborationOpen ? "flex-1" : "flex-none";
 
   const filteredShared = useMemo(
     () => filterSharedAreas(sharedItems, query),
@@ -56,12 +67,12 @@ const ShareArea = () => {
       <div className="flex h-[calc(100dvh-5.5rem)] min-h-96 flex-col gap-3">
         <AreaSection
           id="my-center-heading"
-          title="所属センター"
-          description="所属、またはゲストとして招待されているセンターの領域"
-          count={areas.length}
-          className="max-h-[45%] flex-none"
+          title="My Center"
+          open={myCenterOpen}
+          onOpenChange={setMyCenterOpen}
+          className={myCenterClass}
         >
-          <ul className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
             {areas.map((area) => (
               <li key={area.code}>
                 <AreaCard
@@ -106,7 +117,7 @@ const ShareArea = () => {
                       </Badge>
                     )}
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {area.label}
                   </p>
                 </AreaCard>
@@ -117,10 +128,10 @@ const ShareArea = () => {
 
         <AreaSection
           id="my-collaboration-heading"
-          title="共有された領域"
-          description="他のセンターから共有されているフォルダ"
-          count={sharedLoaded ? sharedItems.length : undefined}
-          className="flex-1"
+          title="My Collaboration"
+          open={collaborationOpen}
+          onOpenChange={setCollaborationOpen}
+          className={collaborationClass}
           action={
             sharedItems.length > SHARED_AREA_FILTER_MIN_COUNT && (
               <SharedAreaFilter value={query} onChange={setQuery} />

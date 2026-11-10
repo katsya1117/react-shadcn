@@ -31,8 +31,8 @@ export const SharedAreaFilter = ({
     value={value}
     onChange={(e) => onChange(e.target.value)}
     placeholder="センター名・フォルダ名・パスで絞り込み"
-    aria-label="共有された領域を絞り込み"
-    className="h-8 w-64 shrink-0 bg-card text-xs"
+    aria-label="My Collaboration を絞り込み"
+    className="h-8 w-64 shrink-0 rounded-lg border-border/60 bg-card text-xs shadow-xs"
   />
 );
 
@@ -41,7 +41,7 @@ export const SharedAreaList = ({ items }: { items: SharedAreaItem[] }) =>
   items.length === 0 ? (
     <p className="text-sm text-muted-foreground">一致する領域はありません。</p>
   ) : (
-    <ul className="flex flex-col gap-1.5">
+    <ul className="flex flex-col gap-2">
       {items.map((item) => (
         <SharedAreaCard key={item.folderId} item={item} />
       ))}

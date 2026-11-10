@@ -8,38 +8,41 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Folder, FolderOpen } from "lucide-react";
-
-/** カード左のフォルダアイコン。所属・共有で共通 */
-export const AreaFolderIcon = () => (
-  <Folder className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-);
+import { Folder, FolderOpen, type LucideIcon } from "lucide-react";
 
 /**
- * 領域カードの外枠。左に情報、右端にボタン群を置く横並びの行。
- * 影や装飾は付けず、ホバーでは枠の色だけ変える。所属・共有で共通
+ * 領域カードの外枠。左にフォルダのタイル、中央に情報、右端にボタン群を置く横並びの行。
+ * 白いカードを薄い影で浮かせ、ホバーで少しだけ持ち上げる。所属・共有で共通
  */
 export const AreaCard = ({
   children,
   actions,
+  icon: Icon = Folder,
   muted = false,
   className,
 }: {
   children: ReactNode;
   /** 右端に寄せるボタン群 */
   actions: ReactNode;
+  /** 左のタイルに置くアイコン */
+  icon?: LucideIcon;
   /** 見つからない領域などを、グレー表示にする */
   muted?: boolean;
   className?: string;
 }) => (
   <div
     className={cn(
-      "flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 transition-colors hover:border-foreground/20",
+      "flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-xs transition-[box-shadow,border-color] hover:border-primary/25 hover:shadow-sm",
       muted && "opacity-60",
       className,
     )}
   >
-    <AreaFolderIcon />
+    <span
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-primary"
+      aria-hidden
+    >
+      <Icon className="h-4 w-4" />
+    </span>
     <div className="min-w-0 flex-1">{children}</div>
     <div className="flex shrink-0 items-center gap-0.5">{actions}</div>
   </div>
@@ -66,7 +69,7 @@ export const AreaIconButton = ({
         size="icon"
         variant="ghost"
         className={cn(
-          "h-8 w-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground",
+          "h-8 w-8 rounded-md text-muted-foreground hover:bg-secondary hover:text-primary",
           className,
         )}
         aria-label={label}
