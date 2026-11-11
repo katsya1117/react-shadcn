@@ -50,6 +50,8 @@ Redux store (`src/redux/store.ts`) has 8 slices:
 | `ss` | ShareArea folder navigation history per root folder |
 | `sharedArea` | Folders shared to the user from other centers (launcher's "共有された領域" section) |
 
+Slice data that another screen can change must be refreshed after the change. In particular, any update that can affect the login user's permissions (user/center create/update/remove) dispatches `refreshLoginUser()` on success (`userSlice`, `centerSlice`). See `docs/design-login-user-refresh.md`. Box API caches in the SS screen (`VITE_BOX_FOLDER_CACHE`, `VITE_BOX_COLLABORATIONS_CACHE`) are off by default.
+
 Async thunks live inside each slice file under `src/redux/slices/`. They instantiate API classes from `src/api/index.ts` using config from `src/config/apiConfig.ts`.
 
 Always use the typed wrappers from `src/redux/hooks.ts` instead of raw `useDispatch`/`useSelector`:

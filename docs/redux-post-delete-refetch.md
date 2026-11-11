@@ -1,5 +1,7 @@
 # POST/DELETE後の再fetch問題：本番環境でデータが古いまま残る原因と対処
 
+関連: ログインユーザー情報の取り直し（権限に影響する更新のあと）は、[design-login-user-refresh.md](./design-login-user-refresh.md)。ここに書いた「更新直後の再 fetch が古い値を返す」問題は、その取り直しにも当てはまる。
+
 ## 症状
 
 - localhost では DELETE 後の再 fetch が正常に動作する

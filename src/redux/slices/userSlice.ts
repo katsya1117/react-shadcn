@@ -56,6 +56,27 @@ export const getLoginUserInfo = createAsyncThunk(
   },
 );
 
+/**
+ * ログインユーザー情報の取り直し Action。
+ *
+ * 権限に影響しうる更新（ユーザー・センターの作成/更新/削除）が成功したときに呼ぶ。
+ * どのメニューへ移っても、更新の時点で取り直されるので、画面ごとの対応は要らない。
+ *
+ * getLoginUserInfo との違い:
+ * - isLoading を立てない（isLoading はユーザー一覧の読み込みとも共有で、取り直しの間に一覧が読み込み表示になるのを避ける）
+ * - 失敗しても、エラーを出さず、今の情報を残す（呼び出し元の保存の成否に影響させない）
+ * - ログインユーザーが未設定（loginUserCd が空）のときは何もしない
+ */
+export const refreshLoginUser = createAsyncThunk(
+  `${sliceName}/refreshLoginUser`,
+  async (_: void, { getState }) => {
+    const userCd = (getState() as AppRootState).user?.loginUserCd;
+    if (!userCd) return null;
+    const response = await userApi.getUser(userCd, Config.apiOption);
+    return response.data;
+  },
+);
+
 /** ユーザー一覧取得 Action */
 export const getUserList = createAsyncThunk(
   `${sliceName}/getUserList`,
@@ -89,7 +110,7 @@ export const updateUserInfo = createAsyncThunk(
   `${sliceName}/updateUserInfo`,
   async (
     param: { userCd: string; params: UserUpdateParams },
-    { rejectWithValue },
+    { rejectWithValue, dispatch },
   ) => {
     try {
       const response = await userApi.updateUser(
@@ -97,6 +118,8 @@ export const updateUserInfo = createAsyncThunk(
         param.params,
         Config.apiOption,
       );
+      // 権限が変わった可能性があるので、ログインユーザーの情報を取り直す（待たない）
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(parseApiError(e));
@@ -125,9 +148,10 @@ export const getAdUserList = createAsyncThunk(
 
 export const userCreation = createAsyncThunk(
   `${sliceName}/userCreation`,
-  async (param: UserCreationParams, { rejectWithValue }) => {
+  async (param: UserCreationParams, { rejectWithValue, dispatch }) => {
     try {
       const response = await userApi.createUser(param, Config.apiOption);
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(parseApiError(e));
@@ -138,9 +162,10 @@ export const userCreation = createAsyncThunk(
 /** ユーザー削除 Action */
 export const removeUser = createAsyncThunk(
   `${sliceName}/removeUser`,
-  async (userCd: string, { rejectWithValue }) => {
+  async (userCd: string, { rejectWithValue, dispatch }) => {
     try {
       const response = await userApi.removeUser(userCd, Config.apiOption);
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(parseApiError(e));
@@ -230,6 +255,15 @@ export const initialState: UserState = {
   },
 };
 
+/** ログインユーザー情報を state に反映し、API のカスタムヘッダも更新する（getLoginUserInfo / refreshLoginUser で共通） */
+const applyLoginUserInfo = (state: UserState, info: UserInfo) => {
+  state.loginUserInfo = info;
+  state.isLogin = true;
+  Config.apiOption.headers = {
+    "x-jcl-user": String(info.user?.user_cd ?? "unknown user"),
+  };
+};
+
 // slice定義
 const userSlice = createSlice({
   name: sliceName,
@@ -252,15 +286,7 @@ const userSlice = createSlice({
       })
       .addCase(getLoginUserInfo.fulfilled, (state, action) => {
         if (action.payload !== null) {
-          state.loginUserInfo = action.payload;
-          state.isLogin = true;
-
-          // APIのカスタムヘッダを更新する
-          Config.apiOption.headers = {
-            "x-jcl-user": String(
-              action.payload.user?.user_cd ?? "unknown user",
-            ),
-          };
+          applyLoginUserInfo(state, action.payload);
         } else {
           state.error = setSliceError(
             "データの取得に失敗しました。",
@@ -273,6 +299,11 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.error = setSliceError(rejectedMessage);
       });
+
+    // 取り直し（refreshLoginUser）: isLoading・error には触れない。失敗したら、今の情報を残す
+    builder.addCase(refreshLoginUser.fulfilled, (state, action) => {
+      if (action.payload) applyLoginUserInfo(state, action.payload);
+    });
 
     builder
       // getUserList

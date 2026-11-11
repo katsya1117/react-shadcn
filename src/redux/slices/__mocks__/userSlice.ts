@@ -20,6 +20,10 @@ export const getLoginUserInfo = jest.fn((arg?: unknown) => ({
   payload: arg,
 }));
 
+export const refreshLoginUser = jest.fn(() => ({
+  type: "refreshLoginUser",
+}));
+
 export const getUserList = jest.fn((arg: unknown) => ({
   type: "getUserList",
   payload: arg,

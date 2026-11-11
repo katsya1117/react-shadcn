@@ -14,6 +14,7 @@ import {
 } from "@/api";
 
 import Config from "@/config/apiConfig";
+import { refreshLoginUser } from "@/redux/slices/userSlice";
 import {
   initialSliceError,
   parseApiError,
@@ -31,9 +32,11 @@ const api = new CenterApi(Config.apiConfig);
 /** センター作成 Action（作成した center_cd を返す） */
 export const createCenter = createAsyncThunk(
   sliceName + "/createCenter",
-  async (param: CenterCreationParams, { rejectWithValue }) => {
+  async (param: CenterCreationParams, { rejectWithValue, dispatch }) => {
     try {
       const response = await api.createCenter(param, Config.apiOption);
+      // 所属・権限に影響しうるので、ログインユーザーの情報を取り直す（待たない）
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(
@@ -72,7 +75,7 @@ export const updateCenterInfo = createAsyncThunk(
   sliceName + "/updateCenterInfo",
   async (
     param: { centerCd: string; params: CenterUpdateParams },
-    { rejectWithValue },
+    { rejectWithValue, dispatch },
   ) => {
     try {
       const response = await api.updateCenter(
@@ -80,6 +83,7 @@ export const updateCenterInfo = createAsyncThunk(
         param.params,
         Config.apiOption,
       );
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(
@@ -92,9 +96,10 @@ export const updateCenterInfo = createAsyncThunk(
 /** センター削除 Action */
 export const removeCenter = createAsyncThunk(
   sliceName + "/removeCenter",
-  async (centerCd: string, { rejectWithValue }) => {
+  async (centerCd: string, { rejectWithValue, dispatch }) => {
     try {
       const response = await api.removeCenter(centerCd, Config.apiOption);
+      void dispatch(refreshLoginUser());
       return response.data;
     } catch (e) {
       return rejectWithValue(
