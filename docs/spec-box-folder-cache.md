@@ -4,9 +4,11 @@
 | --- | --- |
 | 対象 | Box Content Explorer のフォルダ取得（`GET /folders/{id}`）の短時間キャッシュ |
 | 実装 | `src/lib/boxFolderCache.ts`（本体）、`src/pages/SS.tsx`（組み込み）、`src/main.tsx`（設定） |
-| 状態 | 試作として実装。開発環境で、キャッシュの命中を利用者が確認済み。本番での効果と影響は、未測定 |
+| 状態 | 試作として実装。開発環境で、キャッシュの命中を利用者が確認済み。本番での効果と影響は、未測定。**暫定的に、既定は無効**（下の注記） |
 | 作成日 | 2026-11-06 |
 | 関連資料 | [Box API 呼び出し回数の削減対応 報告書](./report-box-api-call-reduction.md)（背景・全体の対策）<br>[SS 画面 技術仕様書](./spec-ss-screen.md)（画面全体） |
+
+> **現在の既定は「無効」です。** Box API の呼び出し回数が問題になるか未確認のため、暫定的に、性能と最新のデータを優先して、キャッシュを使っていません。コードは残してあり、環境変数 `VITE_BOX_FOLDER_CACHE=true` で復活できます（コラボレーター一覧のキャッシュも同様に、`VITE_BOX_COLLABORATIONS_CACHE=true`）。以下の記述のうち「既定は有効」としている箇所は、キャッシュを有効にした場合の説明です。
 
 ## 1. 目的
 
@@ -189,14 +191,14 @@ explorerInstance.show(rootFolderId, accessToken, {
 
 ```ts
 configureBoxFolderCache({
-  enabled: import.meta.env.VITE_BOX_FOLDER_CACHE !== 'false',
+  enabled: import.meta.env.VITE_BOX_FOLDER_CACHE === 'true',
   debug: import.meta.env.DEV,
 })
 ```
 
 | 設定 | 値 | 効果 |
 | --- | --- | --- |
-| `enabled` | 既定 `true`。環境変数 `VITE_BOX_FOLDER_CACHE=false` で無効 | 無効のときは、`show()` に中継処理を渡さない（通常の動作） |
+| `enabled` | 既定 `false`（暫定）。環境変数 `VITE_BOX_FOLDER_CACHE=true` で有効 | 無効のときは、`show()` に中継処理を渡さない（通常の動作） |
 | `debug` | 開発サーバーのときのみ `true` | 命中・未命中・保存を、コンソールに出す |
 
 - 環境変数は、ビルド時（開発サーバーの起動時）に決まる。変更には、再起動が必要。
@@ -231,7 +233,7 @@ configureBoxFolderCache({
 | 別のユーザー・トークンで開く | 別のキーなので、通信する | あり |
 | フォルダ以外の要求（`/items`、`/collaborations` 等） | 保存も命中もしない | あり |
 | 通信が失敗（401、404、ネットワークエラー等） | 保存しない | （失敗した通信のみ） |
-| キャッシュが無効（`VITE_BOX_FOLDER_CACHE=false`） | 中継処理を渡さない | 従来どおり |
+| キャッシュが無効（既定。`VITE_BOX_FOLDER_CACHE` が `true` でない） | 中継処理を渡さない | 従来どおり |
 | ページを再読み込み | 全て消える | 次回は通信する |
 | 更新ボタンを押す | 全て破棄して、現在のフォルダを取り直す（コラボレーター一覧も更新する。5.3） | あり（1 回。一覧が開いていれば、さらに 1 回） |
 
@@ -267,8 +269,8 @@ configureBoxFolderCache({
 
 | 目的 | 操作 |
 | --- | --- |
-| 無効にする | `.env.local` に `VITE_BOX_FOLDER_CACHE=false` を書き、開発サーバーを再起動する（本番ビルドでは、ビルド時に環境変数を設定する） |
-| 有効にする | 設定しない（既定は有効）。または `VITE_BOX_FOLDER_CACHE=true` |
+| 有効にする | `.env.local` に `VITE_BOX_FOLDER_CACHE=true` を書き、開発サーバーを再起動する（本番ビルドでは、ビルド時に環境変数を設定する） |
+| 無効にする | 設定しない（既定は無効）。または `VITE_BOX_FOLDER_CACHE=false` |
 
 ### 8.2 動作の確認（開発環境）
 
@@ -303,7 +305,7 @@ configureBoxFolderCache({
 | 命中しない（`hit` が出ない） | 5 分以内か。並び替えやページ位置が同じか。キャッシュが無効になっていないか（`VITE_BOX_FOLDER_CACHE`）。コンソールのログ自体が出ないときは、開発サーバーで動かしているか |
 | 古い内容が出る | 5 分待つか、ページを再読み込みする。再読み込みで、キャッシュは消える |
 | 通信が 401（`cors` のエラーに見える） | キャッシュとは無関係で、トークンの問題（有効期限 60 分）。Box は 401 の応答に CORS のヘッダーを付けないため、ブラウザは CORS エラーと表示する |
-| 問題の切り分けをしたい | `VITE_BOX_FOLDER_CACHE=false` で無効にして、再現するか確認する |
+| 問題の切り分けをしたい | `VITE_BOX_FOLDER_CACHE` を `true` にしないで（無効のまま）、再現するか確認する |
 
 ## 9. テスト
 
@@ -323,7 +325,7 @@ configureBoxFolderCache({
 | `clear()` | 全て破棄される |
 | イベント | `miss` → `store` → `hit` の順に通知され、トークンを含まない |
 | **実際の axios との結合** | `axios.create` したインスタンスに、中継処理を登録し、通信部分の呼び出し回数を数える。同じフォルダの 2 回目は、通信されず、同じ内容が返る。パラメータ違い、`/items`、`clear()` の後は、通信される |
-| 設定 | 既定は有効。切り替えられる。ログは、`debug` のときだけ出る |
+| 設定 | 既定は無効（暫定）。切り替えられる。ログは、`debug` のときだけ出る |
 | `SS.tsx` | 有効なときは、`show()` に 2 つの中継処理を渡す。無効なときは、渡さない |
 
 - 結合テストは、このリポジトリの axios（v1.21.0）で、`adapter` の差し替えにより通信が省かれることを確認している。**Box の画面部品が内部に持つ axios は、別のバージョンの可能性がある。** 開発環境で、命中が確認できたことで、実際の画面部品でも動作することが分かっている。

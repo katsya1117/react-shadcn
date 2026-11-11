@@ -102,7 +102,7 @@ SS（ルート検証。無効な ID は ShareArea へ）
 | `DISPLAY_PATH_ROOT` | `\share\` | 画面に表示するパスの起点 |
 | `DEFAULT_ROLE` | `viewer` | 追加フォームのロールの初期値 |
 | `ROLE_OPTIONS` | `editor`（表示名 Editor）/ `viewer`（Viewer） | ロールの選択肢 |
-| `COLLABORATIONS_TTL_MS` | 300,000（5 分） | コラボレーター一覧のキャッシュの有効時間 |
+| `COLLABORATIONS_TTL_MS` | 300,000（5 分） | コラボレーター一覧のキャッシュの有効時間。**キャッシュは暫定的に既定で無効**（`configureCollaborationsCache`、環境変数 `VITE_BOX_COLLABORATIONS_CACHE=true` で有効） |
 | 状態確認の間隔 | 5 分 | `BoxManager` のトークン期限の確認間隔 |
 | トークンの更新基準 | 取得から 2,940 秒（49 分）超 | `BoxManager` |
 
@@ -208,7 +208,7 @@ SS（ルート検証。無効な ID は ShareArea へ）
 | `currentFolderId` | 離脱時のフォルダ ID（ルートと異なるときのみ） | 復元時に、ルートを経由せず直接表示する |
 | `canPreview` | `false` | プレビューを無効にする |
 | `canUpload` / `canDelete` / `canRename` / `canCreateNewFolder` | `false` | 変更系操作のボタンを表示しない（画面上のみ。Box 側の権限は変わらない） |
-| `requestInterceptor` / `responseInterceptor` | `boxFolderCache` の中継処理（キャッシュが有効なときのみ） | フォルダ取得を 5 分間キャッシュする（6.2A） |
+| `requestInterceptor` / `responseInterceptor` | `boxFolderCache` の中継処理（キャッシュが有効なときのみ。**暫定的に既定で無効**。`VITE_BOX_FOLDER_CACHE=true` で有効） | フォルダ取得を 5 分間キャッシュする（6.2A） |
 | `size` | `large` | 表示サイズ |
 
 - 第 1 引数のルート ID は、パンくずの起点として使われる。
@@ -295,7 +295,7 @@ flowchart TD
 | 項目 | 仕様 |
 | --- | --- |
 | 初期状態 | 畳んだ状態。通信しない |
-| 開く | 開いたフォルダ分の一覧を、`ensureFolderCollaborations` で取得する。キャッシュが 5 分以内なら通信しない |
+| 開く | 開いたフォルダ分の一覧を、`ensureFolderCollaborations` で取得する。キャッシュは既定で無効なので、毎回通信する（有効にしたときは、5 分以内なら通信しない） |
 | 閉じる | 描画しない。キャッシュは残る |
 | 更新 | 一覧専用のボタンはない。パスバーの更新ボタン（7.8、7.4A）が、一覧もまとめて更新する |
 | フォルダ移動 | 畳んだ状態に戻る |

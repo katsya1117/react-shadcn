@@ -29,6 +29,20 @@ const api = new BoxApi(Config.apiConfig);
 /** コラボレーター一覧のキャッシュ有効時間（5分）。Box API の呼び出し回数を減らすために、この間は再取得しない。 */
 export const COLLABORATIONS_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * コラボレーター一覧のキャッシュ（TTL）の有効・無効。
+ * 既定は無効: Box API の呼び出し回数が問題になるか未確認のため、暫定的に、性能と最新のデータを優先している。
+ * 無効のとき、ensureFolderCollaborations は毎回 Box から取得する（他の処理は変わらない）。
+ * 復活させるには、環境変数 VITE_BOX_COLLABORATIONS_CACHE=true（main.tsx）。
+ */
+let collaborationsCacheEnabled = false;
+
+export const configureCollaborationsCache = (options: { enabled: boolean }) => {
+  collaborationsCacheEnabled = options.enabled;
+};
+
+export const isCollaborationsCacheEnabled = () => collaborationsCacheEnabled;
+
 export const getFolderCollaborations = createAsyncThunk(
   sliceName + "/getFolderCollaborations",
   async (folderId: string) => {
@@ -43,7 +57,8 @@ export const getFolderCollaborations = createAsyncThunk(
 );
 
 /**
- * 一覧が新しければ（TTL 内）取得済みの rows を返し、古い・未取得なら Box から取得する。
+ * キャッシュが有効で、一覧が新しければ（TTL 内）取得済みの rows を返し、古い・未取得なら Box から取得する。
+ * キャッシュが無効（既定）なら、毎回 Box から取得する。
  * キャッシュ破棄（invalidateCollaborations）後は必ず取得し直す。
  */
 export const ensureFolderCollaborations = createAsyncThunk(
@@ -55,6 +70,7 @@ export const ensureFolderCollaborations = createAsyncThunk(
     const rows = byFolderId[folderId];
     const fetchedAt = collaborationFetchedAtByFolderId[folderId];
     if (
+      collaborationsCacheEnabled &&
       rows &&
       fetchedAt !== undefined &&
       Date.now() - fetchedAt < COLLABORATIONS_TTL_MS

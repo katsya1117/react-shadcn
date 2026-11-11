@@ -351,7 +351,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
   }, [currentFolder.id, dispatch, isListOpen]);
 
 
-  // 開いたときに取得する（キャッシュが 5 分以内なら取得しない）。
+  // 開いたときに取得する。コラボレーター一覧のキャッシュは既定で無効なので、毎回取得する
+  // （有効にしたときは、5 分以内なら取得しない。ssSlice の configureCollaborationsCache）。
   useEffect(() => {
     if (isRestoring || !isListOpen) return;
     void dispatch(ensureFolderCollaborations(currentFolder.id))

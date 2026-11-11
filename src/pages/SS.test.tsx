@@ -113,7 +113,7 @@ import {
   ExplorerRestoreSkeleton,
   CollaborationPanelSkeleton,
 } from "./SS";
-import { ssSliceReducer } from "@/redux/slices/ssSlice";
+import { configureCollaborationsCache, ssSliceReducer } from "@/redux/slices/ssSlice";
 import { userSliceReducer } from "@/redux/slices/userSlice";
 import { autoCompleteSliceReducer } from "@/redux/slices/autoCompleteSlice";
 import { BoxApi } from "@/api";
@@ -1571,19 +1571,43 @@ describe("コラボレーター一覧の取得タイミング", () => {
     expect(fetchSpy()).toHaveBeenCalledWith(VALID_ROOT_FOLDER_ID, expect.anything());
   });
 
-  it("閉じて開き直しても、5分以内なら再取得しない", async () => {
+  it("閉じて開き直したら、再取得する（キャッシュは既定で無効）", async () => {
     const { user } = makeStore();
 
     await user.click(screen.getByText("toggle-list")); // 開く → 取得
     await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
     await user.click(screen.getByText("toggle-list")); // 閉じる
-    await user.click(screen.getByText("toggle-list")); // 再度開く
+    await user.click(screen.getByText("toggle-list")); // 再度開く → 再取得
 
+    await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(2));
     expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
       "data-list-open",
       "true",
     );
-    expect(fetchSpy()).toHaveBeenCalledTimes(1);
+  });
+
+  describe("キャッシュを有効にしたとき（VITE_BOX_COLLABORATIONS_CACHE=true）", () => {
+    beforeEach(() => {
+      configureCollaborationsCache({ enabled: true });
+    });
+    afterEach(() => {
+      configureCollaborationsCache({ enabled: false });
+    });
+
+    it("閉じて開き直しても、5分以内なら再取得しない", async () => {
+      const { user } = makeStore();
+
+      await user.click(screen.getByText("toggle-list")); // 開く → 取得
+      await waitFor(() => expect(fetchSpy()).toHaveBeenCalledTimes(1));
+      await user.click(screen.getByText("toggle-list")); // 閉じる
+      await user.click(screen.getByText("toggle-list")); // 再度開く
+
+      expect(screen.getByTestId("collaboration-panel")).toHaveAttribute(
+        "data-list-open",
+        "true",
+      );
+      expect(fetchSpy()).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("フォルダを移動すると一覧は畳んだ状態に戻る", async () => {

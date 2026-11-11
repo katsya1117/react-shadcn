@@ -6,6 +6,8 @@ import { jest } from "@jest/globals";
 import { BoxApi } from "@/api";
 import {
   COLLABORATIONS_TTL_MS,
+  configureCollaborationsCache,
+  isCollaborationsCacheEnabled,
   ensureFolderCollaborations,
   ssActions,
   ssSelector,
@@ -271,11 +273,38 @@ describe("ssSelector デフォルト値", () => {
   });
 });
 
+describe("ensureFolderCollaborations（キャッシュが無効: 既定）", () => {
+  const rows = [{ id: "c1" }] as never;
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("既定ではキャッシュを使わず、毎回 Box から取得する", async () => {
+    expect(isCollaborationsCacheEnabled()).toBe(false);
+    const spy = jest
+      .spyOn(BoxApi.prototype, "getFolderCollaborations")
+      .mockResolvedValue({ data: rows });
+    const store = configureStore({ reducer: { ss: ssSliceReducer } });
+
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+    await store.dispatch(ensureFolderCollaborations("f1")).unwrap();
+
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("ensureFolderCollaborations（一覧キャッシュ）", () => {
   const makeStore = () => configureStore({ reducer: { ss: ssSliceReducer } });
   const rows = [{ id: "c1" }] as never;
 
+  // キャッシュは既定で無効。このブロックでは、有効にして検証する
+  beforeEach(() => {
+    configureCollaborationsCache({ enabled: true });
+  });
+
   afterEach(() => {
+    configureCollaborationsCache({ enabled: false });
     jest.restoreAllMocks();
   });
 
