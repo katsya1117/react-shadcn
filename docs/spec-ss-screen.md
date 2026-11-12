@@ -206,10 +206,11 @@ SS（ルート検証。無効な ID は ShareArea へ）
 | --- | --- | --- |
 | `container` | `.box-container` | 描画先 |
 | `currentFolderId` | 離脱時のフォルダ ID（ルートと異なるときのみ） | 復元時に、ルートを経由せず直接表示する |
-| `canPreview` | `false` | プレビューを無効にする |
+| `canPreview` / `canDownload` | `false` | プレビューとダウンロードを無効にする（API 呼び出しの節約） |
 | `canUpload` / `canDelete` / `canRename` / `canCreateNewFolder` | `false` | 変更系操作のボタンを表示しない（画面上のみ。Box 側の権限は変わらない） |
 | `requestInterceptor` / `responseInterceptor` | `boxFolderCache` の中継処理（キャッシュが有効なときのみ。**暫定的に既定で無効**。`VITE_BOX_FOLDER_CACHE=true` で有効） | フォルダ取得を 5 分間キャッシュする（6.2A） |
 | `size` | `large` | 表示サイズ |
+| `itemActions` | （未使用。`[FILE-COLLAB]` でコメントアウトして保留） | 行の「…」メニューに独自項目を足し、ファイルをコラボレーション対象にする。設計は [spec-box-token-downscope.md](spec-box-token-downscope.md) の第 7 節 |
 
 - 第 1 引数のルート ID は、パンくずの起点として使われる。
 - アクセストークンは、Redux のトークン、なければ `localStorage` の `box_dev_token`（開発用）の順で使う。
@@ -459,7 +460,7 @@ flowchart TD
 | Box Drive のパス | `C:\Users\{ID}\Box` の固定。環境が異なると開けない |
 | Explorer の領域 | 領域の描画は、アクセストークン（Redux）の有無で決まる。`localStorage` の開発用トークンのみがある場合、`show()` の呼び出しは行われるが、描画先の領域がなく、表示されない可能性がある（コード上の観察。未検証） |
 | フォルダ取得のキャッシュ | 試作。Box の画面部品での実機の動作は未確認。他の人の変更は、Explorer に最大 5 分反映されない |
-| 変更系操作の無効化 | 画面上のボタンを隠すだけで、Box 側の権限は変わらない |
+| 変更系操作の無効化 | 画面上のボタンを隠すだけで、Box 側の権限は変わらない（トークンのダウンスコープで絞る設計は [spec-box-token-downscope.md](spec-box-token-downscope.md)） |
 | 画面部品のバージョン | Box UI Elements は `23.0.0` に固定。`currentFolderId` は公式未記載の挙動に依存している。更新時に確認が必要 |
 | パスバーの表示 | 経路が 2 階層以上のとき、先頭の階層の表示が `\share\` + `\` + 階層名となり、バックスラッシュが 2 つ続く表記になる（コード上の観察。画面での確認は未実施） |
 | 未使用ファイル | `src/hooks/useBoxExplorer2.tsx` は、どこからも参照されていない |
