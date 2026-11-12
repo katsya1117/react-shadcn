@@ -204,6 +204,21 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     resetForm();
   }, [currentFolder.id, resetForm]);
 
+  // [FILE-COLLAB] 1/4: ファイルをコラボレーション対象にする機能（未使用・保留）。
+  // 「…」メニューの独自項目（itemActions）で選んだファイルを、コラボレーションの操作対象にする。
+  // 未選択のときは、従来どおり「今開いているフォルダ」が対象。設計は docs/spec-box-token-downscope.md の §7。
+  // 有効にするときは、[FILE-COLLAB] 1/4〜4/4 のコメントアウトを全て外す。
+  // 注意: コラボレーションの thunk・キャッシュ・API は、フォルダ ID 前提。ファイル対応（{ type, id } への拡張）が別途要る。
+  // const [selectedFile, setSelectedFile] = useState<{
+  //   id: string;
+  //   name: string;
+  // } | null>(null);
+  //
+  // // フォルダを移動したら、ファイルの選択を解除する
+  // useEffect(() => {
+  //   setSelectedFile(null);
+  // }, [currentFolder.id]);
+
   // ----- パス組み立て -----
   const { fullPath, relativePath } = useMemo(
     () => buildPath(currentFolder),
@@ -214,6 +229,16 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     [currentFolder],
   );
   const currentFolderName = currentFolder.name || "対象フォルダ";
+
+  // [FILE-COLLAB] 2/4: コラボレーションの操作対象（ファイル選択中はファイル、なければ今のフォルダ）。
+  // 有効にしたら、下の CollaborationPanel の folderName などを、この値に差し替える。
+  // const collabTarget = selectedFile
+  //   ? { type: "file" as const, id: selectedFile.id, name: selectedFile.name }
+  //   : {
+  //       type: "folder" as const,
+  //       id: currentFolder.id,
+  //       name: currentFolderName,
+  //     };
 
   // ----- Box SDK のライフサイクル管理 -----
   const [explorerInstance, setExplorerInstance] = useState<
@@ -260,6 +285,18 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
         ? { currentFolderId: initialRestoreTargetIdRef.current }
         : {}),
       canPreview: false,
+      canDownload: false,
+      // [FILE-COLLAB] 3/4: 行の「…」メニューに独自項目を足す。canDelete 等が全て false でも、この項目があればメニューは出る。
+      // type を "file" にするとファイルの行のみ。省略するとフォルダにも出る（子フォルダを開かずに対象にできる）。
+      // Box UI Elements v26 の itemActions。show() の options が props にそのまま渡る前提（要・実機確認）。
+      // itemActions: [
+      //   {
+      //     label: "コラボレーション対象にする",
+      //     type: "file",
+      //     onAction: (item: { id: string; name: string }) =>
+      //       setSelectedFile({ id: item.id, name: item.name }),
+      //   },
+      // ],
       // フォルダ取得を 5 分間キャッシュする（Explorer は訪問済みのフォルダでも毎回通信するため）。
       ...(isBoxFolderCacheEnabled()
         ? {
@@ -276,6 +313,7 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       size: "large",
     });
     hasShownRef.current = true;
+  // [FILE-COLLAB] 4/4: 上の itemActions を有効にしたら、依存配列に setSelectedFile を足す（eslint の react-hooks/exhaustive-deps 対応）。
   }, [explorerInstance, rootFolderId, accessToken, isLogin, devToken]);
 
   // 画面を離れるときに Explorer を破棄する。
