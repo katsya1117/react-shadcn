@@ -64,40 +64,47 @@
    * ライトサイドバー + ブランドカラーを効果的に使用
    */
   
+  /*
+   * 面（背景・カード・境界線）はニュートラルに保ち、青はブランド要素だけに使う。
+   * --surface-tint: 背景に混ぜるテーマカラーの割合（0% = 完全ニュートラル）
+   */
+  --surface-tint: 0%;
+  --surface-base: #fafafa;
+
   /* Base surfaces */
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --background: color-mix(in oklch, var(--brand-source) var(--surface-tint), var(--surface-base));
+  --foreground: #1f2328;
   
   /* Cards */
   --card: #ffffff;
-  --card-foreground: #1e293b;
+  --card-foreground: #1f2328;
   
   /* Popovers */
   --popover: #ffffff;
-  --popover-foreground: #1e293b;
+  --popover-foreground: #1f2328;
   
   /* Primary - #065b8b そのもの */
   --primary: #065b8b;
   --primary-foreground: #ffffff;
   
-  /* Secondary - ブランドから派生した淡いトーン */
-  --secondary: #e8f4fa;
+  /* Secondary - 選択状態・アイコンチップ用。ブランドを薄く */
+  --secondary: color-mix(in oklch, var(--brand-source) 8%, #ffffff);
   --secondary-foreground: #065b8b;
   
-  /* Muted */
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* Muted - ニュートラルグレー */
+  --muted: #f4f4f5;
+  --muted-foreground: #6b6f76;
   
-  /* Accent - ブランドを感じる淡い青 */
-  --accent: #dbeafe;
-  --accent-foreground: #054872;
+  /* Accent - hover 用。面と同化しないようニュートラル */
+  --accent: #f0f0f1;
+  --accent-foreground: #1f2328;
   
   /* Destructive */
   --destructive: #dc2626;
   
-  /* Borders - ブランドを含んだ境界線 */
-  --border: #cbd5e1;
-  --input: #e2e8f0;
+  /* Borders - ニュートラル */
+  --border: #e4e4e7;
+  --input: #e4e4e7;
   --ring: #065b8b;
   
   /* Charts - #065b8b から派生した調和のとれた配色 */
@@ -111,12 +118,12 @@
    * Sidebar - クリーンなライトカラー、左ボーダーにブランドを使用
    */
   --sidebar: #ffffff;
-  --sidebar-foreground: #334155;
+  --sidebar-foreground: #3f434a;
   --sidebar-primary: #065b8b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e8f4fa;
+  --sidebar-accent: var(--secondary);
   --sidebar-accent-foreground: #065b8b;
-  --sidebar-border: #e2e8f0;
+  --sidebar-border: #e4e4e7;
   --sidebar-ring: #065b8b;
 
   /* 
@@ -125,18 +132,18 @@
   --brand-source: #065b8b;
   --brand: #065b8b;
   --brand-foreground: #ffffff;
-  --brand-soft: #e8f4fa;
-  --brand-muted: #dbeafe;
-  --brand-border: #7dd3fc;
-  --brand-ring: #0ea5e9;
+  --brand-soft: color-mix(in oklch, var(--brand-source) 8%, #ffffff);
+  --brand-muted: color-mix(in oklch, var(--brand-source) 14%, #ffffff);
+  --brand-border: color-mix(in oklch, var(--brand-source) 35%, #ffffff);
+  --brand-ring: #065b8b;
   --brand-ink: #054872;
   --brand-dark: #043c5c;
-  --brand-light: #38bdf8;
+  --brand-light: color-mix(in oklch, var(--brand-source) 60%, #ffffff);
   
-  /* Page gradient - ほぼフラットに近い、極めて繊細なグラデーション */
-  --page-gradient-top: oklch(0.988 0.004 230);
-  --page-gradient-mid: oklch(0.995 0.001 240);
-  --page-gradient-bottom: oklch(0.975 0.006 235);
+  /* Page - グラデーションなしのフラット背景 */
+  --page-gradient-top: var(--background);
+  --page-gradient-mid: var(--background);
+  --page-gradient-bottom: var(--background);
   
   /* Header */
   --header-bg: rgba(255, 255, 255, 0.95);
