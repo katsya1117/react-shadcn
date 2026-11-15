@@ -23,6 +23,8 @@ export default defineConfig({
     // Box の CORS 設定（Developer Console の CORS Domains）は、ポートまで完全一致で登録するため、
     // ポートが変わると Box Explorer が 403（cors_origin_not_whitelisted）になる。
     strictPort: true,
+    // v0 のプレビュー（Vercel Sandbox）経由のアクセスを許可する
+    allowedHosts: ["sb-jc27rxi338jq.vercel.run"],
     watch: {
       usePolling: true,
     },
