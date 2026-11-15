@@ -45,7 +45,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-panel: var(--panel);
-  --color-panel-border: var(--panel-border);
+  --shadow-panel: var(--panel-shadow);
 
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
@@ -94,9 +94,10 @@
   --secondary: color-mix(in oklch, var(--brand-source) 8%, #ffffff);
   --secondary-foreground: #065b8b;
   
-  /* Panel - カードをまとめるグループ枠。背景(#fafafa)と白カードの中間で段差をつける */
-  --panel: #ededef;
-  --panel-border: #e1e1e4;
+  /* Panel - カードをまとめるグループ枠。線で囲わず「一段くぼんだトレイ」として見せる。
+     上端の内側影で凹みを、下端の白いハイライトで縁の立ち上がりを表現する */
+  --panel: #ececee;
+  --panel-shadow: inset 0 1px 3px rgb(15 23 42 / 0.07), inset 0 -1px 0 rgb(255 255 255 / 0.9);
 
   /* Muted - ニュートラルグレー */
   --muted: #f4f4f5;

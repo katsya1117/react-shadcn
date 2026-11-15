@@ -31,9 +31,9 @@ export const AreaSection = ({
   return (
     <section
       aria-labelledby={id}
-      className={cn("flex min-h-0 flex-col rounded-2xl border border-panel-border bg-panel", className)}
+      className={cn("flex min-h-0 flex-col rounded-2xl bg-panel shadow-panel", className)}
     >
-      <header className="flex min-h-8 flex-none items-center justify-between gap-4 px-5 pb-3 pt-4">
+      <header className="flex min-h-8 flex-none items-center justify-between gap-4 px-5 pb-3 pt-5">
         <h2 id={id} className="min-w-0">
           <button
             type="button"
