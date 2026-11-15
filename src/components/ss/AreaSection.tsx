@@ -31,9 +31,9 @@ export const AreaSection = ({
   return (
     <section
       aria-labelledby={id}
-      className={cn("flex min-h-0 flex-col rounded-2xl bg-muted", className)}
+      className={cn("flex min-h-0 flex-col rounded-2xl border border-panel-border bg-panel", className)}
     >
-      <header className="flex min-h-8 flex-none items-center justify-between gap-4 px-3 py-2.5">
+      <header className="flex min-h-8 flex-none items-center justify-between gap-4 px-5 pb-3 pt-4">
         <h2 id={id} className="min-w-0">
           <button
             type="button"
@@ -56,7 +56,7 @@ export const AreaSection = ({
       {open && (
         <div
           id={bodyId}
-          className="flex min-h-0 flex-1 flex-col px-4 pb-4"
+          className="flex min-h-0 flex-1 flex-col px-6 pb-6"
         >
           {/* カードの影が切れないよう、スクロール領域に少し余白を持たせる。
               relative は必須: 中の sr-only（position: absolute）が body 基準で配置されると、
