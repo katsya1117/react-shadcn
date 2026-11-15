@@ -220,38 +220,34 @@
   --header-bg: rgba(15, 23, 42, 0.95);
 }
 
-/* Windows の太いスクロールバーを細く丸いつまみにし、ホバー中だけ表示する。
-   Chromium は scrollbar-color を指定すると ::-webkit-scrollbar を無視するため、
-   標準プロパティは ::-webkit-scrollbar 非対応（Firefox）のときだけ使う */
+/* Windows の太いスクロールバーを細くし、ホバー中だけつまみを表示する。
+   Chrome 121+ / Edge / Firefox は標準の scrollbar-color をホバーで確実に再描画するため標準プロパティを使う。
+   ::-webkit-scrollbar は親の :hover で再描画されず消えたままになることがあるので、
+   scrollbar-color 非対応の Safari だけのフォールバックにする */
 @utility scrollbar-hover {
-  &::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover,
+  &:focus-within {
+    scrollbar-color: rgb(15 23 42 / 0.28) transparent;
   }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    border: 3px solid transparent;
-    border-radius: 9999px;
-    background-clip: padding-box;
-    background-color: transparent;
-  }
-  &:hover::-webkit-scrollbar-thumb {
-    background-color: rgb(15 23 42 / 0.22);
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    border-width: 2px;
-    background-color: rgb(15 23 42 / 0.4);
-  }
-  &::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-  @supports not selector(::-webkit-scrollbar) {
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    &:hover {
-      scrollbar-color: rgb(15 23 42 / 0.3) transparent;
+  @supports not (scrollbar-color: auto) {
+    &::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    &::-webkit-scrollbar-track,
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      border: 3px solid transparent;
+      border-radius: 9999px;
+      background-clip: padding-box;
+      background-color: transparent;
+    }
+    &:hover::-webkit-scrollbar-thumb {
+      background-color: rgb(15 23 42 / 0.28);
     }
   }
 }
