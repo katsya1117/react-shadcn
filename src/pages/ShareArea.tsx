@@ -66,7 +66,7 @@ const ShareArea = () => {
   return (
     <TooltipProvider delayDuration={150}>
       {/* ヘッダー（h-14）と main の上下余白（1rem × 2）を除いた高さに収め、各ブロック内でスクロールさせる */}
-      <div className="flex h-[calc(100dvh-5.5rem)] min-h-96 flex-col gap-6">
+      <div className="flex h-[calc(100dvh-5.5rem)] min-h-96 flex-col gap-8 p-4">
         <AreaSection
           id="my-center-heading"
           title="My Center"
