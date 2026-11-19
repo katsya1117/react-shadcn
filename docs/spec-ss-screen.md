@@ -53,12 +53,20 @@ SS ── サイドメニュー等で他の画面へ ──▶ 他画面（保�
 
 - `:rootFolderId` が、`SHARE_AREAS`（`src/config/shareAreaConfig.ts`）のいずれかの `boxFolderId` と一致しない場合は、ShareArea 画面へリダイレクトする（`isShareAreaRouteFolderId`）。
 - 本アプリは、ログイン利用者がその領域に入れるかの判定を **行わない**。実際のアクセス可否は、Box の権限による。
+- **SS 画面への遷移ボタン**（ShareArea の「コラボレーション設定」）は、その領域の管理者（`ShareArea.isAdmin`）にだけ表示する。`isAdmin` は、本番では、閲覧可能な領域の一覧 API が、ログインユーザーごとに領域単位で返す想定（モックは `shareAreaConfig.ts` の固定値）。
+- **SS 画面に入るたびに、管理者かをサーバーに確認する**（`useAreaAdminGate`、[useAreaAdminGate.ts](../src/hooks/useAreaAdminGate.ts)）。ボタンを隠すだけでは、URL の直接指定や、他の画面から戻る場合を防げないため。
+  - 入口は、`SS` コンポーネント 1 か所のみ。ShareArea のボタン経由・URL 直接指定・他画面から戻る（復元）の、どれも必ず通る。
+  - 一覧 API（`getMyCenterAreas`）を、入るたびに呼び直す。**結果は Redux に保存しない**（フックの state だけで持つ）。前回の値は、権限が変わっている可能性があるため使わない。
+  - 状態は `checking` / `allowed` / `denied`。**`allowed` になるまで `SSContent` を描画しない**。これにより、フォルダの復元、Box トークンの取得、Explorer の生成は、確認後にだけ走る。確認中は `SSGateSkeleton` を出す。（確認を `SSContent` の中や、描画後の `useEffect` で行うと、`SSContent` が作られてすぐ破棄される。）
+  - `denied`（管理者でない、その領域が一覧に無い、**取得に失敗した**）のときは、その領域の復元用の保存状態（`ss` スライスの現在地・履歴）を破棄し、「この領域の管理者のみ利用できます」を通知して ShareArea へ戻す。確認できないときは入れない（fail closed）。
+  - `rootFolderId` が変わったときは、前の結果を使わず `checking` に戻る。
+- **限界**: 画面を開いたまま権限を失った場合は検知できない。サーバー側（Box のトークン発行時の管理者検証。[spec-box-token-downscope.md](spec-box-token-downscope.md)）で守る。
 - `SHARE_AREAS` は、現状は設定ファイルの固定値である。本番では、ログイン利用者の所属に応じて API が返す一覧を用いる想定であり、その場合は、このチェックも API の結果と照合する形への変更が必要となる（第 12 章）。
 
 ## 3. 画面構成
 
 ```
-SS（ルート検証。無効な ID は ShareArea へ）
+SS（ルート検証。無効な ID は ShareArea へ。管理者の確認 `useAreaAdminGate`。確認中は SSGateSkeleton）
 └─ SSContent（key = rootFolderId。領域が変わると作り直される）
    └─ Layout（fluid, subtitle = 領域のフォルダ名）
       ├─ BoxManager（Box のアクセストークンの取得・更新。表示はなし）

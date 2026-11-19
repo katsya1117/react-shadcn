@@ -28,6 +28,7 @@ import {
 } from "@/redux/slices/ssSlice";
 import { boxSelector, userSelector } from "@/redux/slices/userSlice";
 import { CollaborationPanel } from "@/components/ss/CollaborationPanel";
+import { useAreaAdminGate } from "@/hooks/useAreaAdminGate";
 import { PathBar } from "@/components/ss/PathBar";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
@@ -98,6 +99,16 @@ export const CollaborationPanelSkeleton = () => (
 );
 
 // =================================================================================================
+
+/** 管理者の確認中に出す表示（Layout 付き。SSContent は、まだ作らない） */
+const SSGateSkeleton = () => (
+  <Layout fluid>
+    <div className="space-y-3 p-4" aria-busy="true">
+      <Skeleton className="h-6 w-48" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  </Layout>
+);
 
 type SSContentProps = {
   rootFolderId: string;
@@ -683,9 +694,30 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
 export const SS = () => {
   const { rootFolderId: routeFolderId } = useParams();
+  const dispatch = useAppDispatch();
+  // 画面に入るたびに、ログインユーザーがその領域の管理者かを、サーバーに確認する。
+  // 確認が終わる（"allowed"）まで SSContent を描画しない。これにより、フォルダの復元・Box トークンの取得・
+  // Explorer の生成は、権限の確認後にだけ走る（URL 直接指定・他画面から戻る場合も同じ）。
+  const gate = useAreaAdminGate(
+    isShareAreaRouteFolderId(routeFolderId) ? routeFolderId : undefined,
+  );
+
+  // 管理者でなかったら、その領域の復元用の保存状態（現在地・履歴）を破棄する。権限のない人の記録を残さない。
+  useEffect(() => {
+    if (gate !== "denied" || !routeFolderId) return;
+    dispatch(ssActions.clearCurrentFolder(routeFolderId));
+    dispatch(ssActions.clearFolderHistory(routeFolderId));
+    toast.error("この領域の管理者のみ利用できます");
+  }, [gate, routeFolderId, dispatch]);
 
   if (!isShareAreaRouteFolderId(routeFolderId)) {
     return <Navigate replace to={UrlPath.ShareArea} />;
+  }
+  if (gate === "denied") {
+    return <Navigate replace to={UrlPath.ShareArea} />;
+  }
+  if (gate === "checking") {
+    return <SSGateSkeleton />;
   }
 
   // SHARE_AREAS から対象領域を引いて folderName を渡す。

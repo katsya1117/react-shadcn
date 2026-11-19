@@ -571,6 +571,15 @@ export class ShareAreaApi {
     const { listSharedAreas } = await import("./mock/sharedFoldersDb");
     return { data: listSharedAreas(userCd) };
   }
+
+  /**
+   * ログインユーザーが見られる領域（所属・ゲストのセンター）の一覧。各領域に、ログインユーザーがその領域の管理者か（isAdmin）を含む。
+   * SS 画面は、入るたびにこれを取り直して、管理者かを確認する（キャッシュしない）。
+   */
+  async getMyCenterAreas(_userCd: string, _opts?: unknown) {
+    const { MOCK_MY_CENTER_AREAS } = await import("@/config/shareAreaConfig");
+    return { data: MOCK_MY_CENTER_AREAS };
+  }
 }
 
 export class AutoCompleteApi {

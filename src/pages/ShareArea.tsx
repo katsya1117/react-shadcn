@@ -88,18 +88,21 @@ const ShareArea = () => {
                           <Users className="h-4 w-4" aria-hidden />
                         </AreaIconButton>
                       )}
-                      <AreaIconButton
-                        label="コラボレーション設定"
-                        onClick={() =>
-                          navigate(
-                            generatePath(UrlPath.SS, {
-                              rootFolderId: area.boxFolderId,
-                            }),
-                          )
-                        }
-                      >
-                        <Settings className="h-4 w-4" aria-hidden />
-                      </AreaIconButton>
+                      {/* この領域の管理者にだけ、SS 画面（コラボレーション設定）への遷移ボタンを出す */}
+                      {area.isAdmin && (
+                        <AreaIconButton
+                          label="コラボレーション設定"
+                          onClick={() =>
+                            navigate(
+                              generatePath(UrlPath.SS, {
+                                rootFolderId: area.boxFolderId,
+                              }),
+                            )
+                          }
+                        >
+                          <Settings className="h-4 w-4" aria-hidden />
+                        </AreaIconButton>
+                      )}
                       <AreaActionDivider />
                       {/* Box Drive は jclUrl で開く */}
                       <BoxLinkButtons
