@@ -3,6 +3,8 @@ export type ShareArea = {
   folderName: string;
   label: string;
   isGuest?: boolean;
+  /** ログインユーザーが、この領域の管理者か。本番は API がログインユーザーごとに返す。true のときだけ、SS 画面（コラボレーション設定）への遷移ボタンを出す */
+  isAdmin?: boolean;
   jclUrl: string;
   boxFolderId: string;
 };
@@ -10,6 +12,7 @@ export type ShareArea = {
 export const SHARE_AREAS: ShareArea[] = [
   {
     code: "qms",
+    isAdmin: true,
     folderName: "qms",
     label: "QMS事務局",
     jclUrl: "/launch/qms/jcl",
@@ -17,6 +20,7 @@ export const SHARE_AREAS: ShareArea[] = [
   },
   {
     code: "ems",
+    isAdmin: true,
     folderName: "ems",
     label: "EMS事務局",
     jclUrl: "/launch/ems/jcl",
@@ -32,6 +36,7 @@ export const SHARE_AREAS: ShareArea[] = [
   },
   {
     code: "jclgd1swdv",
+    isAdmin: true,
     folderName: "JCLGD1SWDV",
     label: "第1ソフトウェア開発センター",
     jclUrl: "/launch/JCLGD1SWDV/jcl",
@@ -73,6 +78,8 @@ export const MOCK_MY_CENTER_AREAS: ShareArea[] = [
       folderName,
       label,
       isGuest: index % 7 === 3,
+      // モック: 3 件に 1 件は、管理者ではない領域にする（ボタンの出し分けの確認用）
+      isAdmin: index % 3 !== 2,
       jclUrl: `/launch/${folderName}/jcl`,
       boxFolderId: "370615941389",
     };

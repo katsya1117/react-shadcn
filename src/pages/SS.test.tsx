@@ -15,6 +15,12 @@ jest.mock("@/components/ui/sonner");
 jest.mock("@/components/common/LoadingOverlay");
 jest.mock("@/redux/slices/userSlice");
 
+// 管理者の確認（useAreaAdminGate）は、既定で "allowed" にする。確認そのものの検証は、下の「SS: 管理者のゲート」と
+// src/hooks/useAreaAdminGate.test.tsx で行う。
+jest.mock("@/hooks/useAreaAdminGate", () => ({
+  useAreaAdminGate: jest.fn(() => "allowed"),
+}));
+
 // SS 専用の子コンポーネントは、このテスト用の操作ボタンを持つスタブをここに直接定義する。
 jest.mock("@/hooks/useBoxExplorer", () => ({ useBoxExplorer: jest.fn() }));
 
@@ -103,6 +109,7 @@ jest.mock("@/components/ss/CollaborationPanel", () => ({
 }));
 
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
+import { useAreaAdminGate } from "@/hooks/useAreaAdminGate";
 import { configureBoxDevToken } from "@/lib/boxDevToken";
 import { boxFolderCache, configureBoxFolderCache } from "@/lib/boxFolderCache";
 import { UrlPath } from "@/constants/UrlPath";
@@ -228,6 +235,49 @@ describe("SS", () => {
     await waitFor(() => {
       expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument();
     });
+  });
+});
+
+// ===== SS: 管理者のゲート =====
+
+describe("SS: 管理者のゲート", () => {
+  const mockGate = (status: "checking" | "allowed" | "denied") =>
+    (useAreaAdminGate as any).mockReturnValue(status);
+
+  afterEach(() => {
+    mockGate("allowed");
+  });
+
+  it("確認中は、SSContent を作らない（BoxManager・コラボレーションパネルも出ない）", () => {
+    mockGate("checking");
+    makeStore();
+    expect(screen.queryByTestId("collaboration-panel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("box-manager")).not.toBeInTheDocument();
+    expect(useBoxExplorer).not.toHaveBeenCalled();
+  });
+
+  it("管理者でないときは、SSContent を作らず、ShareArea へ戻し、復元用の保存状態を破棄して通知する", async () => {
+    mockGate("denied");
+    const { store } = makeStore({
+      currentFolderByRootId: {
+        [VALID_ROOT_FOLDER_ID]: { id: "child-1", name: "child" },
+      },
+      folderHistoryByRootId: {
+        [VALID_ROOT_FOLDER_ID]: [VALID_ROOT_FOLDER_ID, "child-1"],
+      },
+    } as any);
+
+    expect(screen.queryByTestId("collaboration-panel")).not.toBeInTheDocument();
+    expect(useBoxExplorer).not.toHaveBeenCalled();
+    expect((globalThis as any).mockLocation.pathname).toContain("ShareArea");
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "この領域の管理者のみ利用できます",
+      );
+    });
+    const ss = (store.getState() as any).ss;
+    expect(ss.currentFolderByRootId[VALID_ROOT_FOLDER_ID]).toBeUndefined();
+    expect(ss.folderHistoryByRootId[VALID_ROOT_FOLDER_ID]).toBeUndefined();
   });
 });
 
@@ -726,7 +776,7 @@ describe("SSContent ハンドラ", () => {
 describe("追加ブランチカバレッジ", () => {
   it("SS: 無効な folderId で Navigate を返す（line 600）", () => {
     (globalThis as any).mockParams = { rootFolderId: "invalid-id" };
-    setup(<SS />);
+    makeStore();
     // Navigate mock が mockLocation を ShareArea に更新する
     expect((globalThis as any).mockLocation.pathname).toContain("ShareArea");
   });

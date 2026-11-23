@@ -2,7 +2,7 @@ import { jest } from "@jest/globals";
 import { screen, waitFor, within } from "@testing-library/react";
 import { setupWithStore } from "@test-utils";
 import { ShareArea } from "./ShareArea";
-import { SHARE_AREAS } from "@/config/shareAreaConfig";
+import { MOCK_MY_CENTER_AREAS, SHARE_AREAS } from "@/config/shareAreaConfig";
 import { userSliceReducer } from "@/redux/slices/userSlice";
 import { sharedAreaSliceReducer } from "@/redux/slices/sharedAreaSlice";
 
@@ -81,10 +81,28 @@ describe("ShareArea: My Center（所属・ゲスト）", () => {
 
   it("管理者用のセンターメンバー一覧ボタンを、領域ごとに表示する", () => {
     renderShareArea();
-    const settings = within(myCenter()).getAllByLabelText("コラボレーション設定");
-    expect(within(myCenter()).getAllByLabelText("センターメンバー一覧")).toHaveLength(
-      settings.length,
-    );
+    expect(
+      within(myCenter()).getAllByLabelText("センターメンバー一覧"),
+    ).toHaveLength(MOCK_MY_CENTER_AREAS.length);
+  });
+
+  it("コラボレーション設定ボタンは、その領域の管理者（isAdmin）にだけ表示する", () => {
+    renderShareArea();
+    const adminCount = MOCK_MY_CENTER_AREAS.filter((a) => a.isAdmin).length;
+    expect(adminCount).toBeGreaterThan(0);
+    expect(adminCount).toBeLessThan(MOCK_MY_CENTER_AREAS.length);
+    expect(
+      within(myCenter()).getAllByLabelText("コラボレーション設定"),
+    ).toHaveLength(adminCount);
+
+    // 管理者でない領域のカードには出ない
+    const nonAdmin = MOCK_MY_CENTER_AREAS.find((a) => !a.isAdmin)!;
+    const card = within(myCenter())
+      .getByText(nonAdmin.folderName)
+      .closest("li") as HTMLElement;
+    expect(
+      within(card).queryByLabelText("コラボレーション設定"),
+    ).not.toBeInTheDocument();
   });
 
   it("コラボレーション設定ボタンで SS 画面へ navigate する", async () => {

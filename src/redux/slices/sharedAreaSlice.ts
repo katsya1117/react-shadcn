@@ -28,6 +28,19 @@ export const getSharedAreas = createAsyncThunk(
   },
 );
 
+/**
+ * ログインユーザーが見られる領域（isAdmin 付き）を取得する。
+ * 結果はストアに保存しない。呼び出し側が unwrap() の結果を、その場の判定にだけ使う
+ * （古い値を権限の判定に使わないため。SS 画面の useAreaAdminGate が使う）。
+ */
+export const getMyCenterAreas = createAsyncThunk(
+  sliceName + "/getMyCenterAreas",
+  async (userCd: string) => {
+    const response = await api.getMyCenterAreas(userCd, Config.apiOption);
+    return response.data;
+  },
+);
+
 interface SharedAreaState {
   isLoading: boolean;
   error: SliceError;
