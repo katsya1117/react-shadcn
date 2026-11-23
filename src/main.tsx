@@ -8,6 +8,7 @@ import { Toaster } from './components/ui/sonner'
 import { configureBoxFolderCache } from './lib/boxFolderCache'
 import { configureCollaborationsCache } from './redux/slices/ssSlice'
 import { configureBoxDevToken } from './lib/boxDevToken'
+import { configureRenderLog } from './hooks/useRenderLog'
 
 // ローカル開発用の Box トークン（開発時のみ有効）。詳細は src/lib/boxDevToken.ts を参照。
 configureBoxDevToken({
@@ -27,6 +28,12 @@ configureBoxFolderCache({
 })
 configureCollaborationsCache({
   enabled: import.meta.env.VITE_BOX_COLLABORATIONS_CACHE === 'true',
+})
+
+// 無駄な再レンダリングの調査用ログ（useRenderLog。開発時のみ）。.env.local に VITE_RENDER_LOG=true で有効。
+// 詳細は docs/spec-use-render-log.md を参照。
+configureRenderLog({
+  enabled: import.meta.env.DEV && import.meta.env.VITE_RENDER_LOG === 'true',
 })
 
 createRoot(document.getElementById('root')!).render(
