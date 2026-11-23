@@ -6,7 +6,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 
 import { ShareAreaApi } from "@/api";
 import type { ShareArea } from "@/config/shareAreaConfig";
-import { userSliceReducer } from "@/redux/slices/userSlice";
+import { userActions, userSliceReducer } from "@/redux/slices/userSlice";
 import { sharedAreaSliceReducer } from "@/redux/slices/sharedAreaSlice";
 import { useAreaAdminGate } from "./useAreaAdminGate";
 
@@ -23,10 +23,18 @@ const area = (boxFolderId: string, isAdmin?: boolean): ShareArea => ({
   isAdmin,
 });
 
-const makeWrapper = () => {
+const storeRef: { current: ReturnType<typeof configureStore> | null } = {
+  current: null,
+};
+
+const makeWrapper = (loginUserCd = "u001") => {
   const store = configureStore({
     reducer: { user: userSliceReducer, sharedArea: sharedAreaSliceReducer },
+    preloadedState: {
+      user: { ...userSliceReducer(undefined, { type: "init" }), loginUserCd },
+    },
   });
+  storeRef.current = store;
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <Provider store={store}>{children}</Provider>
   );
@@ -130,5 +138,23 @@ describe("useAreaAdminGate", () => {
     });
     expect(result.current).toBe("checking");
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("ログインユーザー情報の読み込み前（userCd が空）は、API を呼ばず checking で待ち、読み込まれたら確認する", async () => {
+    const spy = jest
+      .spyOn(ShareAreaApi.prototype, "getMyCenterAreas")
+      .mockResolvedValue({ data: [area("A", true)] });
+    const { result } = renderHook(() => useAreaAdminGate("A"), {
+      wrapper: makeWrapper(""),
+    });
+    expect(result.current).toBe("checking");
+    expect(spy).not.toHaveBeenCalled();
+
+    // ログインユーザーが確定したあと、userCd を付けて確認する
+    act(() => {
+      storeRef.current!.dispatch(userActions.setUserId("u001"));
+    });
+    await waitFor(() => expect(result.current).toBe("allowed"));
+    expect(spy).toHaveBeenCalledWith("u001", expect.anything());
   });
 });
