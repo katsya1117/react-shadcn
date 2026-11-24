@@ -28,7 +28,8 @@ type PathBarProps = {
   onGoBack: () => void;
   onGoForward: () => void;
   /** 今見ている画面の情報（フォルダの内容、パス、コラボレーター一覧）を、まとめて最新の情報に更新する */
-  onRefresh: () => void;
+  /** 省略すると、更新ボタンは出ない（本番相当）。更新の試作は src/prototypes/box-cache-refresh/README.md を参照 */
+  onRefresh?: () => void;
   onCopyPath: () => void;
   onOpenBox: () => void;
   onOpenExplorer: () => void;
@@ -151,21 +152,25 @@ export const PathBar = ({
             </TooltipTrigger>
             <TooltipContent>進む</TooltipContent>
           </Tooltip>
-          {/* 戻る/進むと並べて置く（ブラウザの「戻る/進む/更新」と同じ並び） */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className={`shrink-0 ${pathBarIconButtonClass}`}
-                onClick={onRefresh}
-                aria-label="最新の情報に更新"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>最新の情報に更新（フォルダの内容・パス・コラボレーター）</TooltipContent>
-          </Tooltip>
+          {onRefresh && (
+            <>
+            {/* 戻る/進むと並べて置く（ブラウザの「戻る/進む/更新」と同じ並び） */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className={`shrink-0 ${pathBarIconButtonClass}`}
+                  onClick={onRefresh}
+                  aria-label="最新の情報に更新"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>最新の情報に更新（フォルダの内容・パス・コラボレーター）</TooltipContent>
+            </Tooltip>
+            </>
+          )}
 
           <Folder className="h-4 w-4 shrink-0 text-muted-foreground/75" />
           {hasSplitPath ? (

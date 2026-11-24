@@ -101,6 +101,15 @@ describe("PathBar", () => {
     expect(container.querySelector(".custom-class")).toBeInTheDocument();
   });
 
+  it("onRefresh を渡さないとき（本番相当）は、更新ボタンを出さない", () => {
+    renderPathBar({ onRefresh: undefined });
+
+    expect(screen.queryByLabelText("最新の情報に更新")).not.toBeInTheDocument();
+    // 戻る/進むは、そのまま出る
+    expect(screen.getByLabelText("戻る")).toBeInTheDocument();
+    expect(screen.getByLabelText("進む")).toBeInTheDocument();
+  });
+
   it("更新ボタンを押すと onRefresh が呼ばれる", async () => {
     const onRefresh = jest.fn();
     const { user } = renderPathBar({ onRefresh });

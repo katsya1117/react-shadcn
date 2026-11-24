@@ -5,7 +5,8 @@ import './index.css'
 import App from './App.tsx'
 import { store } from './redux/store'
 import { Toaster } from './components/ui/sonner'
-import { configureBoxFolderCache } from './lib/boxFolderCache'
+// [PROTO-CACHE-REFRESH] main.tsx: 試作（フォルダ取得キャッシュ・更新ボタン）。未使用。手順は src/prototypes/box-cache-refresh/README.md
+// import { configureBoxFolderCache } from './prototypes/box-cache-refresh/boxFolderCache'
 import { configureCollaborationsCache } from './redux/slices/ssSlice'
 import { configureBoxDevToken } from './lib/boxDevToken'
 import { configureRenderLog } from './hooks/useRenderLog'
@@ -17,15 +18,14 @@ configureBoxDevToken({
 })
 
 // Box API の呼び出し回数を減らすためのキャッシュ（SS 画面）。
-// 呼び出し回数が問題になるか未確認のため、暫定的に、どちらも既定は無効（性能と最新のデータを優先）。
-// 復活させるには、環境変数を true にする（コードの変更は不要）。
-//   VITE_BOX_FOLDER_CACHE=true          Content Explorer のフォルダ取得（docs/spec-box-folder-cache.md）
-//   VITE_BOX_COLLABORATIONS_CACHE=true  コラボレーター一覧（5 分。ssSlice）
-// 開発時は、フォルダ取得キャッシュの命中・未命中をコンソールに出す（有効のときだけ）。
-configureBoxFolderCache({
-  enabled: import.meta.env.VITE_BOX_FOLDER_CACHE === 'true',
-  debug: import.meta.env.DEV,
-})
+// コラボレーター一覧のキャッシュ（5 分）は、既定は無効。復活させるには、環境変数を true にする（コードの変更は不要）。
+//   VITE_BOX_COLLABORATIONS_CACHE=true
+// フォルダ取得のキャッシュは、試作（src/prototypes/box-cache-refresh/）。使うときは、次のコメントアウトを外す。
+// 開発時は、命中・未命中をコンソールに出す（有効のときだけ）。
+// configureBoxFolderCache({
+//   enabled: import.meta.env.VITE_BOX_FOLDER_CACHE === 'true',
+//   debug: import.meta.env.DEV,
+// })
 configureCollaborationsCache({
   enabled: import.meta.env.VITE_BOX_COLLABORATIONS_CACHE === 'true',
 })

@@ -8,6 +8,10 @@
 | 作成方法 | ソースコードの解析と、実際にフックを動かした挙動の確認による。実装が正であり、本書は実装から起こした仕様である |
 | 関連資料 | [SS 画面 技術仕様書](./spec-ss-screen.md) / 開発者向けの解説 `src/hooks/useBoxExplorer.md`（設計意図・落とし穴） |
 
+> **本番との関係**: 本番環境は、更新（`handleRefresh`）とフォルダ取得キャッシュを追加したコミット `319f0c3` の直前の状態。**本番のフックには、戻る/進むはあるが、`handleRefresh` はない。** 更新とキャッシュは、実現可否を探る試作で、Go は出ていない。
+
+> **更新（`handleRefresh`）に関する記述**（`handleRefresh`、`refreshTargetIdRef`、`handleNavigate` の更新の分岐、第 6.3A 節）は、**試作版 `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts`** のもの。**本体 `src/hooks/useBoxExplorer.ts` にはない**（本番に合わせて外した。試作は未使用で、コピーとして残してある）。それ以外は、両方に共通。
+
 > **修正履歴**: 本書の作成中に、「戻る / 進む」の後に現在地が更新されない不具合を、実際にフックを動かして再現・確認した（第 8 章）。同日に修正し、フックの自動テスト（22 件）を追加した。本書は、**修正後の実装** を記述している。
 
 ## 1. 目的と責務
@@ -379,5 +383,5 @@ Explorer のインスタンス（`explorerRef.current`）がないときに「�
 
 ## 11. 付記
 
-- `src/hooks/useBoxExplorer2.tsx` は、同じ名前のフックを持つが、**どこからも参照されていない**（未使用）。
+- 以前あった `src/hooks/useBoxExplorer2.tsx`（古い未使用の版）は、削除した。
 - 開発者向けの解説 `src/hooks/useBoxExplorer.md` は、設計の意図と、よくある落とし穴をまとめている。
