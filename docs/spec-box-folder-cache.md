@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 | --- | --- |
 | 対象 | Box Content Explorer のフォルダ取得（`GET /folders/{id}`）の短時間キャッシュ |
-| 実装 | `src/prototypes/box-cache-refresh/`（本体・フック・手順。第 0 章）。組み込み位置は、`src/pages/SS.tsx`・`src/main.tsx` の、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
+| 実装 | `src/prototypes/box-cache-refresh/`（本体・フック・手順。第 0 章）。組み込み位置は、`src/hooks/useBoxExplorer.ts`・`src/pages/SS.tsx`・`src/main.tsx` の、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
 | 状態 | **実現可否を探る試作（実現の Go は出ていない）。本番環境は、本機能を追加したコミット `319f0c3` の直前の状態で、本機能（キャッシュ・更新ボタン）は本番に入っていない。** 試作として実装。開発環境で、キャッシュの命中を利用者が確認済み。本番での効果と影響は、未測定。**暫定的に、既定は無効**（下の注記） |
 | 作成日 | 2026-11-06 |
 | 関連資料 | [Box API 呼び出し回数の削減対応 報告書](./report-box-api-call-reduction.md)（背景・全体の対策）<br>[SS 画面 技術仕様書](./spec-ss-screen.md)（画面全体） |
@@ -20,10 +20,10 @@
 | --- | --- | --- |
 | フォルダ取得キャッシュ | `src/prototypes/box-cache-refresh/boxFolderCache.ts`（+ test） | 本体 |
 | | `src/prototypes/box-cache-refresh/useExplorerCacheRefresh.ts`（`useBoxFolderCacheOptions`） | `show()` に渡す中継処理 |
-| 更新ボタン | `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts` | `useBoxExplorer` に `handleRefresh` を足した別版 |
+| 更新ボタン | `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts` | `useFolderNavigation` に `handleRefresh` を足した別版 |
 | | `src/prototypes/box-cache-refresh/useExplorerCacheRefresh.ts`（`useRefreshAll`） | 更新ボタンの処理 |
 | | `src/components/ss/PathBar.tsx` | `onRefresh` を渡したときだけ、更新ボタンを出す（省略可能な props） |
-| 組み込み位置 | `src/pages/SS.tsx`、`src/main.tsx` | 目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト（`grep -rn PROTO-CACHE-REFRESH src`） |
+| 組み込み位置 | `src/hooks/useBoxExplorer.ts`、`src/pages/SS.tsx`、`src/main.tsx` | 目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト（`grep -rn PROTO-CACHE-REFRESH src`） |
 | 有効にする手順・保守 | `src/prototypes/box-cache-refresh/README.md` | |
 
 - どこからも import していない。ただし、型チェックとテストの対象で、壊れていないことは常に確認できる。
@@ -76,7 +76,7 @@ sequenceDiagram
 
 ## 3. 前提となる仕組み（調査結果）
 
-### 3.1 Box UI Elements の挙動（v23.0.0。`index.html` が CDN から読み込むバージョン）
+### 3.1 Box UI Elements の挙動（v23.0.0 のソースを確認した結果。`index.html` は、現在 26.0.0 を読み込む。下の各項目が、26.0.0 でも同じであることは、jsdom で確認済み: [検証報告](./report-box-ui-elements-26-verification.md)）
 
 | 事実 | 出典 |
 | --- | --- |
@@ -102,7 +102,7 @@ sequenceDiagram
 | `createBoxFolderCache(options)` | `src/prototypes/box-cache-refresh/boxFolderCache.ts` | キャッシュを作る関数。2 つの中継処理と、操作用の関数を返す |
 | `boxFolderCache` | 同上 | アプリ全体で共有する 1 つのインスタンス |
 | `configureBoxFolderCache` / `isBoxFolderCacheEnabled` | 同上 | 有効・無効と、ログ出力の設定 |
-| 組み込み | `src/pages/SS.tsx` | `show()` のオプションに、2 つの中継処理を渡す |
+| 組み込み | `src/hooks/useBoxExplorer.ts` | `show()` のオプションに、2 つの中継処理を渡す |
 | 設定 | `src/main.tsx` | 起動時に、環境変数から有効・無効を設定する |
 
 ### 4.2 保存するデータ
@@ -188,7 +188,7 @@ sequenceDiagram
 
 ## 5. 画面との接続
 
-### 5.1 `SS.tsx`
+### 5.1 `useBoxExplorer.ts`（`show()` を呼ぶ側。2026-11-25 までは `SS.tsx` にあった）
 
 Box Content Explorer の `show()` のオプションに、キャッシュが有効なときだけ、2 つの中継処理を足す。
 
@@ -241,7 +241,7 @@ configureBoxFolderCache({
 - ①は、**②より先に** 行う。逆だと、取り直しの要求が、保存済みの古い内容で応答される。
 - コラボレーター一覧のキャッシュ（`ssSlice`、5 分）は、本書のキャッシュとは別の場所（Redux）にある。その破棄と取り直しの詳細は、[SS 画面仕様書](./spec-ss-screen.md)の 7.4A を参照する。
 - **ボタンを 1 つにまとめた理由**: 利用者の目的は、ほとんどが「今見ている画面を最新にしたい」である。フォルダ用と一覧用に分けると、「フォルダの更新ボタンを押したのに、一覧が古い」という誤解が起きやすく、利用者への説明も長くなる。増える通信は、一覧が開いているときの 1 回だけである。
-- 実装: `SS.tsx` の `handleRefreshAll`（`boxFolderCache.clear()` → フックの `handleRefresh()` → `refreshCollaborations()`）、`useBoxExplorer` の `handleRefresh`。
+- 実装: `SS.tsx` の `handleRefreshAll`（`boxFolderCache.clear()` → フックの `handleRefresh()` → `refreshCollaborations()`）、`useFolderNavigation` の `handleRefresh`。
 
 ## 6. 振る舞いの一覧
 
@@ -347,7 +347,7 @@ configureBoxFolderCache({
 | イベント | `miss` → `store` → `hit` の順に通知され、トークンを含まない |
 | **実際の axios との結合** | `axios.create` したインスタンスに、中継処理を登録し、通信部分の呼び出し回数を数える。同じフォルダの 2 回目は、通信されず、同じ内容が返る。パラメータ違い、`/items`、`clear()` の後は、通信される |
 | 設定 | 既定は無効（暫定）。切り替えられる。ログは、`debug` のときだけ出る |
-| `SS.tsx` | 有効なときは、`show()` に 2 つの中継処理を渡す。無効なときは、渡さない |
+| `useBoxExplorer.ts` | 有効なときは、`show()` に 2 つの中継処理を渡す。無効なときは、渡さない |
 
 - 結合テストは、このリポジトリの axios（v1.21.0）で、`adapter` の差し替えにより通信が省かれることを確認している。**Box の画面部品が内部に持つ axios は、別のバージョンの可能性がある。** 開発環境で、命中が確認できたことで、実際の画面部品でも動作することが分かっている。
 
@@ -376,9 +376,10 @@ configureBoxFolderCache({
 | --- | --- |
 | `src/prototypes/box-cache-refresh/boxFolderCache.ts` | キャッシュ本体（新規） |
 | `src/prototypes/box-cache-refresh/boxFolderCache.test.ts` | 単体テストと、axios との結合テスト（新規、35 件） |
-| `src/pages/SS.tsx` | （追加時）`show()` に中継処理を渡す。更新ボタンの処理（`handleRefreshAll`）。現在は、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
+| `src/hooks/useBoxExplorer.ts` | （追加時）`show()` に中継処理を渡す。現在は、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
+| `src/pages/SS.tsx` | （追加時）更新ボタンの処理（`handleRefreshAll`）。現在は、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
 | `src/pages/SS.test.tsx` | （追加時）組み込みのテスト（2 件）。現在は、`useExplorerCacheRefresh.test.tsx` に移した |
 | `src/main.tsx` | 有効・無効、ログ出力の設定（現在は、コメントアウト） |
 | `src/components/ss/PathBar.tsx` | 更新ボタン |
-| `src/hooks/useBoxExplorer.ts` | `handleRefresh`（現在のフォルダを取り直し、結果で現在地を最新にする） |
+| `src/hooks/useFolderNavigation.ts` | `handleRefresh`（現在のフォルダを取り直し、結果で現在地を最新にする） |
 | `.env.example` | `VITE_BOX_FOLDER_CACHE` の説明 |

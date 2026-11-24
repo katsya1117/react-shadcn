@@ -97,8 +97,8 @@ Styling uses Vanilla Extract CSS modules (`.css.ts` files alongside components).
 
 The SS page (`src/pages/SS.tsx`) manages Box folder collaboration. Key points:
 - Only folder IDs listed in `src/config/shareAreaConfig.ts` (`SHARE_AREAS`) are valid roots — others redirect away
-- `useBoxExplorer` hook (`src/hooks/useBoxExplorer.ts`) manages folder navigation history (back/forward) coordinating between Box SDK `navigateTo`, local state, and the `ss` Redux slice
-- The hook uses a dual ref+state pattern: refs for immediate reads inside event handlers, state for rendering
+- `useBoxExplorer` hook (`src/hooks/useBoxExplorer.ts`) owns the Box SDK side: access-token resolution, ContentExplorer instance creation, `show()`/`hide()`, and the `navigate` listener. It calls `useFolderNavigation` (`src/hooks/useFolderNavigation.ts`), which manages folder navigation history (back/forward) coordinating between Box SDK `navigateTo`, local state, and the `ss` Redux slice
+- `useFolderNavigation` uses a dual ref+state pattern: refs for immediate reads inside event handlers, state for rendering
 
 ### Path Alias
 

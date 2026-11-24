@@ -1,7 +1,11 @@
 import { DISPLAY_PATH_ROOT } from "@/constants/ssConstants";
 import { SHARE_AREAS } from "@/config/shareAreaConfig";
 import type { GetFolderCollaborationsResponse } from "@/api";
-import type { CollaborationListItem, FolderInfo } from "@/types/ss";
+import type {
+  CollaborationListItem,
+  CollaboratorType,
+  FolderInfo,
+} from "@/types/ss";
 
 const SHARE_AREA_ROUTE_FOLDER_ID_SET = new Set(
   SHARE_AREAS.map((area) => area.boxFolderId),
@@ -54,6 +58,46 @@ export const buildSourcePathByFolderId = (
 };
 
 /**
+ * 本アプリで管理対象（編集・削除できる）の collaboration かどうか。
+ * can_view_path=true のものだけが管理対象。Box UI 由来の can_view_path=false は、一覧には出すが読み取り専用。
+ * 表記揺れ（snake_case / camelCase）があり、どちらもなければ true として扱う。
+ */
+export const isManageableCollaboration = (
+  item: GetFolderCollaborationsResponse,
+): boolean => item.can_view_path ?? item.canViewPath ?? true;
+
+/**
+ * 選択された相手が、グループ（部署）かユーザーかを判定する。
+ * collaboratorType は画面側の区分、accessibleByType は Box API 側の区分（department → group）。
+ */
+export const resolveCollaboratorType = (
+  groups: ReadonlyArray<{ value: string }>,
+  collaboratorId: string,
+): { collaboratorType: CollaboratorType; accessibleByType: "group" | "user" } => {
+  const isGroup = groups.some((group) => group.value === collaboratorId);
+  return isGroup
+    ? { collaboratorType: "department", accessibleByType: "group" }
+    : { collaboratorType: "user", accessibleByType: "user" };
+};
+
+/**
+ * 追加しようとしている相手が、すでに設定済みか。
+ * 重複と見なすのは、管理対象（can_view_path=true）の collaboration 同士だけ。
+ * Box UI 経由で作られた can_view_path=false は、重複ブロックには使わない。
+ */
+export const findDuplicateCollaboration = (
+  rows: GetFolderCollaborationsResponse[],
+  collaboratorId: string,
+  accessibleByType: "group" | "user",
+): GetFolderCollaborationsResponse | undefined =>
+  rows.find(
+    (item) =>
+      isManageableCollaboration(item) &&
+      item.accessible_by?.id === collaboratorId &&
+      item.accessible_by?.type === accessibleByType,
+  );
+
+/**
  * Box API のレスポンス1件を画面表示用に正規化する純粋関数。
  * - direct/inherited の判定
  * - can_view_path の表記揺れ対応
@@ -66,9 +110,7 @@ export const toCollaborationListItem = (
 ): CollaborationListItem => {
   const sourceFolderId = item.item?.id ?? currentFolderId;
   const isInherited = sourceFolderId !== currentFolderId;
-  // 本アプリでは can_view_path=true の collaboration だけを管理対象として扱う。
-  // Box UI 由来の can_view_path=false は一覧には出すが読み取り専用。
-  const canEdit = item.can_view_path ?? item.canViewPath ?? true;
+  const canEdit = isManageableCollaboration(item);
 
   return {
     collaborator: {

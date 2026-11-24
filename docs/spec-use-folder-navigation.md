@@ -1,16 +1,17 @@
-# useBoxExplorer フック 仕様書
+# useFolderNavigation フック 仕様書
 
 | 項目 | 内容 |
 | --- | --- |
-| 対象 | カスタムフック `useBoxExplorer` |
-| 実装 | `src/hooks/useBoxExplorer.ts`（227 行） |
+| 対象 | カスタムフック `useFolderNavigation` |
+| 実装 | `src/hooks/useFolderNavigation.ts`（227 行） |
 | 作成日 | 2026-11-05 |
+| 改名 | 2026-11-25 に、`useBoxExplorer` から `useFolderNavigation` へ改名した。`useBoxExplorer` の名前は、Box SDK の生成・表示と、このフックを束ねる、外側のフックに付け替えた（[SS 画面 技術仕様書](./spec-ss-screen.md) の第 4 章）。本書の対象は、フォルダ移動の状態だけ |
 | 作成方法 | ソースコードの解析と、実際にフックを動かした挙動の確認による。実装が正であり、本書は実装から起こした仕様である |
-| 関連資料 | [SS 画面 技術仕様書](./spec-ss-screen.md) / 開発者向けの解説 `src/hooks/useBoxExplorer.md`（設計意図・落とし穴）/ [履歴の作られ方（完全解説）](./guide-ss-history.md)（図と例で、初めての人向けに説明したもの） |
+| 関連資料 | [SS 画面 技術仕様書](./spec-ss-screen.md) / 開発者向けの解説 `src/hooks/useFolderNavigation.md`（設計意図・落とし穴）/ [履歴の作られ方（完全解説）](./guide-ss-history.md)（図と例で、初めての人向けに説明したもの） |
 
 > **本番との関係**: 本番環境は、更新（`handleRefresh`）とフォルダ取得キャッシュを追加したコミット `319f0c3` の直前の状態。**本番のフックには、戻る/進むはあるが、`handleRefresh` はない。** 更新とキャッシュは、実現可否を探る試作で、Go は出ていない。
 
-> **更新（`handleRefresh`）に関する記述**（`handleRefresh`、`refreshTargetIdRef`、`handleNavigate` の更新の分岐、第 6.3A 節）は、**試作版 `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts`** のもの。**本体 `src/hooks/useBoxExplorer.ts` にはない**（本番に合わせて外した。試作は未使用で、コピーとして残してある）。それ以外は、両方に共通。
+> **更新（`handleRefresh`）に関する記述**（`handleRefresh`、`refreshTargetIdRef`、`handleNavigate` の更新の分岐、第 6.3A 節）は、**試作版 `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts`** のもの。**本体 `src/hooks/useFolderNavigation.ts` にはない**（本番に合わせて外した。試作は未使用で、コピーとして残してある）。それ以外は、両方に共通。
 
 > **修正履歴**: 本書の作成中に、「戻る / 進む」の後に現在地が更新されない不具合を、実際にフックを動かして再現・確認した（第 8 章）。同日に修正し、フックの自動テスト（22 件）を追加した。本書は、**修正後の実装** を記述している。
 
@@ -37,7 +38,7 @@ Box の Content Explorer（ファイルブラウザ）上での **フォルダ�
 
 ## 2. インターフェース
 
-### 2.1 引数（`UseBoxExplorerOptions`）
+### 2.1 引数（`UseFolderNavigationOptions`）
 
 | 名称 | 型 | 内容 |
 | --- | --- | --- |
@@ -49,7 +50,7 @@ Box の Content Explorer（ファイルブラウザ）上での **フォルダ�
 
 > **すべての引数は、フックが最初に描画された時点の値だけが使われる**（refs と state の初期値）。その後に引数が変わっても、内部の状態には反映されない。このため、呼び出し側は、領域（`rootFolderId`）ごとにコンポーネントを作り直す（SS 画面は `key={rootFolderId}`）。
 
-### 2.2 戻り値（`UseBoxExplorerResult`）
+### 2.2 戻り値（`UseFolderNavigationResult`）
 
 | 名称 | 型 | 内容 |
 | --- | --- | --- |
@@ -95,7 +96,7 @@ type ContentExplorerInstance = {
 
 | 相手 | 関係 |
 | --- | --- |
-| Box Content Explorer（`window.Box.ContentExplorer`） | フックは `explorerRef.current.navigateTo(id)` を呼ぶ。Explorer は、フォルダの取得が成功すると `navigate` イベントを発火する（Box UI Elements v23.0.0 のソース上、`navigateTo` はフォルダ取得 `fetchFolder(id)` を呼び、取得成功時にイベントを発火する）。**実機での確認は未実施** |
+| Box Content Explorer（`window.Box.ContentExplorer`） | フックは `explorerRef.current.navigateTo(id)` を呼ぶ。Explorer は、フォルダの取得が成功すると `navigate` イベントを発火する（Box UI Elements のソース上、`navigateTo` はフォルダ取得 `fetchFolder(id)` を呼び、取得成功時にイベントを発火する。v23.0.0・v26.0.0 とも、jsdom 上で、偽の API を使って、`navigateTo` の結果として `navigate` が届くこと（表示中のフォルダと同じ ID でも届く）を確認した: [検証報告](./report-box-ui-elements-26-verification.md)）。**本物の Box での確認は未実施** |
 | Redux `ss` スライス | `ssActions.setCurrentFolder({ rootFolderId, folder })` と `ssActions.setFolderHistory({ rootFolderId, history, index })` を dispatch する |
 | 呼び出し側 | `handleNavigate` を、Explorer の `navigate` イベントに登録する |
 
@@ -318,7 +319,7 @@ flowchart TD
 
 **原因**: 「戻る」の処理（6.3 の手順 2）が、先に位置を更新する。その後に届く A のイベントでは、「履歴の現在位置のフォルダ」が A になっているため、重複通知の判定に一致し、現在地の更新と、フラグを下ろす処理に到達しなかった。
 
-**修正**: 「戻る / 進む」の最中の判定を、重複通知の判定より **前** に移し、その分岐の中で、現在地の更新（state と Redux）を行うようにした（`useBoxExplorer.ts` の `handleNavigate`）。
+**修正**: 「戻る / 進む」の最中の判定を、重複通知の判定より **前** に移し、その分岐の中で、現在地の更新（state と Redux）を行うようにした（`useFolderNavigation.ts` の `handleNavigate`）。
 
 ### 8.2 【修正済み】「戻る / 進む」の後の、最初のクリックが履歴に積まれなかった
 
@@ -384,7 +385,7 @@ Explorer のインスタンス（`explorerRef.current`）がないときに「�
 
 | 項目 | 内容 |
 | --- | --- |
-| フック単体のテスト | `src/hooks/useBoxExplorer.test.tsx`（本体。更新を含む試作版は `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.test.tsx`）。Redux ストアを実物で用意し、`navigate` イベントを `handleNavigate` の直接呼び出しで模擬する |
+| フック単体のテスト | `src/hooks/useFolderNavigation.test.tsx`（本体。更新を含む試作版は `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.test.tsx`）。Redux ストアを実物で用意し、`navigate` イベントを `handleNavigate` の直接呼び出しで模擬する |
 | `SS.test.tsx` でのフックの扱い | フックを **モックに置き換えて** いる。フック自体の検証は、上記の単体テストで行う |
 | 実機での確認 | 未実施 |
 
@@ -422,4 +423,4 @@ Explorer のインスタンス（`explorerRef.current`）がないときに「�
 ## 11. 付記
 
 - 以前あった `src/hooks/useBoxExplorer2.tsx`（古い未使用の版）は、削除した。
-- 開発者向けの解説 `src/hooks/useBoxExplorer.md` は、設計の意図と、よくある落とし穴をまとめている。
+- 開発者向けの解説 `src/hooks/useFolderNavigation.md` は、設計の意図と、よくある落とし穴をまとめている。

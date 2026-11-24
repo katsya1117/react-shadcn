@@ -5,7 +5,7 @@
 | 対象システム | react-shadcn（Box をラップし、利用者がアクセスできる領域の入口を提供するアプリケーション） |
 | 対象画面 | SS 画面（センター専用領域のフォルダ閲覧・コラボレーション設定） |
 | 作成日 | 2026-11-05 |
-| 関連資料 | [SS 画面 技術仕様書](./spec-ss-screen.md) / [useBoxExplorer フック 仕様書](./spec-use-box-explorer.md) |
+| 関連資料 | [SS 画面 技術仕様書](./spec-ss-screen.md) / [useBoxExplorer フック 仕様書](./spec-use-folder-navigation.md) |
 
 ## 1. 要約
 
@@ -59,7 +59,7 @@ SS 画面で Box の API を呼ぶ処理は、次の 2 系統に分かれる。
 
 ### 3.3 エクスプローラーの取得は、設定で削減できない
 
-Box UI Elements v23.0.0（本アプリが読み込んでいるバージョン）のソースを確認した。
+Box UI Elements v23.0.0（本報告の作成時に、本アプリが読み込んでいたバージョン。現在は 26.0.0 に更新済みで、ここで述べる動きは、26.0.0 でも同じことを確認した: [検証報告](./report-box-ui-elements-26-verification.md)）のソースを確認した。
 
 - フォルダの取得（`fetchFolder`）は、`forceFetch: true` を固定で渡している（[`ContentExplorer.tsx`](https://github.com/box/box-ui-elements/blob/v23.0.0/src/elements/content-explorer/ContentExplorer.tsx) の 588 行付近）。
 - そのため、**訪問済みのフォルダへ戻る場合でも、毎回 API を呼ぶ**。エクスプローラーのインスタンスを使い回しても、削減にはならない。
@@ -210,7 +210,7 @@ Explorer のフォルダ取得は、設定では減らせない（3.3 節）。�
 | `src/redux/slices/ssSlice.ts` | 取得時刻の保持、5 分の有効時間、キャッシュの無効化、取得ロジック（`ensureFolderCollaborations`） |
 | `src/prototypes/box-cache-refresh/boxFolderCache.ts` | フォルダ取得のキャッシュ（試作・未使用） |
 | `src/main.tsx` | キャッシュの有効・無効、開発時のログ出力の設定 |
-| `src/hooks/useBoxExplorer.md` | 復元の説明を更新 |
+| `src/hooks/useFolderNavigation.md` | 復元の説明を更新 |
 | テスト | `SS.test.tsx`、`ssSlice.test.ts`、`CollaborationPanel.test.tsx`、`boxFolderCache.test.ts` を更新・追加（全体で 424 件が成功） |
 
 ## 10. 用語

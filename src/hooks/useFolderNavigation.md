@@ -1,18 +1,18 @@
-# useBoxExplorer
+# useFolderNavigation
 
 Box Content Explorer の **フォルダ移動状態** だけを管理するカスタムフック。
 
 このフックは「現在地・履歴・戻る/進む」を扱う頭脳役で、
-**Box SDK 自体の生成・表示・トークン管理はコンポーネント側の責務**。
+**Box SDK 自体の生成・表示・トークン管理は、外側のフック `useBoxExplorer`（`src/hooks/useBoxExplorer.ts`）の責務**。
 
 ---
 
 ## 設計の前提
 
-`SS.tsx` を例に、責務分担はこうなっている。
+`useBoxExplorer`（`SS.tsx` が呼ぶ）を例に、責務分担はこうなっている。
 
 ```
-SS.tsx                           useBoxExplorer
+useBoxExplorer                   useFolderNavigation
 ─────────────────────────────────────────────────
 Box SDK インスタンス生成     →
 SDK の show() 呼び出し（表示） →
@@ -27,7 +27,7 @@ navigate イベントの登録      → → handleNavigate を呼ぶ
                               ← explorerRef を介して navigateTo を逆呼び出し
 ```
 
-コンポーネントが SDK を作って `explorerRef` に差し込み、
+`useBoxExplorer` が SDK を作って `explorerRef` に差し込み、
 SDK の `navigate` イベントを `handleNavigate` に流し込めば、
 あとは hook 内で履歴の管理・戻る進むの提供をしてくれる。
 
@@ -45,7 +45,7 @@ const {
   handleNavigate,     // SDK の navigate イベントに繋ぐハンドラ
   handleGoBack,       // 戻るボタン
   handleGoForward,    // 進むボタン
-} = useBoxExplorer({
+} = useFolderNavigation({
   rootFolderId,
   initialFolder,
   savedHistory,
@@ -115,7 +115,7 @@ index:                ^
 例: 履歴 `[R, A, B, C]`、index 3（C）で、パンくずで A を押す → 履歴は `[R, A, B, C, A]`、index 4 になる。
 このあと「戻る」→ C（押す前にいたフォルダに戻れる）、さらに「戻る」→ B。
 
-（以前は、履歴にあるフォルダなら、積まずに index だけを動かす規則だった。結果が、フォルダによって「積まれる／積まれない」で変わり、「戻る」で押す前のフォルダに戻れなかったため、2026-11 に変更した。詳細は docs/spec-use-box-explorer.md の 8.6）
+（以前は、履歴にあるフォルダなら、積まずに index だけを動かす規則だった。結果が、フォルダによって「積まれる／積まれない」で変わり、「戻る」で押す前のフォルダに戻れなかったため、2026-11 に変更した。詳細は docs/spec-use-folder-navigation.md の 8.6）
 
 ### 2. 深いフォルダへの復元
 
@@ -127,8 +127,9 @@ index:                ^
 
 `isRestoring` がこの間 `true` になるため、UI 側でスケルトンを出せる。
 
-- `currentFolderId` は公式ドキュメントに記載がない。Box UI Elements v23.0.0 のソースでは、`show()` の
-  options が ContentExplorer の props にそのまま渡され、`componentDidMount` で最初に取得される。
+- `currentFolderId` は公式ドキュメントに記載がない。Box UI Elements のソース（v23.0.0・v26.0.0 の両方で確認）では、
+  `show()` の options が ContentExplorer の props にそのまま渡され、`componentDidMount` で最初に取得される。
+  26.0.0 では、jsdom 上で、ルートを経由せず復元先だけを取得することも確認した（docs/report-box-ui-elements-26-verification.md）。
   バージョンを上げるときは、この挙動が維持されているか確認すること。
 - パンくずは、取得したフォルダの `path_collection` を `rootFolderId` から先で切り出して作られる。
   復元先がルートの子孫でない場合（Box 上で移動された等）は、All Files からの全階層が出る。

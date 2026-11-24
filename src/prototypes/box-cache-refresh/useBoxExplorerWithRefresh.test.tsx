@@ -6,9 +6,9 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import { ssSliceReducer } from "@/redux/slices/ssSlice";
 import type { BoxFolder } from "@/types/BoxUiElements";
-import { useBoxExplorerWithRefresh as useBoxExplorer } from "./useBoxExplorerWithRefresh";
+import { useBoxExplorerWithRefresh as useFolderNavigation } from "./useBoxExplorerWithRefresh";
 
-// 仕様は docs/spec-use-box-explorer.md を参照（テスト番号 T-n は同書 10.1 節に対応）。
+// 仕様は docs/spec-use-folder-navigation.md を参照（テスト番号 T-n は同書 10.1 節に対応）。
 // Box SDK は使わず、navigate イベントは handleNavigate を直接呼んで模擬する。
 // 「戻る / 進む」は navigateTo を呼ぶ → その結果として navigate イベントが届く、という流れを再現する。
 
@@ -21,7 +21,7 @@ const folder = (id: string, type = "folder"): BoxFolder => ({
   path_collection: { entries: [{ id: "0", name: "All Files" }] },
 });
 
-type Options = Partial<Parameters<typeof useBoxExplorer>[0]>;
+type Options = Partial<Parameters<typeof useFolderNavigation>[0]>;
 
 const setupHook = (options: Options = {}) => {
   const store = configureStore({ reducer: { ss: ssSliceReducer } });
@@ -31,7 +31,7 @@ const setupHook = (options: Options = {}) => {
   );
   const { result } = renderHook(
     () =>
-      useBoxExplorer({
+      useFolderNavigation({
         rootFolderId: ROOT,
         initialFolder: { id: ROOT, name: "", pathCollection: { entries: [] } },
         savedHistory: [ROOT],

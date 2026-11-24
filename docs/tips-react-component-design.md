@@ -87,10 +87,10 @@
 
 ## 5. このリポジトリの例
 
-- **`PathBar` / `CollaborationPanel`（SS 画面）**: props だけの部品。親（SS 画面）が `useBoxExplorer` で履歴を持っていて、戻る・進むの状態を props で渡す。親が持つ state を表示するだけなので、props が自然。
+- **`PathBar` / `CollaborationPanel`（SS 画面）**: props だけの部品。親（SS 画面）が `useFolderNavigation` で履歴を持っていて、戻る・進むの状態を props で渡す。親が持つ state を表示するだけなので、props が自然。
 - **ランチャー（`ShareArea`）の絞り込み**: 絞り込み欄（パネルの見出し側）と一覧（中）の両方が使うので、絞り込みの文字列（`query`）は、親（`ShareArea`）が持つ。持ち上げが必要な例。
   - その結果、1 文字入力するたびに、ページ全体が再描画され、`My Center` のカードも再描画される。今の件数（20 枚程度）では問題にならない。重くなったら、`My Center` の部分を、`query` に関係しない別の部品に切り出して `React.memo` で包む。
-- **hook への切り出し**: `useBoxExplorer`（フォルダ移動の状態管理）。見た目ではなくロジックが長いときの例。
+- **hook への切り出し**: `useFolderNavigation`（フォルダ移動の状態管理）。見た目ではなくロジックが長いときの例。
 
 ## 6. チェックリスト（切り出す前に）
 - [ ] この値や処理は、子だけが使うか。（使うなら子で呼ぶ）
