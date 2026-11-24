@@ -1,7 +1,10 @@
 import {
   buildPath,
   buildSourcePathByFolderId,
+  findDuplicateCollaboration,
+  isManageableCollaboration,
   isShareAreaRouteFolderId,
+  resolveCollaboratorType,
   toCollaborationListItem,
 } from "./ssHelpers";
 import type { FolderInfo } from "@/types/ss";
@@ -208,5 +211,111 @@ describe("toCollaborationListItem", () => {
     const result = toCollaborationListItem(item, currentFolderId, sourcePathByFolderId);
     expect(result.isInherited).toBe(false);
     expect(result.collaborator.sourceFolderId).toBe(currentFolderId);
+  });
+});
+
+// --------------------------------------------------------
+// isManageableCollaboration
+// --------------------------------------------------------
+describe("isManageableCollaboration", () => {
+  const row = (extra: Record<string, unknown>) =>
+    ({ id: "c1", ...extra }) as unknown as GetFolderCollaborationsResponse;
+
+  test("can_view_path=true は管理対象", () => {
+    expect(isManageableCollaboration(row({ can_view_path: true }))).toBe(true);
+  });
+
+  test("can_view_path=false は管理対象外", () => {
+    expect(isManageableCollaboration(row({ can_view_path: false }))).toBe(false);
+  });
+
+  test("canViewPath（キャメルケース）も同じように判定する", () => {
+    expect(isManageableCollaboration(row({ canViewPath: false }))).toBe(false);
+  });
+
+  test("どちらもなければ管理対象として扱う", () => {
+    expect(isManageableCollaboration(row({}))).toBe(true);
+  });
+
+  test("両方あるときは can_view_path を優先する", () => {
+    expect(
+      isManageableCollaboration(row({ can_view_path: true, canViewPath: false })),
+    ).toBe(true);
+  });
+});
+
+// --------------------------------------------------------
+// resolveCollaboratorType
+// --------------------------------------------------------
+describe("resolveCollaboratorType", () => {
+  const groups = [{ value: "g1" }, { value: "g2" }];
+
+  test("グループに含まれる ID は department / group", () => {
+    expect(resolveCollaboratorType(groups, "g2")).toEqual({
+      collaboratorType: "department",
+      accessibleByType: "group",
+    });
+  });
+
+  test("グループに含まれない ID は user / user", () => {
+    expect(resolveCollaboratorType(groups, "u1")).toEqual({
+      collaboratorType: "user",
+      accessibleByType: "user",
+    });
+  });
+
+  test("グループが空なら user", () => {
+    expect(resolveCollaboratorType([], "g1").collaboratorType).toBe("user");
+  });
+});
+
+// --------------------------------------------------------
+// findDuplicateCollaboration
+// --------------------------------------------------------
+describe("findDuplicateCollaboration", () => {
+  const row = (
+    id: string,
+    type: "user" | "group",
+    extra: Record<string, unknown> = {},
+  ) =>
+    ({
+      id: `c-${id}-${type}`,
+      accessible_by: { id, type, name: id },
+      ...extra,
+    }) as unknown as GetFolderCollaborationsResponse;
+
+  test("ID と種別が同じ管理対象の行があれば、その行を返す", () => {
+    const rows = [row("u1", "user"), row("u2", "user")];
+    expect(findDuplicateCollaboration(rows, "u2", "user")).toBe(rows[1]);
+  });
+
+  test("ID が同じでも種別が違えば重複ではない（ユーザー ID とグループ ID が同じ値でも別物）", () => {
+    expect(
+      findDuplicateCollaboration([row("x1", "group")], "x1", "user"),
+    ).toBeUndefined();
+  });
+
+  test("can_view_path=false の行は、重複ブロックに使わない", () => {
+    expect(
+      findDuplicateCollaboration(
+        [row("u1", "user", { can_view_path: false })],
+        "u1",
+        "user",
+      ),
+    ).toBeUndefined();
+  });
+
+  test("accessible_by がない行は無視する", () => {
+    expect(
+      findDuplicateCollaboration(
+        [{ id: "c1" } as unknown as GetFolderCollaborationsResponse],
+        "u1",
+        "user",
+      ),
+    ).toBeUndefined();
+  });
+
+  test("空配列は重複なし", () => {
+    expect(findDuplicateCollaboration([], "u1", "user")).toBeUndefined();
   });
 });
