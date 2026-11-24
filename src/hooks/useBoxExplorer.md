@@ -106,13 +106,16 @@ useEffect(() => {
 index:                ^
 ```
 
-- 新しいフォルダ `D` へ移動 → index より後ろを切り捨てて `D` を追加
+- フォルダのクリックでも、パンくずのクリックでも、行き先 `D` を、index より後ろを切り捨てて末尾に追加する
 - 「戻る」 → index を `-1` し、SDK で対象フォルダへ navigate
 - 「進む」 → index を `+1` し、SDK で対象フォルダへ navigate
-- 同じフォルダがすでに履歴にある場合 → 新規追加せずインデックスだけ動かす
 
-パンくずでルートを押すと index が 0 に戻り、それより先に進めなくなる。
-ブラウザとは異なる挙動だが、ファイルエクスプローラーのパンくず UX として妥当な動作。
+パンくずで、すでに履歴にあるフォルダ（例: ルート）を押した場合も、**積む**（ブラウザと同じ）。履歴に、同じフォルダが重複して入る。
+
+例: 履歴 `[R, A, B, C]`、index 3（C）で、パンくずで A を押す → 履歴は `[R, A, B, C, A]`、index 4 になる。
+このあと「戻る」→ C（押す前にいたフォルダに戻れる）、さらに「戻る」→ B。
+
+（以前は、履歴にあるフォルダなら、積まずに index だけを動かす規則だった。結果が、フォルダによって「積まれる／積まれない」で変わり、「戻る」で押す前のフォルダに戻れなかったため、2026-11 に変更した。詳細は docs/spec-use-box-explorer.md の 8.6）
 
 ### 2. 深いフォルダへの復元
 
@@ -135,11 +138,13 @@ index:                ^
 
 `navigate` イベントがどの経路で発火したかを判別して、それぞれ違う処理をする。
 
-| パターン | フラグ | 処理 |
+| パターン | 判定に使うもの | 処理 |
 |---------|-------|------|
 | 復元処理中 | `isRestoringRef` | 履歴は触らず、navigateTo で誘導するだけ |
-| 戻る/進むボタン経由 | `isNavigatingRef` | 履歴は handleGoBack/Forward で更新済みなのでスキップ |
-| ユーザー操作（クリック等） | （フラグなし） | 履歴に積む or インデックスを動かす |
+| 戻る/進むボタン経由 | `pendingTargetIdRef`（向かっているフォルダの ID）と、届いたフォルダが**同じ** | 履歴は handleGoBack/Forward で更新済みなので、現在地だけ更新する |
+| ユーザー操作（クリック、パンくず） | 上のどちらでもない | 履歴に積む（index より先は捨てる） |
+
+「戻る/進む」の判定を、true/false の旗ではなく、向かっているフォルダの **ID** にしている理由: 戻る/進むが失敗して知らせが来ないと、旗は立ったままになり、次の利用者の操作を「戻るの結果」と取り違えて、履歴がずれたため。ID なら、届いたフォルダが違うので、利用者の操作として扱える。
 
 ---
 
@@ -152,7 +157,7 @@ state にすると、setState の直後（イベントハンドラ内など）�
 
 | ref | 用途 |
 |----|------|
-| `isNavigatingRef` | 戻る/進むボタン経由かを判定するフラグ。SDK の navigate イベントとの競合を防ぐため即座読みが必要 |
+| `pendingTargetIdRef` | 戻る/進むで向かっているフォルダの ID。届いた navigate イベントが、戻る/進むの結果かを判定する。SDK の navigate イベントとの競合を防ぐため即座読みが必要 |
 | `isRestoringRef` | 深いフォルダへの復元中かを判定。navigate イベントを複数回経るので state では遅い |
 | `restoreTargetIdRef` | 復元先のフォルダID。初期化以後は変わらない値だが、handleNavigate の中で参照する |
 | `historyIndexRef` | 履歴の現在位置。`handleGoBack/Forward` で「いまの位置 ±1」を即座に読むのに使う |
@@ -190,7 +195,7 @@ const handleGoBack = () => {
   if (!canGoBack) return;
   const nextIndex = historyIndexRef.current - 1;
   const folderId = folderHistoryRef.current[nextIndex];
-  isNavigatingRef.current = true;
+  if (explorerRef.current?.navigateTo) pendingTargetIdRef.current = folderId; // 向かう先を覚える
   syncHistory(nextIndex, folderHistoryRef.current);
   explorerRef.current?.navigateTo?.(folderId);
 };
@@ -226,8 +231,8 @@ useEffect(() => {
 戻る/進むボタンや復元処理で `explorer.navigateTo(id)` を呼ぶと、
 SDK はその直後に `navigate` イベントを発火する。
 
-これをユーザー操作と区別するために `isNavigatingRef` / `isRestoringRef` フラグがある。
-**フラグを立ててから navigateTo を呼ぶ**順序を必ず守ること。
+これをユーザー操作と区別するために `pendingTargetIdRef`（向かう先の ID）と `isRestoringRef`（復元中の旗）がある。
+**向かう先を覚えてから navigateTo を呼ぶ**順序を必ず守ること。
 
 ---
 
@@ -235,13 +240,18 @@ SDK はその直後に `navigate` イベントを発火する。
 
 ### Q. 戻る/進むボタンを押したら履歴が二重に積まれる
 
-→ `isNavigatingRef` のセット忘れ。`navigateTo` の前に必ず `true` を立てる。
+→ `pendingTargetIdRef` のセット忘れ。`navigateTo` の前に、必ず向かう先のフォルダ ID を入れる。
 
 ### Q. 戻る/進むを押したのに、現在地（パスバー等）が更新されない
 
 → `handleGoBack/Forward` は、`navigateTo` の前に履歴の位置を更新している。そのため、後から届く
 `navigate` イベントは、「同じフォルダの再通知」の判定に一致してしまう。
-`handleNavigate` では、**`isNavigatingRef` の判定を、重複判定より前に置き**、その中で現在地も更新すること。
+`handleNavigate` では、**向かう先（`pendingTargetIdRef`）の判定を、重複判定より前に置き**、その中で現在地も更新すること。
+
+### Q. 「戻る」を押したのに失敗した（権限がない、削除済み、通信エラー）あとで、次のクリックが履歴に積まれない
+
+→ 旧方式（true/false の旗）の不具合。いまは、向かう先のフォルダ ID で判定するため、違うフォルダの知らせは、
+利用者の操作として積まれる。ただし、位置は、行き先へ動いたままになるので、その位置より先の履歴は、次の操作で捨てられる。
 
 ### Q. 連続でボタンを押すと変な位置に飛ぶ
 

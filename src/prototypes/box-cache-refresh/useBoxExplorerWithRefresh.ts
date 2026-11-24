@@ -57,8 +57,13 @@ export const useBoxExplorerWithRefresh = ({
   // 状態のうち「最新値を即座に読みたいが、変化のたびに再描画したくない」ものは ref で持つ。
   // state にすると、setState 直後の同期処理（イベントハンドラの中など）から最新値が読めない。
 
-  /** 戻る/進むボタン経由の navigate かどうかを判定するフラグ。SDK の navigate イベント側で履歴更新をスキップするのに使う。 */
-  const isNavigatingRef = useRef(false);
+  /**
+   * 「戻る/進む」で、いま向かっているフォルダの ID。向かっていなければ undefined。
+   * Explorer から届いた知らせが、この ID のフォルダなら、「戻る/進むの結果」と判断する（違えば、利用者の操作として扱う）。
+   * 旗（true/false）ではなく ID にしている理由: 戻る/進むが失敗して知らせが来ないとき、旗だと立ったままになり、
+   * 次の利用者の操作を、戻る/進むの結果と取り違えて、履歴がずれるため。
+   */
+  const pendingTargetIdRef = useRef<string | undefined>(undefined);
   /** 深いフォルダへの復元中かどうか。復元は navigate イベントを複数回経るため即座読みが必要。 */
   const isRestoringRef = useRef(Boolean(restoreTargetId));
   /** 復元先のフォルダID。初期化以後は変わらない。 */
@@ -99,12 +104,18 @@ export const useBoxExplorerWithRefresh = ({
   );
 
   /**
-   * SDK の navigate イベントを受けて、状態を更新する中心ロジック。
+   * Box の Explorer が「このフォルダを表示した」と知らせてきたとき（navigate イベント）に呼ばれる。
+   * 画面に出している「現在のフォルダ」と、戻る/進むのための「履歴」を、Explorer の表示に合わせて更新する。
    *
-   * 経路は3パターン：
-   * 1. 復元中（深いフォルダへ戻ろうとしている） → navigateTo で誘導するだけで履歴は触らない
-   * 2. 戻る/進むボタン経由 → 履歴は handleGoBack/Forward で更新済みなのでスキップ
-   * 3. ユーザーがフォルダをクリックした → 履歴に積む or インデックスを動かす
+   * 履歴は、「訪れたフォルダ ID の並び」と「いま並びのどこにいるか（位置）」の 2 つで持つ。
+   *   例: 履歴 [R, A, B]、位置 2 → いまは B にいる。「戻る」で A へ、さらに「戻る」で R へ。
+   *
+   * 知らせが来る理由は 4 つあり、理由ごとに、やることが違う。上から順に判定して、当てはまったところで終わる。
+   *   ① 復元中       : 他の画面から戻ってきて、前回見ていたフォルダを開き直している途中。履歴は触らない。
+   *   ② 戻る/進む    : 戻る/進むボタンを押した結果（向かっていたフォルダの知らせ）。履歴は、ボタンを押した時点で更新済み。
+   *                    現在のフォルダだけ更新する。
+   *   ③ 同じ知らせ   : いまいるフォルダと同じ知らせ（Explorer が二重に知らせることがある）。何もしない。
+   *   ④ 利用者の操作 : フォルダをクリックした、または、パンくずをクリックした。履歴に積む（ブラウザと同じ）。
    */
   const handleNavigate = useCallback(
     (item: BoxFolder) => {
@@ -123,15 +134,16 @@ export const useBoxExplorerWithRefresh = ({
           : undefined,
       };
 
-      // パターン1: 復元処理中
+      // ① 復元中: 他の画面から戻ってきて、前回見ていたフォルダを開き直している途中。
+      //    Explorer は、先にルートを表示してから、前回のフォルダへ移る。履歴は、保存してあるものをそのまま使うので、触らない。
       if (isRestoringRef.current) {
         const targetId = restoreTargetIdRef.current;
-        // ルートに到達した → 復元先フォルダへジャンプ
+        // ルートが表示された → 前回のフォルダへ移るよう、Explorer に指示する（この知らせは、これで終わり）
         if (targetId && nextFolder.id === rootFolderId) {
           explorerRef.current?.navigateTo?.(targetId);
           return;
         }
-        // 復元先に到達 → 復元完了
+        // 前回のフォルダが表示された → 復元は完了。現在のフォルダだけ更新する
         if (targetId && nextFolder.id === targetId) {
           isRestoringRef.current = false;
           setIsRestoring(false);
@@ -157,54 +169,41 @@ export const useBoxExplorerWithRefresh = ({
         }
       }
 
-      // パターン2: 戻る/進むボタン経由
-      // handleGoBack/Forward が履歴の位置を先に更新しているため、このイベントは次の「重複通知」の判定に
-      // 一致してしまう。そのため重複判定より前に処理する。履歴は更新済みなので、現在地の更新だけ行う。
-      if (isNavigatingRef.current) {
-        isNavigatingRef.current = false;
-        setCurrentFolder(nextFolder);
-        dispatch(
-          ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-        );
-        return;
+      // ② 戻る/進むボタンの結果: 履歴の位置は、ボタンを押した時点（handleGoBack / handleGoForward）で、すでに動かしてある。
+      //    ここでは、現在のフォルダの表示だけを更新する。
+      //    向かっていたフォルダの知らせのときだけ、この扱いにする。違うフォルダの知らせなら、戻る/進むは失敗した
+      //    （または、別の操作が先に来た）ので、向かう先は忘れて、利用者の操作（④）として扱う。
+      //    ③より先に判定する理由: 位置は先に動かしてあるので、この知らせは「いまいるフォルダと同じ知らせ」に見えてしまい、
+      //    ③で捨てられて、現在のフォルダが更新されなくなるため。
+      const pendingTargetId = pendingTargetIdRef.current;
+      if (pendingTargetId !== undefined) {
+        pendingTargetIdRef.current = undefined;
+        if (nextFolder.id === pendingTargetId) {
+          setCurrentFolder(nextFolder);
+          dispatch(
+            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
+          );
+          return;
+        }
       }
 
-      // 同じフォルダの再通知は無視（SDK が冗長に発火するケースの保険）
+      // ③ 同じ知らせ: いまいるフォルダ（履歴の現在位置のフォルダ）と同じなら、何もしない（Explorer が二重に知らせる場合の保険）
       if (folderHistoryRef.current[historyIndexRef.current] === nextFolder.id) {
         return;
       }
 
+      // ④ 利用者の操作（フォルダのクリック、パンくずのクリック）: 現在のフォルダを更新し、履歴に積む。
+      //    パンくずで、すでに履歴にあるフォルダへ戻った場合も、同じ（位置を動かすだけにはしない）。
+      //    ブラウザと同じ動きで、「戻る」で、押す前にいたフォルダへ戻れる。
+      //    例: 履歴 [R, A, B, C]、位置 3（C）で、パンくずで A を押す → 履歴は [R, A, B, C, A]、位置 4。「戻る」で C へ戻れる。
+      //    位置が履歴の途中にあるときは、位置より先の履歴を捨ててから積む（例: [R, A, B] の位置 1 で X を開く → [R, A, X]）。
       setCurrentFolder(nextFolder);
       dispatch(
         ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
       );
 
-      // パターン3: ユーザー操作（クリック・パンくず）による移動
       const currentHistory = folderHistoryRef.current;
       const currentIndex = historyIndexRef.current;
-
-      // すでに履歴の手前にあるフォルダ（パンくずでルートを押した等）
-      // → ブラウザとは異なるが、ファイルエクスプローラーのパンくず UX として妥当な挙動とする
-      const backwardIndex = currentHistory.lastIndexOf(
-        nextFolder.id,
-        currentIndex,
-      );
-      if (backwardIndex >= 0) {
-        syncHistory(backwardIndex, currentHistory);
-        return;
-      }
-
-      // すでに履歴の先にあるフォルダ → そこへ進める
-      const forwardIndex = currentHistory.indexOf(
-        nextFolder.id,
-        currentIndex + 1,
-      );
-      if (forwardIndex >= 0) {
-        syncHistory(forwardIndex, currentHistory);
-        return;
-      }
-
-      // 履歴になければ、現在位置以降を切り捨てて新規エントリを追加
       const trimmed = currentHistory.slice(0, currentIndex + 1);
       const nextHistory = [...trimmed, nextFolder.id];
       syncHistory(trimmed.length, nextHistory);
@@ -224,7 +223,8 @@ export const useBoxExplorerWithRefresh = ({
     const nextIndex = historyIndexRef.current - 1;
     const folderId = folderHistoryRef.current[nextIndex];
     if (!folderId) return;
-    isNavigatingRef.current = true;
+    // 向かう先を覚える（Explorer に指示できるときだけ。指示できないと、知らせが来ず、覚えたままになるため）
+    if (explorerRef.current?.navigateTo) pendingTargetIdRef.current = folderId;
     syncHistory(nextIndex, folderHistoryRef.current);
     explorerRef.current?.navigateTo?.(folderId);
   }, [canGoBack, syncHistory]);
@@ -235,7 +235,7 @@ export const useBoxExplorerWithRefresh = ({
     const nextIndex = historyIndexRef.current + 1;
     const folderId = folderHistoryRef.current[nextIndex];
     if (!folderId) return;
-    isNavigatingRef.current = true;
+    if (explorerRef.current?.navigateTo) pendingTargetIdRef.current = folderId;
     syncHistory(nextIndex, folderHistoryRef.current);
     explorerRef.current?.navigateTo?.(folderId);
   }, [canGoForward, syncHistory]);
