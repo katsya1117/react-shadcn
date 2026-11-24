@@ -134,49 +134,132 @@ describe("useBoxExplorer", () => {
       });
     });
 
-    it("T-3: パンくずで手前のフォルダへ移動すると、履歴は変えず位置だけ動く", () => {
+    it("T-3: パンくずで手前のフォルダへ移動しても、履歴に積まれる（ブラウザと同じ）", () => {
       const { navigate, state } = setupHook();
       navigate("A");
       navigate("B");
       navigate("C");
 
-      navigate("B");
+      navigate("B"); // パンくずで、手前の B へ
 
       expect(state()).toMatchObject({
         current: "B",
-        history: [ROOT, "A", "B", "C"],
-        index: 2,
+        history: [ROOT, "A", "B", "C", "B"],
+        index: 4,
       });
     });
 
-    it("T-4: 履歴の先にあるフォルダへ移動すると、履歴は変えず位置だけ動く", () => {
-      const { navigate, state } = setupHook();
+    it("T-3b: パンくずで手前へ移動したあと「戻る」を押すと、押す前にいたフォルダ（C）へ戻れる", () => {
+      const { navigate, goBack, state, navigateTo } = setupHook();
       navigate("A");
       navigate("B");
       navigate("C");
-      navigate("A"); // 手前へ（位置 1）
+      navigate("A"); // パンくずで A へ
 
-      navigate("C"); // 履歴では先にある
+      goBack();
+      navigate("C"); // 「戻る」の結果として届く知らせ
 
+      expect(navigateTo).toHaveBeenLastCalledWith("C");
       expect(state()).toMatchObject({
         current: "C",
-        history: [ROOT, "A", "B", "C"],
+        history: [ROOT, "A", "B", "C", "A"],
         index: 3,
       });
     });
 
-    it("T-5: 途中から新しいフォルダへ移動すると、位置より後ろが切り捨てられる", () => {
+    it("T-4: 位置が途中のとき、履歴の先にあるフォルダを開いても、先の履歴は捨てられて積まれる", () => {
       const { navigate, state } = setupHook();
       navigate("A");
       navigate("B");
       navigate("C");
-      navigate("A");
+      navigate("A"); // パンくずで A へ（履歴 [R, A, B, C, A]、位置 4）
+      navigate("D"); // 新しいフォルダ
 
-      navigate("Z");
+      expect(state()).toMatchObject({
+        current: "D",
+        history: [ROOT, "A", "B", "C", "A", "D"],
+        index: 5,
+      });
+    });
+
+    it("T-5: 途中から新しいフォルダへ移動すると、位置より後ろが切り捨てられる", () => {
+      const { navigate, goBack, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      navigate("C");
+      goBack();
+      navigate("B"); // 「戻る」の結果（位置 2）
+
+      navigate("Z"); // C を飛ばして、新しいフォルダへ
 
       expect(state()).toMatchObject({
         current: "Z",
-        history: [ROOT, "A", "Z"],
+        history: [ROOT, "A", "B", "Z"],
+        index: 3,
+      });
+    });
+
+    it("N-1: 「戻る」の結果が届かなくても、次のフォルダのクリックは、履歴に積まれる（取り違えない）", () => {
+      const { navigate, goBack, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      goBack(); // A へ向かうが、知らせは届かない（取得失敗など）
+
+      navigate("X"); // 利用者が X を開く
+
+      expect(state()).toMatchObject({
+        current: "X",
+        history: [ROOT, "A", "X"],
+        index: 2,
+        reduxCurrent: "X",
+        reduxHistory: [ROOT, "A", "X"],
+        reduxIndex: 2,
+      });
+    });
+
+    it("N-2: 「戻る」の結果が届かなくても、次のパンくずの操作は、履歴に積まれる", () => {
+      const { navigate, goBack, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      navigate("C");
+      goBack(); // B へ向かうが、知らせは届かない
+
+      navigate("A"); // パンくずで A へ
+
+      expect(state()).toMatchObject({
+        current: "A",
+        history: [ROOT, "A", "B", "A"],
+        index: 3,
+      });
+    });
+
+    it("N-3: 向かっているフォルダの知らせが届いたときだけ、「戻る」の結果として扱う（履歴は積まない）", () => {
+      const { navigate, goBack, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      goBack();
+
+      navigate("A"); // 向かっていた A の知らせ
+
+      expect(state()).toMatchObject({
+        current: "A",
+        history: [ROOT, "A", "B"],
+        index: 1,
+      });
+    });
+
+    it("N-4: Explorer のインスタンスがなくて「戻る」が実行できなかったときも、次のクリックは、履歴に積まれる", () => {
+      const { result, navigate, goBack, state } = setupHook();
+      navigate("A");
+      navigate("B");
+      result.current.explorerRef.current = undefined; // インスタンスなし
+
+      goBack(); // 位置は動くが、navigateTo は呼べない（知らせは届かない）
+      navigate("X");
+
+      expect(state()).toMatchObject({
+        current: "X",
+        history: [ROOT, "A", "X"],
         index: 2,
       });
     });
