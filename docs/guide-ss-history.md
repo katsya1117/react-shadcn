@@ -4,8 +4,8 @@
 | --- | --- |
 | 対象 | SS 画面（コラボレーション設定）の、「戻る / 進む」ボタンと、他の画面から戻ったときの「前回のフォルダの復元」を支える、フォルダの履歴 |
 | 想定する読者 | このコードを初めて読む人。React や Redux の詳しい知識は、前提にしない |
-| 実装 | [src/hooks/useBoxExplorer.ts](../src/hooks/useBoxExplorer.ts)（本体）、[src/pages/SS.tsx](../src/pages/SS.tsx)（初期値の用意）、[src/redux/slices/ssSlice.ts](../src/redux/slices/ssSlice.ts)（保存） |
-| 詳細な仕様 | [useBoxExplorer 仕様書](./spec-use-box-explorer.md)（判定の表・不具合の経緯）。本書は、それを、図と例で説明し直したもの |
+| 実装 | [src/hooks/useFolderNavigation.ts](../src/hooks/useFolderNavigation.ts)（本体）、[src/pages/SS.tsx](../src/pages/SS.tsx)（初期値の用意）、[src/redux/slices/ssSlice.ts](../src/redux/slices/ssSlice.ts)（保存） |
+| 詳細な仕様 | [useFolderNavigation 仕様書](./spec-use-folder-navigation.md)（判定の表・不具合の経緯）。本書は、それを、図と例で説明し直したもの |
 | 確認の方法 | 本書の例は、すべて、実際にフックを動かして確かめた（2026-11-25）。ただし、本物の Box の Explorer での確認は、未実施 |
 
 ## 0. 先に結論
@@ -158,7 +158,7 @@ Explorer は、同じフォルダの「知らせ」を、続けて 2 回送っ�
 | 「戻る」を押す（失敗。知らせは来ない） | 位置は A へ動くが、画面は B のまま |
 | 利用者が、別のフォルダ X を開く | X の知らせが届く。**覚えていた「向かう先」（A）と違う**ので、「戻るの結果」ではなく、**利用者の操作**として扱う（④）。履歴は `[R, A, X]` になり、画面と履歴が、一致する |
 
-> 以前は、「戻る」を押したあとの知らせを、**何であっても**、「戻るの結果」と見なしていた（true / false の旗で判定）。失敗すると、次の操作が取り違えられ、X が履歴に足されず、画面と履歴がずれていた。向かう先のフォルダ ID を覚える方式にして、解消した（詳細は [spec-use-box-explorer.md](./spec-use-box-explorer.md) の 8.6）。
+> 以前は、「戻る」を押したあとの知らせを、**何であっても**、「戻るの結果」と見なしていた（true / false の旗で判定）。失敗すると、次の操作が取り違えられ、X が履歴に足されず、画面と履歴がずれていた。向かう先のフォルダ ID を覚える方式にして、解消した（詳細は [spec-use-folder-navigation.md](./spec-use-folder-navigation.md) の 8.6）。
 
 ## 9. 他の画面から戻ったときの「復元」
 
@@ -212,14 +212,14 @@ Explorer は、同じフォルダの「知らせ」を、続けて 2 回送っ�
 
 | 内容 | 場所 |
 | --- | --- |
-| 履歴・位置・現在のフォルダの持ち方 | [useBoxExplorer.ts](../src/hooks/useBoxExplorer.ts) の `folderHistory`、`historyIndex`、`currentFolder`（画面用の state と、イベント内で最新値を読むための ref を併用） |
+| 履歴・位置・現在のフォルダの持ち方 | [useFolderNavigation.ts](../src/hooks/useFolderNavigation.ts) の `folderHistory`、`historyIndex`、`currentFolder`（画面用の state と、イベント内で最新値を読むための ref を併用） |
 | 履歴の更新（保存を含む） | 同 `syncHistory` |
 | 知らせの処理（第 8 章の ①〜④） | 同 `handleNavigate`（コメントに、①〜④の説明がある） |
 | 戻る / 進む | 同 `handleGoBack`、`handleGoForward` |
 | 向かう先の記憶 | 同 `pendingTargetIdRef` |
 | 初期値の用意・復元先の決定 | [SS.tsx](../src/pages/SS.tsx) の `initialHistory`、`restoreTargetId` |
 | Redux への保存・破棄 | [ssSlice.ts](../src/redux/slices/ssSlice.ts) の `setFolderHistory`、`setCurrentFolder`、`clearFolderHistory`、`clearCurrentFolder` |
-| テスト | [useBoxExplorer.test.tsx](../src/hooks/useBoxExplorer.test.tsx)（本書の例に対応: T-2〜T-5、T-3b、N-1〜N-4 など） |
+| テスト | [useFolderNavigation.test.tsx](../src/hooks/useFolderNavigation.test.tsx)（本書の例に対応: T-2〜T-5、T-3b、N-1〜N-4 など） |
 
 ## 13. よくある疑問
 

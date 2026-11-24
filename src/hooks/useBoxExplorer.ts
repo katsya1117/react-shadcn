@@ -1,41 +1,32 @@
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
 
+import { getBoxDevToken } from "@/lib/boxDevToken";
+import { boxSelector, userSelector } from "@/redux/slices/userSlice";
 import type { BoxFolder } from "@/types/BoxUiElements";
 import type { ContentExplorerInstance, FolderInfo } from "@/types/ss";
-import { ssActions } from "@/redux/slices/ssSlice";
-import { useAppDispatch } from "@/redux/hooks";
+import { useFolderNavigation } from "./useFolderNavigation";
+// [PROTO-CACHE-REFRESH] 1/5: 試作（フォルダ取得キャッシュ・更新ボタン）。未使用。有効にする手順は src/prototypes/box-cache-refresh/README.md
+// import { useBoxExplorerWithRefresh } from "@/prototypes/box-cache-refresh/useBoxExplorerWithRefresh";
+// import { useBoxFolderCacheOptions } from "@/prototypes/box-cache-refresh/useExplorerCacheRefresh";
 
 type UseBoxExplorerOptions = {
   rootFolderId: string;
   initialFolder: FolderInfo;
   savedHistory: string[];
   savedIndex: number;
-  /** ルート以外の深いフォルダから復帰するときに復元先フォルダID。なければ通常起動。 */
+  /** ルート以外の深いフォルダから復帰するときの復元先フォルダ ID。なければ通常起動。 */
   restoreTargetId?: string;
 };
 
-type UseBoxExplorerResult = {
-  /** Box SDK の ContentExplorer インスタンスを差し込む ref（コンポーネント側で初期化したものをセットする） */
-  explorerRef: React.MutableRefObject<ContentExplorerInstance | undefined>;
-  currentFolder: FolderInfo;
-  folderHistory: string[];
-  historyIndex: number;
-  /** 深いフォルダへの復元処理が進行中かどうか */
-  isRestoring: boolean;
-  canGoBack: boolean;
-  canGoForward: boolean;
-  /** Box SDK の navigate イベントを受け取って状態を更新するハンドラ */
-  handleNavigate: (item: BoxFolder) => void;
-  handleGoBack: () => void;
-  handleGoForward: () => void;
-};
-
 /**
- * Box ContentExplorer のフォルダ移動状態（現在地・履歴・戻る/進む）を管理するフック。
+ * Box の Content Explorer（画面部品）を、画面に出して、フォルダ移動の状態と結びつけるフック。
  *
- * Box SDK 自体の初期化・表示・トークン管理は、このフックの責務外。コンポーネント側で
- * SDK インスタンスを生成して `explorerRef.current` にセットし、`handleNavigate` を
- * SDK の navigate イベントに登録する想定。
+ * - フォルダ移動の状態（現在地・履歴・戻る/進む・復元）は `useFolderNavigation` が持つ。
+ * - このフックは、Box SDK の側を受け持つ: 接続に使うトークンの決定、インスタンスの生成、`show()`、
+ *   画面を離れるときの `hide()`、`navigate` イベントの購読（→ `useFolderNavigation` の `handleNavigate`）。
+ *
+ * 描画先は、呼び出し側が用意する `.box-container` 要素。`hasBoxToken` が true のときに、それを描画する。
  */
 export const useBoxExplorer = ({
   rootFolderId,
@@ -43,191 +34,156 @@ export const useBoxExplorer = ({
   savedHistory,
   savedIndex,
   restoreTargetId,
-}: UseBoxExplorerOptions): UseBoxExplorerResult => {
-  const dispatch = useAppDispatch();
-  const explorerRef = useRef<ContentExplorerInstance | undefined>(undefined);
+}: UseBoxExplorerOptions) => {
+  // ----- 接続に使うトークン -----
+  const isLogin = useSelector(userSelector.isLoginSelector());
+  const token = useSelector(boxSelector.tokenSelector());
+  // 開発時のみ、開発用トークンがあれば、ログイン状態やモックのトークンに関係なく、それで接続する。
+  const devToken = getBoxDevToken();
+  const accessToken =
+    devToken ??
+    token?.accessToken ??
+    localStorage.getItem("box_dev_token") ??
+    undefined;
+  /** 描画先（`.box-container`）を出してよいか。false の間は、呼び出し側が「接続中」を表示する。 */
+  const hasBoxToken = Boolean(token?.accessToken) || Boolean(devToken);
 
-  // === ref にする理由 ===
-  // 状態のうち「最新値を即座に読みたいが、変化のたびに再描画したくない」ものは ref で持つ。
-  // state にすると、setState 直後の同期処理（イベントハンドラの中など）から最新値が読めない。
-
-  /**
-   * 「戻る/進む」で、いま向かっているフォルダの ID。向かっていなければ undefined。
-   * Explorer から届いた知らせが、この ID のフォルダなら、「戻る/進むの結果」と判断する（違えば、利用者の操作として扱う）。
-   * 旗（true/false）ではなく ID にしている理由: 戻る/進むが失敗して知らせが来ないとき、旗だと立ったままになり、
-   * 次の利用者の操作を、戻る/進むの結果と取り違えて、履歴がずれるため。
-   */
-  const pendingTargetIdRef = useRef<string | undefined>(undefined);
-  /** 深いフォルダへの復元中かどうか。復元は navigate イベントを複数回経るため即座読みが必要。 */
-  const isRestoringRef = useRef(Boolean(restoreTargetId));
-  /** 復元先のフォルダID。初期化以後は変わらない。 */
-  const restoreTargetIdRef = useRef(restoreTargetId);
-  /** 履歴インデックス。handleGoBack/Forward で「いまの位置 ±1」を即座に読むのに使う。 */
-  const historyIndexRef = useRef(savedIndex);
-  /** 履歴配列本体。state も持つが、handleNavigate 中で同期的に最新値を参照したいので ref も併用。 */
-  const folderHistoryRef = useRef(savedHistory);
-
-  // === state にする理由 ===
-  // canGoBack / canGoForward の表示や Explorer の表示など、変化したら画面に反映する必要があるものは state。
-  const [currentFolder, setCurrentFolder] = useState<FolderInfo>(initialFolder);
-  const [folderHistory, setFolderHistory] = useState<string[]>(savedHistory);
-  const [historyIndex, setHistoryIndex] = useState(savedIndex);
-  const [isRestoring, setIsRestoring] = useState(Boolean(restoreTargetId));
-
-  /**
-   * 履歴インデックス・履歴配列を ref / state / Redux すべてに同期更新する。
-   * 「ref と state がずれる」事故をこのヘルパーで防ぐ。
-   */
-  const syncHistory = useCallback(
-    (nextIndex: number, nextHistory: string[]) => {
-      historyIndexRef.current = nextIndex;
-      folderHistoryRef.current = nextHistory;
-      setHistoryIndex(nextIndex);
-      setFolderHistory(nextHistory);
-      dispatch(
-        ssActions.setFolderHistory({
-          rootFolderId,
-          history: nextHistory,
-          index: nextIndex,
-        }),
-      );
-    },
-    [dispatch, rootFolderId],
-  );
-
-  /**
-   * Box の Explorer が「このフォルダを表示した」と知らせてきたとき（navigate イベント）に呼ばれる。
-   * 画面に出している「現在のフォルダ」と、戻る/進むのための「履歴」を、Explorer の表示に合わせて更新する。
-   *
-   * 履歴は、「訪れたフォルダ ID の並び」と「いま並びのどこにいるか（位置）」の 2 つで持つ。
-   *   例: 履歴 [R, A, B]、位置 2 → いまは B にいる。「戻る」で A へ、さらに「戻る」で R へ。
-   *
-   * 知らせが来る理由は 4 つあり、理由ごとに、やることが違う。上から順に判定して、当てはまったところで終わる。
-   *   ① 復元中       : 他の画面から戻ってきて、前回見ていたフォルダを開き直している途中。履歴は触らない。
-   *   ② 戻る/進む    : 戻る/進むボタンを押した結果（向かっていたフォルダの知らせ）。履歴は、ボタンを押した時点で更新済み。
-   *                    現在のフォルダだけ更新する。
-   *   ③ 同じ知らせ   : いまいるフォルダと同じ知らせ（Explorer が二重に知らせることがある）。何もしない。
-   *   ④ 利用者の操作 : フォルダをクリックした、または、パンくずをクリックした。履歴に積む（ブラウザと同じ）。
-   */
-  const handleNavigate = useCallback(
-    (item: BoxFolder) => {
-      if (!item || item.type !== "folder") return;
-
-      const nextFolder: FolderInfo = {
-        id: item.id,
-        name: item.name ?? "",
-        pathCollection: item.path_collection
-          ? {
-              entries: item.path_collection.entries.map((entry) => ({
-                id: entry.id,
-                name: entry.name ?? "",
-              })),
-            }
-          : undefined,
-      };
-
-      // ① 復元中: 他の画面から戻ってきて、前回見ていたフォルダを開き直している途中。
-      //    Explorer は、先にルートを表示してから、前回のフォルダへ移る。履歴は、保存してあるものをそのまま使うので、触らない。
-      if (isRestoringRef.current) {
-        const targetId = restoreTargetIdRef.current;
-        // ルートが表示された → 前回のフォルダへ移るよう、Explorer に指示する（この知らせは、これで終わり）
-        if (targetId && nextFolder.id === rootFolderId) {
-          explorerRef.current?.navigateTo?.(targetId);
-          return;
-        }
-        // 前回のフォルダが表示された → 復元は完了。現在のフォルダだけ更新する
-        if (targetId && nextFolder.id === targetId) {
-          isRestoringRef.current = false;
-          setIsRestoring(false);
-          setCurrentFolder(nextFolder);
-          dispatch(
-            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-          );
-          return;
-        }
-      }
-
-      // ② 戻る/進むボタンの結果: 履歴の位置は、ボタンを押した時点（handleGoBack / handleGoForward）で、すでに動かしてある。
-      //    ここでは、現在のフォルダの表示だけを更新する。
-      //    向かっていたフォルダの知らせのときだけ、この扱いにする。違うフォルダの知らせなら、戻る/進むは失敗した
-      //    （または、別の操作が先に来た）ので、向かう先は忘れて、利用者の操作（④）として扱う。
-      //    ③より先に判定する理由: 位置は先に動かしてあるので、この知らせは「いまいるフォルダと同じ知らせ」に見えてしまい、
-      //    ③で捨てられて、現在のフォルダが更新されなくなるため。
-      const pendingTargetId = pendingTargetIdRef.current;
-      if (pendingTargetId !== undefined) {
-        pendingTargetIdRef.current = undefined;
-        if (nextFolder.id === pendingTargetId) {
-          setCurrentFolder(nextFolder);
-          dispatch(
-            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-          );
-          return;
-        }
-      }
-
-      // ③ 同じ知らせ: いまいるフォルダ（履歴の現在位置のフォルダ）と同じなら、何もしない（Explorer が二重に知らせる場合の保険）
-      if (folderHistoryRef.current[historyIndexRef.current] === nextFolder.id) {
-        return;
-      }
-
-      // ④ 利用者の操作（フォルダのクリック、パンくずのクリック）: 現在のフォルダを更新し、履歴に積む。
-      //    パンくずで、すでに履歴にあるフォルダへ戻った場合も、同じ（位置を動かすだけにはしない）。
-      //    ブラウザと同じ動きで、「戻る」で、押す前にいたフォルダへ戻れる。
-      //    例: 履歴 [R, A, B, C]、位置 3（C）で、パンくずで A を押す → 履歴は [R, A, B, C, A]、位置 4。「戻る」で C へ戻れる。
-      //    位置が履歴の途中にあるときは、位置より先の履歴を捨ててから積む（例: [R, A, B] の位置 1 で X を開く → [R, A, X]）。
-      setCurrentFolder(nextFolder);
-      dispatch(
-        ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-      );
-
-      const currentHistory = folderHistoryRef.current;
-      const currentIndex = historyIndexRef.current;
-      const trimmed = currentHistory.slice(0, currentIndex + 1);
-      const nextHistory = [...trimmed, nextFolder.id];
-      syncHistory(trimmed.length, nextHistory);
-    },
-    [dispatch, rootFolderId, syncHistory],
-  );
-
-  const canGoBack = historyIndex > 0;
-  const canGoForward = historyIndex < folderHistory.length - 1;
-
-  /**
-   * 戻る：履歴を1つ前に動かして、Box SDK にも対象フォルダへ navigate を指示する。
-   * historyIndexRef / folderHistoryRef から最新値を読むことで stale closure を回避する。
-   */
-  const handleGoBack = useCallback(() => {
-    if (!canGoBack) return;
-    const nextIndex = historyIndexRef.current - 1;
-    const folderId = folderHistoryRef.current[nextIndex];
-    if (!folderId) return;
-    // 向かう先を覚える（Explorer に指示できるときだけ。指示できないと、知らせが来ず、覚えたままになるため）
-    if (explorerRef.current?.navigateTo) pendingTargetIdRef.current = folderId;
-    syncHistory(nextIndex, folderHistoryRef.current);
-    explorerRef.current?.navigateTo?.(folderId);
-  }, [canGoBack, syncHistory]);
-
-  /** 進む：handleGoBack の鏡像。 */
-  const handleGoForward = useCallback(() => {
-    if (!canGoForward) return;
-    const nextIndex = historyIndexRef.current + 1;
-    const folderId = folderHistoryRef.current[nextIndex];
-    if (!folderId) return;
-    if (explorerRef.current?.navigateTo) pendingTargetIdRef.current = folderId;
-    syncHistory(nextIndex, folderHistoryRef.current);
-    explorerRef.current?.navigateTo?.(folderId);
-  }, [canGoForward, syncHistory]);
-
-  return {
+  // ----- フォルダ移動の状態 -----
+  const {
     explorerRef,
     currentFolder,
-    folderHistory,
-    historyIndex,
     isRestoring,
     canGoBack,
     canGoForward,
     handleNavigate,
     handleGoBack,
     handleGoForward,
+    // [PROTO-CACHE-REFRESH] 2/5: useFolderNavigation を useBoxExplorerWithRefresh に差し替え、handleRefresh を受け取って、下の return に足す
+    // handleRefresh,
+  } = useFolderNavigation({
+    rootFolderId,
+    initialFolder,
+    savedHistory,
+    savedIndex,
+    restoreTargetId,
+  });
+  // [PROTO-CACHE-REFRESH] 4/5（前半）: const cacheOptions = useBoxFolderCacheOptions();
+
+  // 復元先は「マウント時点」の値で固定する。離脱時のフォルダは、移動のたびに Redux 側で更新されるため、
+  // そのまま show の依存に使うと、移動のたびに show し直してしまう。
+  const initialRestoreTargetIdRef = useRef(restoreTargetId);
+
+  // ----- Box SDK のライフサイクル管理 -----
+  const [explorerInstance, setExplorerInstance] = useState<
+    ContentExplorerInstance | undefined
+  >(undefined);
+
+  // SDK インスタンスを生成して explorerRef にも差し込む（useFolderNavigation はこの ref を介して navigateTo を呼ぶ）
+  useEffect(() => {
+    /* istanbul ignore next */ if (typeof window === "undefined") return;
+    if (explorerInstance) return;
+    const BoxGlobal = window.Box;
+    if (!BoxGlobal?.ContentExplorer) {
+      if (devToken) {
+        console.warn(
+          "[box] window.Box.ContentExplorer がありません。index.html の Box UI Elements の読み込みを確認してください。",
+        );
+      }
+      return;
+    }
+    const explorer = new BoxGlobal.ContentExplorer();
+    setExplorerInstance(explorer);
+    explorerRef.current = explorer;
+  }, [explorerInstance, explorerRef, devToken]);
+
+  // show() 済みかどうか。hide() は show() 前に呼ぶと例外になるため、unmount 時の判定に使う。
+  const hasShownRef = useRef(false);
+
+  // ログイン済み & トークンがあれば Explorer を表示
+  useEffect(() => {
+    if (!explorerInstance || !accessToken) return;
+    if (!isLogin && !devToken) return;
+    if (devToken) {
+      // 診断用。トークンの中身は出さず、長さだけを出す（Box の開発用トークンは通常 32 文字）。
+      console.info(
+        `[box] 開発用トークンで接続します（長さ ${devToken.length}）。401 になる場合は、期限切れ（60 分）か、トークンの誤りです。`,
+      );
+    }
+    explorerInstance.show(rootFolderId, accessToken, {
+      container: ".box-container",
+      // 深いフォルダからの復帰時は、ルートを経由せず最初から離脱時のフォルダを表示する（ルートの取得を省く）。
+      // rootFolderId はパンくずの起点として引き続き使われる。currentFolderId は公式ドキュメント未記載だが、
+      // Box UI Elements のソース上（v23.0.0・v26.0.0 で確認）、show() の options が ContentExplorer の props にそのまま渡される。
+      ...(initialRestoreTargetIdRef.current
+        ? { currentFolderId: initialRestoreTargetIdRef.current }
+        : {}),
+      canPreview: false,
+      canDownload: false,
+      // 共有リンクの作成（ファイルの行の「…」メニューの「Share」）も出さない。既定では出る（docs/report-box-ui-elements-26-verification.md の 6）。
+      canShare: false,
+      canSetShareAccess: false,
+      // [FILE-COLLAB] 3/4: 行の「…」メニューに独自項目を足す。canDelete 等が全て false でも、この項目があればメニューは出る。
+      // type を "file" にするとファイルの行のみ。省略するとフォルダにも出る（子フォルダを開かずに対象にできる）。
+      // Box UI Elements の itemActions（v23.0.0・v26.0.0 の両方にある）。show() の options が props にそのまま渡る。
+      // jsdom 上で、23・26 とも、「…」メニューに項目が出て、onAction にアイテムが渡ることを確認済み
+      // （docs/report-box-ui-elements-26-verification.md）。本物の Box 上での確認は未実施。
+      // 有効にするときは、選んだファイルを SS.tsx へ渡す口（例: このフックの引数 onSelectFile）も要る。
+      // itemActions: [
+      //   {
+      //     label: "コラボレーション対象にする",
+      //     type: "file",
+      //     onAction: (item: { id: string; name: string }) =>
+      //       onSelectFile({ id: item.id, name: item.name }),
+      //   },
+      // ],
+      // [PROTO-CACHE-REFRESH] 3/5: フォルダ取得を 5 分間キャッシュする中継処理（キャッシュが有効なときだけ中身が入る）
+      // ...cacheOptions,   // 併せて、この effect の依存配列に cacheOptions を足す
+      // このアプリの Explorer はコラボレート対象フォルダを選ぶための画面。
+      // ファイル・フォルダの変更系操作は画面から行わせない（UI 上のボタン非表示のみで、Box 側の権限は変えない）。
+      canUpload: false,
+      canDelete: false,
+      canRename: false,
+      canCreateNewFolder: false,
+      size: "large",
+    });
+    hasShownRef.current = true;
+  // [FILE-COLLAB] 4/4: 上の itemActions を有効にしたら、依存配列に onSelectFile を足す（eslint の react-hooks/exhaustive-deps 対応）。
+  }, [explorerInstance, rootFolderId, accessToken, isLogin, devToken]);
+
+  // 画面を離れるときに Explorer を破棄する。
+  // hide() を呼ばないと、Box 側の React ツリー（API インスタンスとキャッシュ）が unmount されず残り続ける。
+  useEffect(() => {
+    if (!explorerInstance) return;
+    return () => {
+      if (!hasShownRef.current) return;
+      hasShownRef.current = false;
+      try {
+        explorerInstance.hide?.();
+      } catch {
+        // 破棄に失敗しても画面遷移は妨げない
+      }
+    };
+  }, [explorerInstance]);
+
+  // navigate イベントを useFolderNavigation の handleNavigate に流し込む
+  useEffect(() => {
+    if (!explorerInstance) return;
+    const listener = (item: BoxFolder) => handleNavigate(item);
+    explorerInstance.removeAllListeners?.();
+    explorerInstance.addListener?.("navigate", listener);
+    return () => {
+      explorerInstance.removeAllListeners?.();
+    };
+  }, [explorerInstance, handleNavigate]);
+
+  return {
+    currentFolder,
+    isRestoring,
+    canGoBack,
+    canGoForward,
+    handleGoBack,
+    handleGoForward,
+    hasBoxToken,
+    // [PROTO-CACHE-REFRESH] 2/5（続き）: handleRefresh,
   };
 };

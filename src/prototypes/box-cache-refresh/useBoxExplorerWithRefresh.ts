@@ -33,9 +33,9 @@ type UseBoxExplorerResult = {
 };
 
 /**
- * 【試作・未使用】useBoxExplorer（本番相当）に、更新（handleRefresh）を足した版。
+ * 【試作・未使用】useFolderNavigation（本番相当）に、更新（handleRefresh）を足した版。
  * 更新の結果のイベントは、フックの内部の ref と handleNavigate に絡むため、差し込み口ではなく、別版として置いている。
- * 本体（useBoxExplorer）を直したら、こちらにも反映すること。詳細は README.md を参照。
+ * 本体（useFolderNavigation）を直したら、こちらにも反映すること。詳細は README.md を参照。
  *
  * Box ContentExplorer のフォルダ移動状態（現在地・履歴・戻る/進む）を管理するフック。
  *

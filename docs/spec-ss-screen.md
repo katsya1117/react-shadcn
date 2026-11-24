@@ -6,7 +6,7 @@
 | 実装 | `src/pages/SS.tsx` ほか（第 4 章） |
 | 作成日 | 2026-11-05 |
 | 作成方法 | ソースコードの解析による（実装が正であり、本書は実装から起こした仕様である） |
-| 関連資料 | [useBoxExplorer フック 仕様書](./spec-use-box-explorer.md)（フォルダ移動・履歴・復元の詳細）<br>[画面仕様書案（非エンジニア向け）](./screen-spec-user-sharearea-ss.md)（画面上の文言・操作）<br>[Box API 呼び出し回数の削減対応 報告書](./report-box-api-call-reduction.md) |
+| 関連資料 | [useFolderNavigation フック 仕様書](./spec-use-folder-navigation.md)（フォルダ移動・履歴・復元の詳細）<br>[画面仕様書案（非エンジニア向け）](./screen-spec-user-sharearea-ss.md)（画面上の文言・操作）<br>[Box API 呼び出し回数の削減対応 報告書](./report-box-api-call-reduction.md) |
 
 ## 1. 目的と範囲
 
@@ -26,7 +26,7 @@ SS 画面は、ShareArea 画面で選択された「センター専用領域」�
 ### 1.3 前提
 
 - 本リポジトリの API 層（`src/api/index.ts`）は **インメモリのモック実装** であり、実際の通信は行わない（`CLAUDE.md` の記載どおり）。本番の API は別途用意されており、本書では、モックの型定義を **インターフェース契約** として扱う。本番 API のエンドポイントやエラー形式は、本リポジトリからは確認できない（第 12 章）。
-- Box の画面部品は、`index.html` が CDN から読み込む（`elements/23.0.0`）。
+- Box の画面部品は、`index.html` が CDN から読み込む（`elements/26.0.0`。2026-11-25 に 23.0.0 から更新。[検証報告](report-box-ui-elements-26-verification.md)）。
 
 ## 2. 画面の位置づけ
 
@@ -93,12 +93,14 @@ SS（ルート検証。無効な ID は ShareArea へ。管理者の確認 `useA
 
 | 要素 | ファイル | 責務 |
 | --- | --- | --- |
-| `SS` / `SSContent` | `src/pages/SS.tsx` | ルート検証、Box 画面部品のライフサイクル管理、コラボレーション操作の制御、各部品の組み立て |
-| `useBoxExplorer` | `src/hooks/useBoxExplorer.ts` | 現在のフォルダ、履歴（戻る/進む）、復元の状態管理（[別紙](./spec-use-box-explorer.md)） |
+| `SS` / `SSContent` | `src/pages/SS.tsx` | ルート検証、Box 画面部品のライフサイクル管理、各フック・各部品の組み立て |
+| `useCollaboratorActions` | `src/hooks/useCollaboratorActions.ts` | コラボレーターの追加・削除・ロール更新（API → 一覧の更新 → 通知の共通の流れ）、追加フォームの状態、実行中フラグ（`isMutating`） |
+| `useBoxExplorer` | `src/hooks/useBoxExplorer.ts` | Box の Explorer を画面に出す側。接続に使うトークンの決定、SDK インスタンスの生成、`show()`、画面を離れるときの `hide()`、`navigate` イベントの購読。内部で `useFolderNavigation` を呼び、その結果（現在のフォルダ・戻る/進む・復元中か）と `hasBoxToken` を返す |
+| `useFolderNavigation` | `src/hooks/useFolderNavigation.ts` | 現在のフォルダ、履歴（戻る/進む）、復元の状態管理。Box SDK は `explorerRef` 越しにしか知らない（[別紙](./spec-use-folder-navigation.md)）。旧名 `useBoxExplorer`（2026-11-25 に改名） |
 | `PathBar` | `src/components/ss/PathBar.tsx` | パスの表示、戻る/進む、パスのコピー、外部で開くボタン（表示のみ。処理は親が持つ） |
 | `CollaborationPanel` | `src/components/ss/CollaborationPanel.tsx` | 追加フォーム、一覧の開閉、一覧の描画（表示のみ） |
 | `CollaboratorRow` | `src/components/ss/CollaboratorRow.tsx` | 一覧 1 行の表示、ロール変更・削除の確認ダイアログ |
-| `ssHelpers` | `src/pages/ssHelpers.ts` | パスの組み立て、継承元パスの対応表、API 応答の表示用への変換（純粋関数） |
+| `ssHelpers` | `src/pages/ssHelpers.ts` | パスの組み立て、継承元パスの対応表、API 応答の表示用への変換、追加対象の種別判定・重複判定（純粋関数） |
 | `ssSlice` | `src/redux/slices/ssSlice.ts` | コラボレーター一覧、現在フォルダ・履歴の保持と、API 呼び出しの thunk |
 | `BoxManager` | `src/components/common/BoxManager/BoxManager.tsx` | Box のアカウント ID・アクセストークンの取得と更新 |
 | `ssConstants` | `src/constants/ssConstants.ts` | 表示用パスの起点、ロールの選択肢と既定値 |
@@ -158,14 +160,11 @@ SS（ルート検証。無効な ID は ShareArea へ。管理者の確認 `useA
 
 ### 5.3 `SSContent` のローカル状態
 
+Box SDK のインスタンス（`explorerInstance`）、`show()` 済みか（`hasShownRef`）、復元先の固定（`initialRestoreTargetIdRef`）は、`useBoxExplorer` が持つ。追加フォームの選択値（`selectedCollaborator` / `selectedRole`。フォルダが変わるとリセット）と、変更操作の実行中フラグ（`isMutating`。実行中の操作の数で持ち、重なっても最後の 1 件が終わるまで true）は、`useCollaboratorActions` が持つ。
+
 | 状態 | 内容 |
 | --- | --- |
-| `explorerInstance` | Box の Content Explorer のインスタンス（初回の描画後に 1 度だけ生成） |
 | `openListFolderId` | コラボレーター一覧を開いているフォルダの ID（開いていなければ `null`）。**ID で持つため、フォルダを移動すると自動で畳んだ状態に戻る** |
-| `selectedCollaborator` / `selectedRole` | 追加フォームの選択値。フォルダが変わるとリセットされる |
-| `isAddingCollaborator` / `isRemovingCollaborator` / `isUpdatingCollaborator` | 各変更操作の実行中フラグ。いずれかが true の間は操作を受け付けない（`isMutating`） |
-| `initialRestoreTargetIdRef` | 復元先のフォルダ ID。マウント時点の値で固定する |
-| `hasShownRef` | Box 画面部品を `show()` 済みか |
 
 ## 6. 外部とのやりとり
 
@@ -237,7 +236,7 @@ SS（ルート検証。無効な ID は ShareArea へ。管理者の確認 `useA
 
 #### イベント
 
-- `navigate` イベントで、フォルダ移動を `useBoxExplorer` に通知する。リスナーは、登録の前後に `removeAllListeners` で整理する。
+- `navigate` イベントで、フォルダ移動を `useFolderNavigation`（の `handleNavigate`）に通知する。この接続は `useBoxExplorer` の中で行う。リスナーは、登録の前後に `removeAllListeners` で整理する。
 
 #### 破棄
 
@@ -275,14 +274,14 @@ SS（ルート検証。無効な ID は ShareArea へ。管理者の確認 `useA
 
 - 他の画面へ移動し、再び同じ領域の SS 画面へ戻ると、離脱時のフォルダを復元する。
 - 復元中は `isRestoring` が true になり、パスバー、Explorer、右カラムをスケルトン表示にする。
-- 復元の判定・手順の詳細は、[useBoxExplorer 仕様書](./spec-use-box-explorer.md)の復元の章を参照する。
+- 復元の判定・手順の詳細は、[useFolderNavigation 仕様書](./spec-use-folder-navigation.md)の復元の章を参照する。
 - 「ShareArea に戻る」で離れた場合は、現在フォルダと履歴を破棄するため、**復元されない**（次回はルートから表示する）。
 - 復元の状態は Redux のメモリ上にあり、ページの再読み込みで失われる。
 
 ### 7.3 フォルダの移動
 
-- 利用者が Explorer でフォルダを開く、パンくずで移動する、戻る/進むを押す、のいずれも、Explorer の `navigate` イベントが `useBoxExplorer` に通知され、現在フォルダと履歴が更新される想定である。
-- 「戻る / 進む」でも、Explorer が `navigateTo` の結果として発火する `navigate` イベントで、現在フォルダが更新される（この処理は、2026-11-05 に修正した。修正前は、イベントが無視され、パスバーと右カラムが移動前のフォルダのままになっていた）。詳細は [useBoxExplorer 仕様書](./spec-use-box-explorer.md)の第 8 章を参照する。
+- 利用者が Explorer でフォルダを開く、パンくずで移動する、戻る/進むを押す、のいずれも、Explorer の `navigate` イベントが `useFolderNavigation` に通知され、現在フォルダと履歴が更新される想定である。
+- 「戻る / 進む」でも、Explorer が `navigateTo` の結果として発火する `navigate` イベントで、現在フォルダが更新される（この処理は、2026-11-05 に修正した。修正前は、イベントが無視され、パスバーと右カラムが移動前のフォルダのままになっていた）。詳細は [useFolderNavigation 仕様書](./spec-use-folder-navigation.md)の第 8 章を参照する。
 - 現在フォルダが変わると、次が起きる。
   - 右カラムのフォルダ名が更新される。
   - 追加フォームの入力がリセットされる。
@@ -452,12 +451,14 @@ flowchart TD
 
 | 対象 | ファイル | 備考 |
 | --- | --- | --- |
-| SS 画面 | `src/pages/SS.test.tsx` | `useBoxExplorer`、`PathBar`、`CollaborationPanel` はスタブに置き換えて検証している |
+| SS 画面 | `src/pages/SS.test.tsx` | `useFolderNavigation`、`PathBar`、`CollaborationPanel` はスタブに置き換えて検証している（`useBoxExplorer` は実物。`window.Box` は未設定） |
 | ヘルパー | `SS.test.tsx` 内 | `toCollaborationListItem` 等の分岐 |
 | スライス | `src/redux/slices/ssSlice.test.ts` | キャッシュの有効時間、無効化など |
 | フォルダ取得のキャッシュ（試作） | `src/prototypes/box-cache-refresh/boxFolderCache.test.ts`（35 件） | 保存・命中・有効時間・分離・実際の axios での通信の省略 |
 | パネル / 行 / パスバー | `src/components/ss/*.test.tsx` | |
-| `useBoxExplorer` | `src/hooks/useBoxExplorer.test.tsx`（30 件） | 履歴・復元・「戻る / 進む」を、フック単体で検証している |
+| `useBoxExplorer` | `src/hooks/useBoxExplorer.test.tsx`（20 件） | トークンの決定、`show()` の引数、復元先、`navigate` イベントの購読と、状態への反映、`hide()` による破棄を、偽の `window.Box` で検証している |
+| `useCollaboratorActions` | `src/hooks/useCollaboratorActions.test.tsx` | 追加・削除・ロール更新の成功と失敗の流れ、実行中フラグ、フォームのリセットを検証している |
+| `useFolderNavigation` | `src/hooks/useFolderNavigation.test.tsx`（30 件） | 履歴・復元・「戻る / 進む」を、フック単体で検証している |
 
 ## 12. 制約・既知事項・要確認
 
@@ -474,7 +475,8 @@ flowchart TD
 | Explorer の領域 | 領域の描画は、アクセストークン（Redux）の有無で決まる。`localStorage` の開発用トークンのみがある場合、`show()` の呼び出しは行われるが、描画先の領域がなく、表示されない可能性がある（コード上の観察。未検証） |
 | フォルダ取得のキャッシュ | 試作。Box の画面部品での実機の動作は未確認。他の人の変更は、Explorer に最大 5 分反映されない |
 | 変更系操作の無効化 | 画面上のボタンを隠すだけで、Box 側の権限は変わらない（トークンのダウンスコープで絞る設計は [spec-box-token-downscope.md](spec-box-token-downscope.md)） |
-| 画面部品のバージョン | Box UI Elements は `23.0.0` に固定。`currentFolderId` は公式未記載の挙動に依存している。更新時に確認が必要 |
+| 画面部品のバージョン | Box UI Elements は `26.0.0` に固定（CDN。2026-11-25 に 23.0.0 から更新）。`currentFolderId` は公式未記載の挙動に依存している。jsdom 上で、依存している動きが 23.0.0 と同じことを検証済み（React 19 は関係しない）。**更新後の、画面の見た目と、本物の Box との通信（26 が新しく送る `X-Box-Client-Version` ヘッダーの CORS）は、未確認**（[検証報告](report-box-ui-elements-26-verification.md) の第 7.2 節）。戻すときは、`index.html` の 2 行を `23.0.0` に戻す |
+| 共有リンク（Share） | ファイルの行の「…」メニューの「Share」（共有リンクの作成）は、既定で出る（23・26 とも）。**`canShare: false` と `canSetShareAccess: false` で、出さないようにしてある**（2026-11-25。jsdom で、消えることを確認済み。テスト: `useBoxExplorer.test.tsx`） |
 | パスバーの表示 | 経路が 2 階層以上のとき、先頭の階層の表示が `\share\` + `\` + 階層名となり、バックスラッシュが 2 つ続く表記になる（コード上の観察。画面での確認は未実施） |
 | 本番との差 | **本番環境は、コミット `319f0c3`（フォルダ取得キャッシュ・更新ボタン・開発用トークンの追加）の直前の状態。** このリポジトリには、それ以降に、キャッシュ・更新ボタン（`handleRefresh`、`PathBar` の更新、`boxFolderCache`）・開発用トークンが入っているが、**実現の可否を探る試作の段階で、Go は出ていない**。本番へ反映するときは、`SS.tsx` の更新・キャッシュ・開発用トークンに関する部分を、含めないこと。戻る/進むは、本番にもある。 |
 | 試作の扱い | 試作の構成と、外す・戻す方法は [spec-box-folder-cache.md](spec-box-folder-cache.md) の第 0 章。`src/hooks/useBoxExplorer2.tsx`（本番でもない古い未使用の版）は、削除した |

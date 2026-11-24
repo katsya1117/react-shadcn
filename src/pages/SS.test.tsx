@@ -22,7 +22,7 @@ jest.mock("@/hooks/useAreaAdminGate", () => ({
 }));
 
 // SS 専用の子コンポーネントは、このテスト用の操作ボタンを持つスタブをここに直接定義する。
-jest.mock("@/hooks/useBoxExplorer", () => ({ useBoxExplorer: jest.fn() }));
+jest.mock("@/hooks/useFolderNavigation", () => ({ useFolderNavigation: jest.fn() }));
 
 jest.mock("@/components/common/BoxManager/BoxManager", () => ({
   BoxManager: () => <div data-testid="box-manager" />,
@@ -107,9 +107,8 @@ jest.mock("@/components/ss/CollaborationPanel", () => ({
   ),
 }));
 
-import { useBoxExplorer } from "@/hooks/useBoxExplorer";
+import { useFolderNavigation } from "@/hooks/useFolderNavigation";
 import { useAreaAdminGate } from "@/hooks/useAreaAdminGate";
-import { configureBoxDevToken } from "@/lib/boxDevToken";
 import { UrlPath } from "@/constants/UrlPath";
 import { setup, setupWithStore } from "@test-utils";
 import {
@@ -128,7 +127,7 @@ import type { FolderInfo } from "@/types/ss";
 const VALID_ROOT_FOLDER_ID = "370613768434"; // QMS
 
 const makeBoxExplorerMock = (
-  overrides: Partial<ReturnType<typeof useBoxExplorer>> = {},
+  overrides: Partial<ReturnType<typeof useFolderNavigation>> = {},
 ) => ({
   explorerRef: { current: undefined },
   currentFolder: {
@@ -180,7 +179,7 @@ const dispatchUnwrapRejectsWith = (error: unknown) =>
 
 beforeEach(() => {
   (globalThis as any).mockParams = { rootFolderId: VALID_ROOT_FOLDER_ID };
-  (useBoxExplorer as any).mockReturnValue(makeBoxExplorerMock());
+  (useFolderNavigation as any).mockReturnValue(makeBoxExplorerMock());
   jest
     .spyOn(BoxApi.prototype, "getFolderCollaborations")
     .mockResolvedValue({ data: [] });
@@ -250,7 +249,7 @@ describe("SS: 管理者のゲート", () => {
     makeStore();
     expect(screen.queryByTestId("collaboration-panel")).not.toBeInTheDocument();
     expect(screen.queryByTestId("box-manager")).not.toBeInTheDocument();
-    expect(useBoxExplorer).not.toHaveBeenCalled();
+    expect(useFolderNavigation).not.toHaveBeenCalled();
   });
 
   it("管理者でないときは、SSContent を作らず、ShareArea へ戻し、復元用の保存状態を破棄して通知する", async () => {
@@ -265,7 +264,7 @@ describe("SS: 管理者のゲート", () => {
     } as any);
 
     expect(screen.queryByTestId("collaboration-panel")).not.toBeInTheDocument();
-    expect(useBoxExplorer).not.toHaveBeenCalled();
+    expect(useFolderNavigation).not.toHaveBeenCalled();
     expect((globalThis as any).mockLocation.pathname).toContain("ShareArea");
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
@@ -328,7 +327,7 @@ describe("SSContent", () => {
   });
 
   it("isRestoring=true のとき PathBar の代わりに PathBarSkeleton を表示する", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({ isRestoring: true }),
     );
     makeStore();
@@ -349,7 +348,7 @@ describe("SSContent", () => {
   });
 
   it("currentFolder.id が '0' のとき folder-name は '対象フォルダ'（空 name）を表示する", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: "0",
@@ -365,7 +364,7 @@ describe("SSContent", () => {
   });
 
   it("pathCollection にエントリがあるとき buildPath が正しく動作する", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: "child-folder",
@@ -494,7 +493,7 @@ describe("toCollaborationListItem", () => {
   });
 
   it("buildSourcePathByFolderId: pathCollection エントリからソースパスを組み立てる", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: VALID_ROOT_FOLDER_ID,
@@ -799,7 +798,7 @@ describe("追加ブランチカバレッジ", () => {
   });
 
   it("handleOpenExplorer: pathCollection に entries がある場合（line 382-383）", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: VALID_ROOT_FOLDER_ID,
@@ -975,7 +974,7 @@ describe("追加ブランチカバレッジ", () => {
   });
 
   it("buildPath: pathCollection が undefined のとき entries フォールバック [] を使う（line 64）", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: "some-child",
@@ -1134,7 +1133,7 @@ describe("追加ブランチカバレッジ", () => {
   });
 
   it("handleOpenExplorer: pathCollection が undefined のとき entrySegments = []（line 381）", async () => {
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: VALID_ROOT_FOLDER_ID,
@@ -1249,239 +1248,7 @@ describe("追加ブランチカバレッジ", () => {
   });
 });
 
-// ===== window.Box SDK 連携 =====
-
-describe("Box SDK 連携", () => {
-  it("window.Box.ContentExplorer があれば explorerInstance を生成して show を呼ぶ", async () => {
-    const mockShow = jest.fn();
-    const mockAddListener = jest.fn();
-    const mockRemoveAllListeners = jest.fn();
-
-    (window as any).Box = {
-      ContentExplorer: class {
-        show = mockShow;
-        addListener = mockAddListener;
-        removeAllListeners = mockRemoveAllListeners;
-      },
-    };
-
-    makeStore(undefined, {
-      isLogin: true,
-      box: {
-        boxAccountId: "acc1",
-        token: { accessToken: "test-token" } as any,
-        tokenDt: Date.now(),
-      },
-    });
-
-    await waitFor(() => {
-      expect(mockShow).toHaveBeenCalledWith(
-        VALID_ROOT_FOLDER_ID,
-        "test-token",
-        expect.any(Object),
-      );
-    });
-    expect(mockAddListener).toHaveBeenCalledWith(
-      "navigate",
-      expect.any(Function),
-    );
-
-    // navigate イベントリスナーを実際に起動して listener 関数本体（line 310）をカバーする
-    const navigateListener = mockAddListener.mock.calls.find(
-      (call: any[]) => call[0] === "navigate",
-    )?.[1] as ((item: any) => void) | undefined;
-    if (navigateListener) {
-      navigateListener({ id: "new-folder", name: "New Folder", pathCollection: { entries: [] } });
-    }
-
-    delete (window as any).Box;
-  });
-});
-
-// ===== Explorer の復元表示・破棄 =====
-
-describe("Explorer の復元表示と破棄", () => {
-  const loggedIn = {
-    isLogin: true,
-    box: {
-      boxAccountId: "acc1",
-      token: { accessToken: "test-token" } as any,
-      tokenDt: Date.now(),
-    },
-  };
-
-  const installExplorer = (hide?: () => void) => {
-    const mockShow = jest.fn();
-    (window as any).Box = {
-      ContentExplorer: class {
-        show = mockShow;
-        addListener = jest.fn();
-        removeAllListeners = jest.fn();
-        hide = hide;
-      },
-    };
-    return mockShow;
-  };
-
-  afterEach(() => {
-    delete (window as any).Box;
-  });
-
-  describe("開発用トークン（ローカル開発）", () => {
-    afterEach(() => {
-      localStorage.removeItem("box_dev_token");
-      configureBoxDevToken({ enabled: false });
-    });
-
-    it("有効で開発用トークンがあれば、ログインしていなくても Explorer を表示し、そのトークンで接続する", async () => {
-      configureBoxDevToken({ enabled: true });
-      localStorage.setItem("box_dev_token", "dev-123");
-      const mockShow = installExplorer();
-
-      makeStore(); // 未ログイン・Redux のトークンなし
-
-      await waitFor(() =>
-        expect(mockShow).toHaveBeenCalledWith(
-          VALID_ROOT_FOLDER_ID,
-          "dev-123",
-          expect.any(Object),
-        ),
-      );
-      expect(screen.queryByText("Box に接続中...")).not.toBeInTheDocument();
-    });
-
-    it("Redux にモックのトークンがあっても、開発用トークンを優先する", async () => {
-      configureBoxDevToken({ enabled: true });
-      localStorage.setItem("box_dev_token", "dev-123");
-      const mockShow = installExplorer();
-
-      makeStore(undefined, loggedIn); // Redux のトークンは "test-token"
-
-      await waitFor(() => expect(mockShow).toHaveBeenCalled());
-      expect(mockShow.mock.calls[0][1]).toBe("dev-123");
-    });
-
-    it("無効（既定）のときは、localStorage にトークンがあっても、未ログインなら表示しない", async () => {
-      localStorage.setItem("box_dev_token", "dev-123");
-      const mockShow = installExplorer();
-
-      makeStore();
-
-      await waitFor(() =>
-        expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
-      );
-      expect(mockShow).not.toHaveBeenCalled();
-      expect(screen.getByText("Box に接続中...")).toBeInTheDocument();
-    });
-
-    it("window.Box がないとき、開発用トークンがあれば警告をコンソールに出す", async () => {
-      configureBoxDevToken({ enabled: true });
-      localStorage.setItem("box_dev_token", "dev-123");
-      const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
-
-      makeStore(); // window.Box は未設定
-
-      await waitFor(() =>
-        expect(warn).toHaveBeenCalledWith(
-          expect.stringContaining("window.Box.ContentExplorer がありません"),
-        ),
-      );
-      warn.mockRestore();
-    });
-  });
-
-  it("通常の表示では currentFolderId を渡さない（ルートから表示）", async () => {
-    const mockShow = installExplorer();
-
-    makeStore(undefined, loggedIn);
-
-    await waitFor(() => expect(mockShow).toHaveBeenCalled());
-    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("currentFolderId");
-  });
-
-  it("離脱時のフォルダがあるときは、ルートを経由せず currentFolderId で直接表示する", async () => {
-    const mockShow = installExplorer();
-
-    makeStore(
-      {
-        currentFolderByRootId: {
-          [VALID_ROOT_FOLDER_ID]: {
-            id: "child-saved",
-            name: "saved-child",
-            pathCollection: { entries: [] },
-          },
-        },
-      },
-      loggedIn,
-    );
-
-    await waitFor(() => expect(mockShow).toHaveBeenCalled());
-    // 第1引数（rootFolderId）はルートのまま。パンくずの起点になる。
-    expect(mockShow).toHaveBeenCalledWith(
-      VALID_ROOT_FOLDER_ID,
-      "test-token",
-      expect.objectContaining({ currentFolderId: "child-saved" }),
-    );
-  });
-
-  it("離脱時のフォルダがルート自身のときは currentFolderId を渡さない", async () => {
-    const mockShow = installExplorer();
-
-    makeStore(
-      {
-        currentFolderByRootId: {
-          [VALID_ROOT_FOLDER_ID]: {
-            id: VALID_ROOT_FOLDER_ID,
-            name: "qms",
-            pathCollection: { entries: [] },
-          },
-        },
-      },
-      loggedIn,
-    );
-
-    await waitFor(() => expect(mockShow).toHaveBeenCalled());
-    expect(mockShow.mock.calls[0][2]).not.toHaveProperty("currentFolderId");
-  });
-
-  it("画面を離れるとき（unmount）に Explorer を hide() で破棄する", async () => {
-    const hide = jest.fn();
-    const mockShow = installExplorer(hide);
-    const { unmount } = makeStore(undefined, loggedIn);
-    await waitFor(() => expect(mockShow).toHaveBeenCalled());
-    expect(hide).not.toHaveBeenCalled();
-
-    unmount();
-
-    expect(hide).toHaveBeenCalledTimes(1);
-  });
-
-  it("show() していない（未ログイン等）ときは unmount しても hide() を呼ばない", async () => {
-    const hide = jest.fn();
-    const mockShow = installExplorer(hide);
-    const { unmount } = makeStore(); // 未ログイン・トークンなし → show されない
-    await waitFor(() =>
-      expect(screen.getByTestId("collaboration-panel")).toBeInTheDocument(),
-    );
-
-    unmount();
-
-    expect(mockShow).not.toHaveBeenCalled();
-    expect(hide).not.toHaveBeenCalled();
-  });
-
-  it("hide() が例外を投げても unmount は失敗しない", async () => {
-    const hide = jest.fn(() => {
-      throw new Error("hide fail");
-    });
-    const mockShow = installExplorer(hide);
-    const { unmount } = makeStore(undefined, loggedIn);
-    await waitFor(() => expect(mockShow).toHaveBeenCalled());
-
-    expect(() => unmount()).not.toThrow();
-    expect(hide).toHaveBeenCalledTimes(1);
-  });
-});
+// Box SDK の生成・show・hide・イベント購読・トークンの決定は、src/hooks/useBoxExplorer.test.tsx で検証している。
 
 // ===== コラボレーター一覧の取得（畳み・キャッシュ）=====
 
@@ -1556,7 +1323,7 @@ describe("コラボレーター一覧の取得タイミング", () => {
     );
 
     // 別フォルダへ移動したことにして再描画させる（select-collaborator の state 更新で再描画される）
-    (useBoxExplorer as any).mockReturnValue(
+    (useFolderNavigation as any).mockReturnValue(
       makeBoxExplorerMock({
         currentFolder: {
           id: "child-folder",
