@@ -84,15 +84,13 @@ POST /api/box/token
 
 ## 6. Box UI Elements のバージョン
 
-- 現在は CDN の 23.0.0（[index.html](../index.html)）。**26.0.0 に上げてよい**（利用者の了承済み）。
-- 26.0.0 の `explorer.js` のソースで確認できたこと:
+- 現在は CDN の **26.0.0**（[index.html](../index.html)。2026-11-25 に 23.0.0 から更新。**CDN のまま**）。
+- **検証済み（2026-11-25）**: このアプリが依存している動き（`currentFolderId`、`navigate` イベントの形、`navigateTo`、`requestInterceptor`、`itemActions`、`canDownload: false`、`hide()`）は、23.0.0 と 26.0.0 で同じ。詳細は [検証報告](./report-box-ui-elements-26-verification.md)。React 19 は関係しない（バンドルに React 18.3.1 が内蔵されている）。
+- 26.0.0 の `explorer.js` で確認できたこと:
   - `ContentExplorer` が、`select` / `navigate` / `rename` / `delete` / `create` / `download` / `preview` / `upload` のイベントを `emit` する。
   - `canDownload` の既定は有効（`canDownload:!0`）。無効にするには、`false` の明示が要る。
-- 上げたあとの確認項目:
-  - `show()` に渡している `currentFolderId`（ソース上の挙動に依存した非公式の指定）が、26 でも効くか。
-  - `requestInterceptor` / `responseInterceptor` のキャッシュが動くか。
-  - `navigate` イベントの引数の形が変わっていないか（[useBoxExplorer.ts](../src/hooks/useBoxExplorer.ts) が依存）。
-  - `explorer.css` のバージョンも、同時に 26.0.0 へ上げる。
+- **未確認（本物の環境で確認が必要）**: 画面の見た目（CSS が約 1.8 倍）、本物の Box との通信（26 は、`X-Box-Client-Version` ヘッダーを新しく送る。CORS の事前確認が通るか）。確認項目は、検証報告の第 7.2 節。
+- 上げるときは、`explorer.css` のバージョンも、同時に 26.0.0 へ上げる。
 
 ## 7. ファイルへのコラボレーションと、選択
 
@@ -104,12 +102,12 @@ POST /api/box/token
 ### 7.2 Explorer の制約
 
 - Explorer には、**外から選択状態を指定する手段がない**。行のハイライトを、こちらから制御することはできない（`navigateTo` と `clearCache` 系のみ）。
-- 26.0.0 の `explorer.js` は、`select` 等のイベントを `emit` する。ただし、`select` の発火タイミングと引数は、ソースだけでは確定できていない（フォルダ行のクリックは、選択ではなく移動になる可能性が高い）。
+- 26.0.0 の `explorer.js` は、`select` 等のイベントを `emit` する。ただし、**jsdom 上で、ファイル名をクリックしても、`select` は届かなかった**（`canPreview: false` のとき。23.0.0・26.0.0 とも）。フォルダ行のクリックは、選択ではなく移動になる。行のクリックで、対象を選ぶ案は、成立しない。
 - 画面側で対象を示すため、**独自パネルに「操作対象」を表示**する（ハイライトの代わり）。
 
 ### 7.3 採用案: `itemActions`（行の「…」メニュー）
 
-26.0.0 の Explorer には、`itemActions` がある。各行の「…」メニューに、独自項目を足せる。
+Explorer には、`itemActions` がある（**23.0.0 にも、26.0.0 にもある**。バージョンを上げなくても使える）。各行の「…」メニューに、独自項目を足せる。jsdom 上で、23・26 とも、項目が出て、`onAction` にアイテムが渡ることを確認した。
 
 ```ts
 itemActions: [
