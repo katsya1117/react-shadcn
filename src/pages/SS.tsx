@@ -33,7 +33,9 @@ import { PathBar } from "@/components/ss/PathBar";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { useBoxExplorer } from "@/hooks/useBoxExplorer";
 import { getBoxDevToken } from "@/lib/boxDevToken";
-import { boxFolderCache, isBoxFolderCacheEnabled } from "@/lib/boxFolderCache";
+// [PROTO-CACHE-REFRESH] 1/5: 試作（フォルダ取得キャッシュ・更新ボタン）。未使用。有効にする手順は src/prototypes/box-cache-refresh/README.md
+// import { useBoxExplorerWithRefresh } from "@/prototypes/box-cache-refresh/useBoxExplorerWithRefresh";
+// import { useBoxFolderCacheOptions, useRefreshAll } from "@/prototypes/box-cache-refresh/useExplorerCacheRefresh";
 import { useAppDispatch } from "@/redux/hooks";
 import { DEFAULT_ROLE } from "@/constants/ssConstants";
 import { UrlPath } from "@/constants/UrlPath";
@@ -183,7 +185,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
     handleNavigate,
     handleGoBack,
     handleGoForward,
-    handleRefresh,
+    // [PROTO-CACHE-REFRESH] 2/5: useBoxExplorer を useBoxExplorerWithRefresh に差し替え、handleRefresh を受け取る
+    // handleRefresh,
   } = useBoxExplorer({
     rootFolderId,
     initialFolder,
@@ -308,13 +311,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
       //       setSelectedFile({ id: item.id, name: item.name }),
       //   },
       // ],
-      // フォルダ取得を 5 分間キャッシュする（Explorer は訪問済みのフォルダでも毎回通信するため）。
-      ...(isBoxFolderCacheEnabled()
-        ? {
-            requestInterceptor: boxFolderCache.requestInterceptor,
-            responseInterceptor: boxFolderCache.responseInterceptor,
-          }
-        : {}),
+      // [PROTO-CACHE-REFRESH] 3/5: フォルダ取得を 5 分間キャッシュする中継処理（キャッシュが有効なときだけ中身が入る）
+      // ...cacheOptions,   // 併せて、この effect の依存配列に cacheOptions を足す
       // このアプリの Explorer はコラボレート対象フォルダを選ぶための画面。
       // ファイル・フォルダの変更系操作は画面から行わせない（UI 上のボタン非表示のみで、Box 側の権限は変えない）。
       canUpload: false,
@@ -413,20 +411,10 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
 
   // ----- パスバーのアクション -----
 
-  // 更新ボタン: 今見ている画面の情報を、まとめて最新にする。
-  // 1. フォルダ取得のキャッシュ（Explorer）を全て破棄して、現在のフォルダを取り直す（先に破棄する。逆だと保存済みの内容が返る）
-  // 2. コラボレーター一覧のキャッシュを全て破棄して、一覧が開いていれば、現在のフォルダの一覧を取り直す
-  //    （追加・削除・ロール変更の後と同じ処理。一覧には親フォルダからの継承分も含まれ、他の管理者が親フォルダを
-  //     変更すると配下の一覧も古くなるため、現在のフォルダ以外も破棄する。畳んでいれば、次に開いたときに取得する）
-  const handleRefreshAll = useCallback(async () => {
-    boxFolderCache.clear();
-    handleRefresh();
-    try {
-      await refreshCollaborations();
-    } catch {
-      toast.error("コラボレーター一覧の取得に失敗しました");
-    }
-  }, [handleRefresh, refreshCollaborations]);
+  // [PROTO-CACHE-REFRESH] 4/5: 更新ボタンの処理（refreshCollaborations より後ろに置く）。
+  // あわせて、show() の effect より前（useBoxExplorer の直後など）に、次の 1 行を足す:
+  //   const cacheOptions = useBoxFolderCacheOptions();
+  // const handleRefreshAll = useRefreshAll({ handleRefresh, refreshCollaborations });
 
   const handleCopyPath = useCallback(async () => {
     try {
@@ -641,7 +629,8 @@ const SSContent = ({ rootFolderId, areaFolderName }: SSContentProps) => {
               canGoForward={canGoForward}
               onGoBack={handleGoBack}
               onGoForward={handleGoForward}
-              onRefresh={() => void handleRefreshAll()}
+              // [PROTO-CACHE-REFRESH] 5/5: 更新ボタン（渡すと PathBar に出る）
+              // onRefresh={() => void handleRefreshAll()}
               onCopyPath={handleCopyPath}
               onOpenBox={handleOpenBox}
               onOpenExplorer={handleOpenExplorer}

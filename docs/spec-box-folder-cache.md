@@ -3,12 +3,33 @@
 | 項目 | 内容 |
 | --- | --- |
 | 対象 | Box Content Explorer のフォルダ取得（`GET /folders/{id}`）の短時間キャッシュ |
-| 実装 | `src/lib/boxFolderCache.ts`（本体）、`src/pages/SS.tsx`（組み込み）、`src/main.tsx`（設定） |
-| 状態 | 試作として実装。開発環境で、キャッシュの命中を利用者が確認済み。本番での効果と影響は、未測定。**暫定的に、既定は無効**（下の注記） |
+| 実装 | `src/prototypes/box-cache-refresh/`（本体・フック・手順。第 0 章）。組み込み位置は、`src/pages/SS.tsx`・`src/main.tsx` の、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
+| 状態 | **実現可否を探る試作（実現の Go は出ていない）。本番環境は、本機能を追加したコミット `319f0c3` の直前の状態で、本機能（キャッシュ・更新ボタン）は本番に入っていない。** 試作として実装。開発環境で、キャッシュの命中を利用者が確認済み。本番での効果と影響は、未測定。**暫定的に、既定は無効**（下の注記） |
 | 作成日 | 2026-11-06 |
 | 関連資料 | [Box API 呼び出し回数の削減対応 報告書](./report-box-api-call-reduction.md)（背景・全体の対策）<br>[SS 画面 技術仕様書](./spec-ss-screen.md)（画面全体） |
 
 > **現在の既定は「無効」です。** Box API の呼び出し回数が問題になるか未確認のため、暫定的に、性能と最新のデータを優先して、キャッシュを使っていません。コードは残してあり、環境変数 `VITE_BOX_FOLDER_CACHE=true` で復活できます（コラボレーター一覧のキャッシュも同様に、`VITE_BOX_COLLABORATIONS_CACHE=true`）。以下の記述のうち「既定は有効」としている箇所は、キャッシュを有効にした場合の説明です。
+
+## 0. 試作の範囲と、本番へ反映するときの扱い
+
+本番環境は、この試作を追加したコミット `319f0c3` の**直前**の状態。試作は、実現可否を探る段階で、実現の Go は出ていない。**履歴に埋もれないよう、未使用の部品として、`src/prototypes/box-cache-refresh/` に分けて残してある。**
+
+### 試作の構成
+
+| 区分 | ファイル | 内容 |
+| --- | --- | --- |
+| フォルダ取得キャッシュ | `src/prototypes/box-cache-refresh/boxFolderCache.ts`（+ test） | 本体 |
+| | `src/prototypes/box-cache-refresh/useExplorerCacheRefresh.ts`（`useBoxFolderCacheOptions`） | `show()` に渡す中継処理 |
+| 更新ボタン | `src/prototypes/box-cache-refresh/useBoxExplorerWithRefresh.ts` | `useBoxExplorer` に `handleRefresh` を足した別版 |
+| | `src/prototypes/box-cache-refresh/useExplorerCacheRefresh.ts`（`useRefreshAll`） | 更新ボタンの処理 |
+| | `src/components/ss/PathBar.tsx` | `onRefresh` を渡したときだけ、更新ボタンを出す（省略可能な props） |
+| 組み込み位置 | `src/pages/SS.tsx`、`src/main.tsx` | 目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト（`grep -rn PROTO-CACHE-REFRESH src`） |
+| 有効にする手順・保守 | `src/prototypes/box-cache-refresh/README.md` | |
+
+- どこからも import していない。ただし、型チェックとテストの対象で、壊れていないことは常に確認できる。
+- **開発用トークン**（`boxDevToken`、`vite.config.ts` の `strictPort`、README）は、試作ではなく開発環境のツール。本番では無効になるので、`src/lib/` のまま残している。
+- コラボレーター一覧のキャッシュの切り替え（`ssSlice` の `configureCollaborationsCache`、`81b19c6`）も、そのまま。
+- 注意: コラボレーター一覧のキャッシュは、本番（`319f0c3` の直前）では、**常に有効**だった可能性がある。このリポジトリでは、既定を無効にしてある。本番との挙動の差に注意すること（未確認）。
 
 ## 1. 目的
 
@@ -78,7 +99,7 @@ sequenceDiagram
 
 | 要素 | ファイル | 役割 |
 | --- | --- | --- |
-| `createBoxFolderCache(options)` | `src/lib/boxFolderCache.ts` | キャッシュを作る関数。2 つの中継処理と、操作用の関数を返す |
+| `createBoxFolderCache(options)` | `src/prototypes/box-cache-refresh/boxFolderCache.ts` | キャッシュを作る関数。2 つの中継処理と、操作用の関数を返す |
 | `boxFolderCache` | 同上 | アプリ全体で共有する 1 つのインスタンス |
 | `configureBoxFolderCache` / `isBoxFolderCacheEnabled` | 同上 | 有効・無効と、ログ出力の設定 |
 | 組み込み | `src/pages/SS.tsx` | `show()` のオプションに、2 つの中継処理を渡す |
@@ -309,7 +330,7 @@ configureBoxFolderCache({
 
 ## 9. テスト
 
-`src/lib/boxFolderCache.test.ts`（35 件）、`src/pages/SS.test.tsx`（組み込みの 2 件）。
+`src/prototypes/box-cache-refresh/boxFolderCache.test.ts`（35 件）、`useExplorerCacheRefresh.test.tsx`（組み込みの 5 件）、`useBoxExplorerWithRefresh.test.tsx`（更新）。SS 画面からは外したため、`SS.test.tsx` の組み込みのテストは、`319f0c3` の履歴にのみ残る。
 
 | 観点 | 内容 |
 | --- | --- |
@@ -353,11 +374,11 @@ configureBoxFolderCache({
 
 | ファイル | 内容 |
 | --- | --- |
-| `src/lib/boxFolderCache.ts` | キャッシュ本体（新規） |
-| `src/lib/boxFolderCache.test.ts` | 単体テストと、axios との結合テスト（新規、35 件） |
-| `src/pages/SS.tsx` | `show()` に中継処理を渡す。更新ボタンの処理（`handleRefreshAll`） |
-| `src/pages/SS.test.tsx` | 組み込みのテスト（2 件）を追加 |
-| `src/main.tsx` | 有効・無効、ログ出力の設定 |
+| `src/prototypes/box-cache-refresh/boxFolderCache.ts` | キャッシュ本体（新規） |
+| `src/prototypes/box-cache-refresh/boxFolderCache.test.ts` | 単体テストと、axios との結合テスト（新規、35 件） |
+| `src/pages/SS.tsx` | （追加時）`show()` に中継処理を渡す。更新ボタンの処理（`handleRefreshAll`）。現在は、目印 `[PROTO-CACHE-REFRESH]` 付きのコメントアウト |
+| `src/pages/SS.test.tsx` | （追加時）組み込みのテスト（2 件）。現在は、`useExplorerCacheRefresh.test.tsx` に移した |
+| `src/main.tsx` | 有効・無効、ログ出力の設定（現在は、コメントアウト） |
 | `src/components/ss/PathBar.tsx` | 更新ボタン |
 | `src/hooks/useBoxExplorer.ts` | `handleRefresh`（現在のフォルダを取り直し、結果で現在地を最新にする） |
 | `.env.example` | `VITE_BOX_FOLDER_CACHE` の説明 |

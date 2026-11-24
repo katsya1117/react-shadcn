@@ -124,7 +124,7 @@ Box UI Elements v23.0.0（本アプリが読み込んでいるバージョン）
 
 > 設計・仕様・運用の詳細は、[Box フォルダ取得キャッシュ 設計・仕様書](./spec-box-folder-cache.md)を参照する。
 
-Explorer のフォルダ取得は、設定では減らせない（3.3 節）。そこで、Explorer の `show()` に渡せる通信の中継処理（`requestInterceptor` / `responseInterceptor`）を使い、**同じ要求の応答を 5 分間保存し、通信せずに返す** 試作を実装した（`src/lib/boxFolderCache.ts`）。
+Explorer のフォルダ取得は、設定では減らせない（3.3 節）。そこで、Explorer の `show()` に渡せる通信の中継処理（`requestInterceptor` / `responseInterceptor`）を使い、**同じ要求の応答を 5 分間保存し、通信せずに返す** 試作を実装した（`src/prototypes/box-cache-refresh/boxFolderCache.ts`。現在は、本番に合わせて SS 画面から外し、未使用の部品として残してある）。
 
 | 項目 | 内容 |
 | --- | --- |
@@ -208,7 +208,7 @@ Explorer のフォルダ取得は、設定では減らせない（3.3 節）。�
 | `src/pages/SS.tsx` | 一覧の開閉、取得タイミングの制御、追加時の最新取得、`currentFolderId` の指定、`hide()` の呼び出し、変更系操作の無効化 |
 | `src/components/ss/CollaborationPanel.tsx` | 一覧の開閉ボタンの追加 |
 | `src/redux/slices/ssSlice.ts` | 取得時刻の保持、5 分の有効時間、キャッシュの無効化、取得ロジック（`ensureFolderCollaborations`） |
-| `src/lib/boxFolderCache.ts` | フォルダ取得のキャッシュ（試作） |
+| `src/prototypes/box-cache-refresh/boxFolderCache.ts` | フォルダ取得のキャッシュ（試作・未使用） |
 | `src/main.tsx` | キャッシュの有効・無効、開発時のログ出力の設定 |
 | `src/hooks/useBoxExplorer.md` | 復元の説明を更新 |
 | テスト | `SS.test.tsx`、`ssSlice.test.ts`、`CollaborationPanel.test.tsx`、`boxFolderCache.test.ts` を更新・追加（全体で 424 件が成功） |
