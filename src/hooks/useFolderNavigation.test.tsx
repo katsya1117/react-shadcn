@@ -448,6 +448,30 @@ describe("useFolderNavigation", () => {
     });
   });
 
+  describe("初回表示（現在地が仮の値のままのとき）", () => {
+    it("T-16: 名前のない仮の現在地は、ルートの知らせで実データに置き換わる（履歴は触らない）", () => {
+      const { navigate, result, store, state } = setupHook();
+
+      navigate(ROOT);
+
+      expect(result.current.currentFolder.name).toBe(`name-${ROOT}`);
+      expect(result.current.currentFolder.pathCollection?.entries).toHaveLength(1);
+      expect(store.getState().ss.currentFolderByRootId[ROOT]?.name).toBe(`name-${ROOT}`);
+      expect(state()).toMatchObject({ history: [ROOT], index: 0 });
+    });
+
+    it("T-17: 現在地に名前があれば、同じ知らせは、従来どおり何もしない", () => {
+      const { navigate, dispatchSpy, result } = setupHook({
+        initialFolder: { id: ROOT, name: "既存", pathCollection: { entries: [] } },
+      });
+
+      navigate(ROOT);
+
+      expect(result.current.currentFolder.name).toBe("既存");
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe("Redux への保存", () => {
     it("T-14: 現在地と履歴の更新のたびに、setCurrentFolder / setFolderHistory が dispatch される", () => {
       const { navigate, dispatchSpy } = setupHook();

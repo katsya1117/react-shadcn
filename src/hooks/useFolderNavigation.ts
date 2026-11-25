@@ -73,6 +73,18 @@ export const useFolderNavigation = ({
   const [folderHistory, setFolderHistory] = useState<string[]>(savedHistory);
   const [historyIndex, setHistoryIndex] = useState(savedIndex);
   const [isRestoring, setIsRestoring] = useState(Boolean(restoreTargetId));
+  /** 現在のフォルダ。③（初回表示）で「まだ仮の値か」をイベント内で即座に読むために、ref でも持つ。 */
+  const currentFolderRef = useRef(initialFolder);
+
+  /** 現在のフォルダを、ref・state・Redux の 3 つに同期して更新する。 */
+  const commitCurrentFolder = useCallback(
+    (folder: FolderInfo) => {
+      currentFolderRef.current = folder;
+      setCurrentFolder(folder);
+      dispatch(ssActions.setCurrentFolder({ rootFolderId, folder }));
+    },
+    [dispatch, rootFolderId],
+  );
 
   /**
    * 履歴インデックス・履歴配列を ref / state / Redux すべてに同期更新する。
@@ -102,12 +114,13 @@ export const useFolderNavigation = ({
    * 履歴は、「訪れたフォルダ ID の並び」と「いま並びのどこにいるか（位置）」の 2 つで持つ。
    *   例: 履歴 [R, A, B]、位置 2 → いまは B にいる。「戻る」で A へ、さらに「戻る」で R へ。
    *
-   * 知らせが来る理由は 4 つあり、理由ごとに、やることが違う。上から順に判定して、当てはまったところで終わる。
+   * 知らせが来る理由は 5 つあり、理由ごとに、やることが違う。上から順に判定して、当てはまったところで終わる。
    *   ① 復元中       : 他の画面から戻ってきて、前回見ていたフォルダを開き直している途中。履歴は触らない。
    *   ② 戻る/進む    : 戻る/進むボタンを押した結果（向かっていたフォルダの知らせ）。履歴は、ボタンを押した時点で更新済み。
    *                    現在のフォルダだけ更新する。
-   *   ③ 同じ知らせ   : いまいるフォルダと同じ知らせ（Explorer が二重に知らせることがある）。何もしない。
-   *   ④ 利用者の操作 : フォルダをクリックした、または、パンくずをクリックした。履歴に積む（ブラウザと同じ）。
+   *   ③ 初回表示     : 初めて入った画面で、ルートの知らせが届いた。現在のフォルダは仮の値なので、実データに差し替える。履歴は触らない。
+   *   ④ 同じ知らせ   : いまいるフォルダと同じ知らせ（Explorer が二重に知らせることがある）。何もしない。
+   *   ⑤ 利用者の操作 : フォルダをクリックした、または、パンくずをクリックした。履歴に積む（ブラウザと同じ）。
    */
   const handleNavigate = useCallback(
     (item: BoxFolder) => {
@@ -139,10 +152,7 @@ export const useFolderNavigation = ({
         if (targetId && nextFolder.id === targetId) {
           isRestoringRef.current = false;
           setIsRestoring(false);
-          setCurrentFolder(nextFolder);
-          dispatch(
-            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-          );
+          commitCurrentFolder(nextFolder);
           return;
         }
       }
@@ -157,28 +167,33 @@ export const useFolderNavigation = ({
       if (pendingTargetId !== undefined) {
         pendingTargetIdRef.current = undefined;
         if (nextFolder.id === pendingTargetId) {
-          setCurrentFolder(nextFolder);
-          dispatch(
-            ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-          );
+          commitCurrentFolder(nextFolder);
           return;
         }
       }
 
-      // ③ 同じ知らせ: いまいるフォルダ（履歴の現在位置のフォルダ）と同じなら、何もしない（Explorer が二重に知らせる場合の保険）
-      if (folderHistoryRef.current[historyIndexRef.current] === nextFolder.id) {
+      const isSameAsCurrent =
+        folderHistoryRef.current[historyIndexRef.current] === nextFolder.id;
+
+      // ③ 初回表示: 初めて入った画面でルートにいるとき、現在のフォルダは、SS.tsx が作った仮の値（名前もパスもない）。
+      //    Explorer が最初に知らせてくるルートが、「同じ知らせ」（④）に見えるが、ここで捨てると、
+      //    ルートに留まっている間、名前とパスが空のままになる。届いた実データに差し替える（履歴は触らない）。
+      if (isSameAsCurrent && !currentFolderRef.current.name) {
+        commitCurrentFolder(nextFolder);
         return;
       }
 
-      // ④ 利用者の操作（フォルダのクリック、パンくずのクリック）: 現在のフォルダを更新し、履歴に積む。
+      // ④ 同じ知らせ: いまいるフォルダ（履歴の現在位置のフォルダ）と同じなら、何もしない（Explorer が二重に知らせる場合の保険）
+      if (isSameAsCurrent) {
+        return;
+      }
+
+      // ⑤ 利用者の操作（フォルダのクリック、パンくずのクリック）: 現在のフォルダを更新し、履歴に積む。
       //    パンくずで、すでに履歴にあるフォルダへ戻った場合も、同じ（位置を動かすだけにはしない）。
       //    ブラウザと同じ動きで、「戻る」で、押す前にいたフォルダへ戻れる。
       //    例: 履歴 [R, A, B, C]、位置 3（C）で、パンくずで A を押す → 履歴は [R, A, B, C, A]、位置 4。「戻る」で C へ戻れる。
       //    位置が履歴の途中にあるときは、位置より先の履歴を捨ててから積む（例: [R, A, B] の位置 1 で X を開く → [R, A, X]）。
-      setCurrentFolder(nextFolder);
-      dispatch(
-        ssActions.setCurrentFolder({ rootFolderId, folder: nextFolder }),
-      );
+      commitCurrentFolder(nextFolder);
 
       const currentHistory = folderHistoryRef.current;
       const currentIndex = historyIndexRef.current;
@@ -186,7 +201,7 @@ export const useFolderNavigation = ({
       const nextHistory = [...trimmed, nextFolder.id];
       syncHistory(trimmed.length, nextHistory);
     },
-    [dispatch, rootFolderId, syncHistory],
+    [rootFolderId, syncHistory, commitCurrentFolder],
   );
 
   const canGoBack = historyIndex > 0;
